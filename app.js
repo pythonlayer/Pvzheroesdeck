@@ -1573,6 +1573,449 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
         }
     };
 
+    /* ================================================================
+       AI DECK APPRAISAL ENGINE (v3)
+       ----------------------------------------------------------------
+       Builds a full competitive-review-style appraisal on top of the
+       v2 evaluator above. Reuses de_normalizeCard / de_detectPackages /
+       de_runMonteCarlo / de_getMetaLearner / de_findSimilarCards /
+       synergyMatrix / cardFrequencies / getVerdictContext instead of
+       recomputing any of it, and adds the pieces v2 never produced:
+       multi-archetype confidence, named packages, role distribution,
+       removal breakdown, win-condition detection, per-card importance
+       (leave-one-out), replacement suggestions, hero fit, meta
+       similarity to real decks in fullDatabase, matchup estimates
+       against 8 archetypes, a natural-language identity paragraph,
+       and improvement suggestions with rough expected score deltas.
+
+       Public entry point:
+         - window.DeckAppraisal.appraise(cards, heroName, deckKey)
+         - window.DeckEvaluator.appraise(...)  (alias)
+       ================================================================ */
+
+    // ---------------------------------------------------------------
+    // Hero <-> class-pair lookup (reverse of heroMap)
+    // ---------------------------------------------------------------
+    let de_heroClassMap = null;
+    function de_getHeroClasses(heroName) {
+        if (!heroName) return null;
+        if (!de_heroClassMap) {
+            de_heroClassMap = {};
+            for (const key in heroMap) {
+                const val = heroMap[key];
+                String(val).split('/').map(s => s.trim()).forEach(h => {
+                    de_heroClassMap[h] = key.split(',');
+                });
+            }
+        }
+        return de_heroClassMap[heroName] || null;
+    }
+
+    // ---------------------------------------------------------------
+    // Role / removal / curve breakdowns
+    // ---------------------------------------------------------------
+    function de_roleDistribution(seeds, totalCards) {
+        const buckets = { early: 0, mid: 0, late: 0, removal: 0, draw: 0, generation: 0, buffs: 0, healing: 0, reach: 0, boardControl: 0, threats: 0, support: 0 };
+        if (!totalCards) return buckets;
+        seeds.forEach(s => {
+            const c = s.count, n = s.norm;
+            buckets[n.curveBucket] += c;
+            if (n.roles.includes('removal')) { buckets.removal += c; buckets.boardControl += c; }
+            if (n.roles.includes('card_advantage')) buckets.draw += c;
+            if (n.roles.includes('tokens')) buckets.generation += c;
+            if (n.roles.includes('buff')) buckets.buffs += c;
+            if (n.roles.includes('healing')) buckets.healing += c;
+            if (n.mechanics.includes('reach')) buckets.reach += c;
+            if (n.roles.includes('threat')) buckets.threats += c;
+            if (n.roles.includes('card_advantage') || n.roles.includes('buff') || n.roles.includes('healing')) buckets.support += c;
+        });
+        const pct = {};
+        Object.keys(buckets).forEach(k => { pct[k] = Math.round((buckets[k] / totalCards) * 100); });
+        return pct;
+    }
+
+    function de_removalAnalysis(seeds, totalCards) {
+        const out = { total: 0, hard: 0, soft: 0, freeze: 0, aoe: 0, early: 0, late: 0, flexibility: 0, efficiency: 0, density: 0 };
+        if (!totalCards) return out;
+        let costSum = 0;
+        seeds.forEach(s => {
+            const n = s.norm;
+            if (!n.roles.includes('removal') && n.removalType !== 'freeze') return;
+            const c = s.count;
+            out.total += c; costSum += n.cost * c;
+            if (n.removalType === 'hard') out.hard += c;
+            else if (n.removalType === 'freeze') out.freeze += c;
+            else out.soft += c;
+            if (/\ball zombies\b|\ball plants\b|\beach zombie\b|\beach plant\b/i.test(n.description)) out.aoe += c;
+            if (n.cost <= 3) out.early += c; else out.late += c;
+        });
+        out.flexibility = [out.hard > 0, out.soft > 0, out.freeze > 0, out.aoe > 0].filter(Boolean).length;
+        out.efficiency = out.total ? Math.round(Math.max(0, 100 - (costSum / out.total) * 15)) : 0;
+        out.density = Math.round((out.total / totalCards) * 100);
+        return out;
+    }
+
+    // ---------------------------------------------------------------
+    // Win-condition detection
+    // ---------------------------------------------------------------
+    const DE_WINCON_DEFS = [
+        { key: 'finishers', label: 'Big Finishers', test: n => n.cost >= 6 || (n.cost >= 5 && n.roles.includes('finisher')) },
+        { key: 'burn', label: 'Direct Damage / Reach', test: n => n.mechanics.includes('reach') },
+        { key: 'swarm', label: 'Token Swarm', test: n => n.roles.includes('tokens') },
+        { key: 'evolution', label: 'Evolution', test: n => n.roles.includes('evolution_enabler') },
+        { key: 'environment', label: 'Environment', test: n => n.tribes.includes('Environment') || /\benvironment\b/i.test(n.description) },
+        { key: 'bullseye', label: 'Bullseye', test: n => /\bbullseye\b/i.test(n.description) },
+        { key: 'control', label: 'Control Attrition', test: n => n.roles.includes('removal') || n.roles.includes('card_advantage') }
+    ];
+
+    function de_detectWinConditions(seeds, totalCards, monteCarlo) {
+        if (!totalCards) return { winConditions: [], primary: 'Unclear', clarity: 0, confidence: 20 };
+        const results = [];
+        DE_WINCON_DEFS.forEach(def => {
+            let copies = 0, costSum = 0; const cards = [];
+            seeds.forEach(s => {
+                if (!def.test(s.norm)) return;
+                copies += s.count; costSum += s.norm.cost * s.count;
+                cards.push({ name: s.name, count: s.count });
+            });
+            if (!copies) return;
+            results.push({
+                type: def.label,
+                copies,
+                rate: Math.round((copies / totalCards) * 100),
+                speed: Math.round(costSum / copies),
+                cards
+            });
+        });
+        results.sort((a, b) => b.rate - a.rate);
+        const top = results[0], second = results[1];
+        const clarity = top ? Math.max(0, top.rate - (second ? second.rate : 0)) : 0;
+        const consistency = Math.round((1 - (monteCarlo ? monteCarlo.brickRate : 0.3)) * 100);
+        results.forEach(r => { r.redundancy = r.copies; r.consistency = consistency; });
+        return {
+            winConditions: results,
+            primary: top ? top.type : 'Unclear',
+            clarity,
+            confidence: top ? Math.max(20, Math.min(95, 40 + top.rate)) : 20
+        };
+    }
+
+    // ---------------------------------------------------------------
+    // Multi-archetype confidence (independent 0-100 scores, not a
+    // single softmax pick — mirrors "Aggro 93% / Burn 71% / ..." )
+    // ---------------------------------------------------------------
+    const DE_ARCHETYPE_LIST = ['Aggro', 'Burn', 'Tempo', 'Midrange', 'Control', 'Swarm', 'Ramp', 'Combo'];
+
+    function de_archetypeConfidences(seeds, totalCards, roleDist, winconResult, monteCarlo) {
+        if (!totalCards) return DE_ARCHETYPE_LIST.map(name => ({ name, confidence: 0, reasoning: 'Not enough cards to evaluate.' }));
+        const meta = de_getMetaLearner();
+        const curve = [0, 0, 0, 0, 0, 0];
+        let removalCount = 0;
+        seeds.forEach(s => {
+            const c = s.norm.cost;
+            const idx = c <= 1 ? 0 : c === 2 ? 1 : c === 3 ? 2 : c === 4 ? 3 : c === 5 ? 4 : 5;
+            curve[idx] += s.count;
+            if (s.norm.roles.includes('removal')) removalCount += s.count;
+        });
+        const shape = curve.map(v => v / totalCards);
+        function curveFit(target) {
+            let dist = 0; for (let i = 0; i < 6; i++) dist += Math.abs(shape[i] - target[i]);
+            return Math.max(0, 1 - dist / 1.4);
+        }
+        const removalDensity = (removalCount / totalCards) * 100;
+        const scores = {
+            Aggro: curveFit(meta.archetypes.Aggro.curveTarget) * 70 + (roleDist.early || 0) * 0.3,
+            Midrange: curveFit(meta.archetypes.Midrange.curveTarget) * 100,
+            Control: curveFit(meta.archetypes.Control.curveTarget) * 70 + removalDensity * 0.3,
+            Swarm: curveFit(meta.archetypes.Swarm.curveTarget) * 60 + (roleDist.generation || 0) * 0.5,
+            Ramp: curveFit(meta.archetypes.Ramp.curveTarget) * 100,
+            Burn: (roleDist.reach || 0) * 1.3,
+            Tempo: (shape[0] + shape[1]) * 40 + removalDensity * 0.4,
+            Combo: (winconResult.clarity || 0) * 0.6 + (monteCarlo ? (1 - monteCarlo.brickRate) * 20 : 0)
+        };
+        const reasons = {
+            Aggro: `${roleDist.early || 0}% of the deck is early plays`,
+            Midrange: `curve shape distance from the midrange target is ${(1 - curveFit(meta.archetypes.Midrange.curveTarget)).toFixed(2)}`,
+            Control: `${Math.round(removalDensity)}% removal density with a slow curve`,
+            Swarm: `${roleDist.generation || 0}% of the deck generates tokens`,
+            Ramp: `curve shape matches a ramp/value profile`,
+            Burn: `${roleDist.reach || 0}% of the deck can hit the hero directly`,
+            Tempo: `${Math.round((shape[0] + shape[1]) * 100)}% of the deck is 1-2 cost with ${Math.round(removalDensity)}% removal`,
+            Combo: `win-condition clarity score of ${Math.round(winconResult.clarity || 0)}`
+        };
+        return DE_ARCHETYPE_LIST.map(name => ({
+            name,
+            confidence: Math.max(0, Math.min(97, Math.round(scores[name] || 0))),
+            reasoning: reasons[name]
+        })).sort((a, b) => b.confidence - a.confidence);
+    }
+
+    // ---------------------------------------------------------------
+    // Named packages (labels the union-find communities de_detectPackages
+    // already finds, instead of just listing card groups)
+    // ---------------------------------------------------------------
+    function de_namePackage(group) {
+        const tribeCounts = {};
+        group.forEach(c => c.norm.tribes.forEach(t => { tribeCounts[t] = (tribeCounts[t] || 0) + c.count; }));
+        const topTribe = Object.entries(tribeCounts).sort((a, b) => b[1] - a[1])[0];
+        const groupCopies = group.reduce((s, c) => s + c.count, 0);
+        if (topTribe && topTribe[1] >= Math.ceil(groupCopies * 0.4)) return `${topTribe[0]} Package`;
+        const mechCounts = {};
+        group.forEach(c => c.norm.mechanics.forEach(m => { mechCounts[m] = (mechCounts[m] || 0) + c.count; }));
+        const topMech = Object.entries(mechCounts).sort((a, b) => b[1] - a[1])[0];
+        if (topMech) return `${topMech[0].charAt(0).toUpperCase()}${topMech[0].slice(1)} Package`;
+        return 'Support Package';
+    }
+
+    function de_namedPackages(seeds) {
+        const groups = de_detectPackages(seeds);
+        return groups.map(g => {
+            const copies = g.reduce((s, c) => s + c.count, 0);
+            let synergySum = 0, pairs = 0;
+            for (let i = 0; i < g.length; i++) {
+                for (let j = i + 1; j < g.length; j++) { synergySum += de_pairSynergy(g[i].key, g[j].key); pairs++; }
+            }
+            const avgSynergy = pairs ? synergySum / pairs : 0;
+            return {
+                name: de_namePackage(g),
+                cards: g.map(c => ({ name: c.name, count: c.count })),
+                copies,
+                synergyStrength: Math.round(avgSynergy * 100),
+                confidence: Math.round(Math.min(95, 40 + avgSynergy * 100))
+            };
+        }).sort((a, b) => b.copies - a.copies);
+    }
+
+    // ---------------------------------------------------------------
+    // Card importance (leave-one-out) using a cheap subscore proxy —
+    // deliberately skips Monte Carlo / legacy synergy since this runs
+    // once per unique card in the deck.
+    // ---------------------------------------------------------------
+    function de_cheapScore(seeds, totalCards) {
+        if (!totalCards) return 0;
+        const curveScore = de_scoreCurve(seeds, totalCards);
+        const removalScore = de_scoreRemoval(seeds, totalCards);
+        const finisherScore = de_scoreFinishers(seeds, totalCards);
+        const packageScore = de_scorePackages(de_detectPackages(seeds), totalCards);
+        const roleScore = de_scoreRoleBalance(seeds, totalCards);
+        return curveScore * 0.22 + removalScore * 0.22 + finisherScore * 0.18 + packageScore * 0.2 + roleScore * 0.18;
+    }
+
+    function de_cardImportance(seeds, totalCards) {
+        if (!totalCards || seeds.length < 2) return { core: [], support: [], luxury: [], weakest: [], results: [] };
+        const baseline = de_cheapScore(seeds, totalCards);
+        const results = seeds.map(seed => {
+            const without = seeds.filter(s => s !== seed);
+            const withoutTotal = totalCards - seed.count;
+            const withoutScore = de_cheapScore(without, withoutTotal);
+            return { name: seed.name, count: seed.count, importance: Math.round(baseline - withoutScore) };
+        }).sort((a, b) => b.importance - a.importance);
+
+        return {
+            core: results.filter(r => r.importance >= 8).map(r => r.name),
+            support: results.filter(r => r.importance >= 3 && r.importance < 8).map(r => r.name),
+            luxury: results.filter(r => r.importance < 3).map(r => r.name),
+            weakest: results.slice(-3).reverse().map(r => r.name),
+            results
+        };
+    }
+
+    function de_replacementSuggestions(cardImportance, seeds) {
+        return cardImportance.weakest.slice(0, 3).map(name => {
+            const seed = seeds.find(s => s.name === name);
+            const alts = seed ? de_findSimilarCards(seed.name, seeds.map(s => s.key), 3) : [];
+            return {
+                card: name,
+                reason: `${name} contributes the least to curve, removal, packages, and role balance relative to its slot.`,
+                suggestions: alts.map(a => a.name)
+            };
+        });
+    }
+
+    // ---------------------------------------------------------------
+    // Hero compatibility
+    // ---------------------------------------------------------------
+    function de_heroFit(seeds, totalCards, heroName) {
+        const classes = de_getHeroClasses(heroName);
+        if (!classes) return null;
+        const classSet = new Set(classes);
+        let inClass = 0, removal = 0, finishers = 0, support = 0;
+        seeds.forEach(s => {
+            const cls = s.norm.class;
+            if (!cls || classSet.has(cls)) inClass += s.count;
+            if (s.norm.roles.includes('removal')) removal += s.count;
+            if (s.norm.roles.includes('finisher') || s.norm.cost >= 5) finishers += s.count;
+            if (s.norm.roles.includes('card_advantage') || s.norm.roles.includes('buff') || s.norm.roles.includes('healing')) support += s.count;
+        });
+        const classSynergy = totalCards ? Math.round((inClass / totalCards) * 100) : 0;
+        const offClass = totalCards - inClass;
+        const score = Math.max(0, Math.min(100, classSynergy - Math.min(30, offClass * 4)));
+        return {
+            heroClasses: classes,
+            classSynergy,
+            offClassCards: offClass,
+            removalAvailable: removal,
+            finishersAvailable: finishers,
+            supportAvailable: support,
+            score,
+            note: offClass > 0
+                ? `${offClass} card${offClass === 1 ? '' : 's'} fall outside ${heroName}'s classes (${classes.join('/')}) — double-check legality.`
+                : `Every card matches ${heroName}'s classes (${classes.join('/')}).`
+        };
+    }
+
+    // ---------------------------------------------------------------
+    // Meta similarity — nearest real decks in fullDatabase
+    // ---------------------------------------------------------------
+    function de_metaSimilarity(seeds, totalCards, ctx) {
+        if (!totalCards) return { avgSimilarity: 0, topSimilarDecks: [] };
+        const userCounts = new Map(seeds.map(s => [s.name, s.count]));
+        const comparisons = [];
+        for (const dbKey in ctx.dbDecks) {
+            const db = ctx.dbDecks[dbKey];
+            let overlap = 0;
+            const [a, b] = userCounts.size < db.seedCounts.size ? [userCounts, db.seedCounts] : [db.seedCounts, userCounts];
+            for (const [name, c] of a) { const other = b.get(name); if (other !== undefined) overlap += Math.min(c, other); }
+            const similarity = Math.round((overlap / Math.max(totalCards, db.totalCards)) * 100);
+            if (similarity >= 25) {
+                const dbDeck = fullDatabase[dbKey];
+                comparisons.push({ deckKey: dbKey, hero: dbDeck?.hero || 'Unknown', author: dbDeck?.author || 'Unknown', similarity });
+            }
+        }
+        comparisons.sort((a, b) => b.similarity - a.similarity);
+        const top = comparisons.slice(0, 5);
+        const avg = top.length ? Math.round(top.reduce((s, c) => s + c.similarity, 0) / top.length) : 0;
+        return { avgSimilarity: avg, topSimilarDecks: top };
+    }
+
+    // ---------------------------------------------------------------
+    // Matchup estimates — rule-based, not simulated (there's no
+    // opponent AI to actually play games against).
+    // ---------------------------------------------------------------
+    const DE_MATCHUP_ARCHETYPES = ['Aggro', 'Tempo', 'Midrange', 'Control', 'Combo', 'Swarm', 'Burn', 'Ramp'];
+
+    function de_matchupEstimates(subscores, roleDist, monteCarlo) {
+        const consistency = Math.round((1 - (monteCarlo ? monteCarlo.brickRate : 0.3)) * 100);
+        const removalDensity = roleDist.removal || 0;
+        const earlyDensity = roleDist.early || 0;
+        const healing = roleDist.healing || 0;
+        const reach = roleDist.reach || 0;
+        const base = {
+            Aggro: 50 + removalDensity * 0.4 + healing * 0.5 - earlyDensity * 0.15,
+            Tempo: 50 + removalDensity * 0.3 - reach * 0.2,
+            Midrange: 50 + (subscores.curve - 50) * 0.3,
+            Control: 50 + reach * 0.5 + earlyDensity * 0.3 - healing * 0.2,
+            Combo: 50 + earlyDensity * 0.3 + removalDensity * 0.3,
+            Swarm: 50 + (subscores.removal - 50) * 0.4 + (roleDist.boardControl || 0) * 0.2,
+            Burn: 50 + healing * 0.6 - reach * 0.1,
+            Ramp: 50 + earlyDensity * 0.4 + reach * 0.2
+        };
+        const out = {};
+        DE_MATCHUP_ARCHETYPES.forEach(name => {
+            out[name] = Math.max(10, Math.min(90, Math.round(base[name] + (consistency - 70) * 0.15)));
+        });
+        return out;
+    }
+
+    // ---------------------------------------------------------------
+    // Deck identity paragraph + improvement suggestions
+    // ---------------------------------------------------------------
+    function de_deckIdentity(topArchetypes, topPackages, winconResult, subscores) {
+        const primaryArch = topArchetypes[0]?.name || 'Midrange';
+        const secondaryArch = topArchetypes[1] && topArchetypes[1].confidence >= 45 ? topArchetypes[1].name : null;
+        const packageNames = topPackages.slice(0, 2).map(p => p.name.replace(' Package', '')).join('/');
+        const wincon = winconResult.primary || 'board presence';
+        const weakest = Object.entries(subscores).sort((a, b) => a[1] - b[1])[0];
+        const weakLabel = DE_LABELS[weakest[0]] || weakest[0];
+
+        let text = `This is a${/^[aeiou]/i.test(primaryArch) ? 'n' : ''} ${primaryArch}${secondaryArch ? `/${secondaryArch}` : ''} deck`;
+        if (packageNames) text += ` built around its ${packageNames} package${topPackages.length > 1 ? 's' : ''}`;
+        text += `, winning primarily through ${wincon.toLowerCase()}. `;
+        text += weakest[1] < 45 ? `Its biggest liability is a thin ${weakLabel}.` : `It doesn't have any glaring structural weaknesses.`;
+        return text;
+    }
+
+    function de_improvementSuggestions(subscores, cardImportance) {
+        const suggestions = [];
+        Object.entries(subscores).sort((a, b) => a[1] - b[1]).slice(0, 3).forEach(([key, val]) => {
+            if (val >= 65) return;
+            const label = DE_LABELS[key] || key;
+            const expectedImprovement = Math.max(1, Math.round((75 - val) * (DE_WEIGHTS[key] || 0.1)));
+            const texts = {
+                curve: 'Rebalance the mana curve — add more cheap plays or trim excess late-game cards.',
+                removal: 'Add more removal, ideally a mix of hard removal and an AOE effect.',
+                finishers: 'Add 1-2 more reliable win conditions in the 5+ cost slot.',
+                packages: 'Commit harder to a single package instead of spreading copies across unrelated cards.',
+                playability: 'Cut the weakest singleton copies to reduce brick hands.',
+                roleBalance: 'Diversify roles — the deck is missing card draw, buffs, or healing.'
+            };
+            suggestions.push({ category: label, suggestion: texts[key] || `Improve ${label}.`, expectedScoreImprovement: `+${expectedImprovement}` });
+        });
+        if (cardImportance.weakest.length) {
+            suggestions.push({
+                category: 'weakest card',
+                suggestion: `Consider replacing ${cardImportance.weakest[0]} — it contributes the least to the deck's structure.`,
+                expectedScoreImprovement: '+2 to +5'
+            });
+        }
+        return suggestions;
+    }
+
+    // ---------------------------------------------------------------
+    // MAIN ENTRY POINT
+    // ---------------------------------------------------------------
+    function de_appraise(deckCards, heroName, selfDeckKey, ctxOverride) {
+        const ctx = ctxOverride || getVerdictContext();
+        const legacy = getDeckVerdictFromCardsLegacy(deckCards, selfDeckKey, ctx);
+        const base = de_evaluate(deckCards, selfDeckKey, ctx, legacy);
+
+        const seeds = de_buildSeeds(deckCards);
+        const totalCards = seeds.reduce((s, c) => s + c.count, 0);
+
+        const roleDist = de_roleDistribution(seeds, totalCards);
+        const removal = de_removalAnalysis(seeds, totalCards);
+        const winconResult = de_detectWinConditions(seeds, totalCards, base.monte_carlo);
+        const archetypes = de_archetypeConfidences(seeds, totalCards, roleDist, winconResult, base.monte_carlo);
+        const packages = de_namedPackages(seeds);
+        const cardImportance = de_cardImportance(seeds, totalCards);
+        const replacementSuggestions = de_replacementSuggestions(cardImportance, seeds);
+        const heroFit = heroName ? de_heroFit(seeds, totalCards, heroName) : null;
+        const metaSimilarity = de_metaSimilarity(seeds, totalCards, ctx);
+        const matchups = de_matchupEstimates(base.scores, roleDist, base.monte_carlo);
+        const identity = de_deckIdentity(archetypes, packages, winconResult, base.scores);
+        const improvementSuggestions = de_improvementSuggestions(base.scores, cardImportance);
+        const { grade, gradeColor } = getVerdictGrade(base.verdict, false, totalCards);
+
+        return {
+            overallScore: base.verdict,
+            tier: grade,
+            tierColor: gradeColor,
+            confidence: base.confidence,
+            identity,
+            archetypes,
+            packages,
+            roleDistribution: roleDist,
+            curveAnalysis: { counts: legacy.curve, avgCost: legacy.avgCost, health: legacy.curveHealthText, score: base.scores.curve },
+            removalAnalysis: removal,
+            winConditions: winconResult.winConditions,
+            primaryWinCondition: winconResult.primary,
+            winConditionConfidence: winconResult.confidence,
+            strengths: base.explanation.strengths,
+            weaknesses: base.explanation.weaknesses,
+            matchups,
+            cardImportance,
+            replacementSuggestions,
+            heroFit,
+            metaSimilarity,
+            improvementSuggestions,
+            monteCarlo: base.monte_carlo,
+            subscores: base.scores,
+            totalCards
+        };
+    }
+
+    window.DeckAppraisal = { appraise: de_appraise };
+    window.DeckEvaluator.appraise = de_appraise;
 
    /* ============================================================
    DECK FINDER — COMPLETE CONSOLIDATED BUILD (V4)
