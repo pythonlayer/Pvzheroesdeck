@@ -7262,11 +7262,70 @@ gradeButtons.forEach(button => {
         renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
     }
 
+    const ZOMBIE_CLASSES = ["Crazy", "Sneaky", "Brainy", "Beastly", "Hearty"];
+
+    // heroMap keys aren't in a consistent class order ("Kabloom,Solar" vs "Guardian,Kabloom"),
+    // so normalize by sorting the class names before building the lookup.
+    const HERO_BY_PAIR_KEY = {};
+    Object.entries(heroMap).forEach(([key, heroNames]) => {
+        const normKey = key.split(',').sort().join(',');
+        HERO_BY_PAIR_KEY[normKey] = heroNames;
+    });
+
+    function heroesForPair(pair) {
+        const key = [...pair].sort().join(',');
+        const heroStr = HERO_BY_PAIR_KEY[key] || '';
+        return heroStr.split('/').map(s => s.trim()).filter(Boolean);
+    }
+
+    // heroMap collapses some class pairs into two heroes with a "/" (Citron / Beta-Carrotina,
+    // Super Brainz / Huge-Gigantacus). Those two heroes share the same two classes but have
+    // completely different signature superpowers — they are not interchangeable. When we can
+    // tell which one the person actually owns, credit that specific hero instead of the pair.
+    function resolveHeroName(classArray) {
+        const key = classArray.join(',');
+        const raw = heroMap[key];
+        if (!raw) return null;
+
+        const candidates = raw.split('/').map(s => s.trim()).filter(Boolean);
+        if (candidates.length <= 1) return raw;
+
+        const ownedCandidates = candidates.filter(h => ownedHeroes[h]);
+        if (ownedCandidates.length === 1) return ownedCandidates[0];
+
+        return raw; // still ambiguous (owns both, or owns neither) — show both names
+    }
+
+    function classPairsFor(faction) {
+        const classes = faction === "Plant"
+            ? Array.from(plantClasses)
+            : ZOMBIE_CLASSES;
+        const pairs = [];
+        for (let i = 0; i < classes.length; i++) {
+            for (let j = i + 1; j < classes.length; j++) {
+                pairs.push([classes[i], classes[j]]);
+            }
+        }
+        return pairs;
+    }
+
+    // How many total copies (capped at 4 each) does the collection have
+    // across cards belonging to this class pair, for this faction?
+    function ownedCapacityForPair(pair, faction) {
+        let capacity = 0;
+        Object.keys(cardDatabase || {}).forEach(name => {
+            const info = cardDatabase[name];
+            if (!info) return;
+            const cardFaction = plantClasses.has(info.Class) ? "Plant" : "Zombie";
+            if (cardFaction !== faction) return;
+            if (!pair.includes(info.Class)) return;
+            capacity += Math.min(ownedCollection[name] || 0, 4);
+        });
+        return capacity;
+    }
+
     function buildDeckFromCollection() {
         currentFaction = collectionFactionSelect ? collectionFactionSelect.value : 'Plant';
-        activeClasses = new Set();
-        currentSeeds = [];
-        lastAddedCard = null;
 
         const verdictCtx =
             typeof getVerdictContext === 'function'
@@ -7281,25 +7340,76 @@ gradeButtons.forEach(button => {
             { synergy: 0.36, power: 0.34, curve: 0.25, consistency: 0.05 }
         ];
 
+        // Only bother trying pairs that could plausibly reach a full deck;
+        // if none can, we still want the pair that gets closest.
+        let candidatePairs = classPairsFor(currentFaction);
+
+        const hasMarkedAnyHero = Object.values(ownedHeroes).some(Boolean);
+        if (hasMarkedAnyHero) {
+            const ownedPairs = candidatePairs.filter(pair =>
+                heroesForPair(pair).some(hero => ownedHeroes[hero])
+            );
+            if (ownedPairs.length === 0) {
+                if (collectionPanel) collectionPanel.classList.add('hidden');
+                alert(
+                    `You haven't marked any ${currentFaction} heroes as owned yet. ` +
+                    `Go to More > My Collection and mark a hero, then try again.`
+                );
+                return;
+            }
+            candidatePairs = ownedPairs;
+        }
+        // If the person hasn't touched hero tracking at all, fall back to
+        // considering every pair (don't break the feature for existing users).
+
+        const pairs = candidatePairs
+            .map(pair => ({ pair, capacity: ownedCapacityForPair(pair, currentFaction) }))
+            .sort((a, b) => b.capacity - a.capacity);
+
         let bestDeck = null;
         let bestScore = -Infinity;
+        let bestCount = -1;
 
-        for (const profile of profiles) {
-            const completedDeck = buildFastCompletion(
-                [],
-                profile,
-                idealCurve,
-                verdictCtx,
-                false,
-                false,
-                true // ownedOnly
-            );
+        for (const { pair } of pairs) {
+            if (bestCount >= 40) break; // already found a full deck, no need to keep trying
 
-            const score = getExactFinishScore(completedDeck, verdictCtx);
+            activeClasses = new Set(pair);
+            currentSeeds = [];
+            lastAddedCard = null;
 
-            if (score > bestScore) {
-                bestScore = score;
-                bestDeck = completedDeck;
+            let pairBestDeck = null;
+            let pairBestScore = -Infinity;
+
+            for (const profile of profiles) {
+                const completedDeck = buildFastCompletion(
+                    [],
+                    profile,
+                    idealCurve,
+                    verdictCtx,
+                    false,
+                    false,
+                    true // ownedOnly
+                );
+
+                const score = getExactFinishScore(completedDeck, verdictCtx);
+
+                if (score > pairBestScore) {
+                    pairBestScore = score;
+                    pairBestDeck = completedDeck;
+                }
+            }
+
+            if (!pairBestDeck) continue;
+
+            const count = getFinishDeckCount(pairBestDeck);
+
+            // Prefer whichever pair gets closer to a full 40-card deck;
+            // break ties by score.
+            if (count > bestCount || (count === bestCount && pairBestScore > bestScore)) {
+                bestCount = count;
+                bestScore = pairBestScore;
+                bestDeck = pairBestDeck;
+                activeClasses = new Set(pair);
             }
         }
 
@@ -7320,6 +7430,16 @@ gradeButtons.forEach(button => {
 
         if (collectionPanel) collectionPanel.classList.add('hidden');
         renderSeeds();
+
+        const finalCount = getTotalCards();
+        const builtHeroName = resolveHeroName(Array.from(activeClasses).sort()) || `${Array.from(activeClasses).join(' / ')} Hero`;
+        if (finalCount < 40) {
+            alert(
+                `Built the best ${finalCount}-card ${builtHeroName} deck possible from your collection. ` +
+                `You don't own enough cards in any single 2-class combo to fill all 40 slots yet — ` +
+                `mark more owned cards and try again to fill the rest.`
+            );
+        }
     }
 
     const getTotalCards = () => currentSeeds.reduce((sum, seed) => sum + seed.count, 0);
@@ -7460,7 +7580,7 @@ gradeButtons.forEach(button => {
                     imgFilename: `${singleClass.toLowerCase().replace(/[\s-]+/g, '_')}.webp`
                 }];
             } else {
-                heroName = heroMap[classArray.join(',')] || `Any ${classArray.join(' / ')} Hero`;
+                heroName = resolveHeroName(classArray) || `Any ${classArray.join(' / ')} Hero`;
                 heroesData = heroName.split(/\s*\/\s*/).map(name => ({
                     name: name,
                     imgFilename: `${name.replace(/[\s-]+/g, '_')}.webp`
@@ -11640,7 +11760,7 @@ const deckShareUrl = baseDeckShareUrl
     : null;
 
 const classArray = Array.from(activeClasses).sort();
-const heroName = heroMap[classArray.join(',')] || `Unknown Hero`;
+const heroName = resolveHeroName(classArray) || `Unknown Hero`;
 
 const deckLinkHtml = deckShareUrl
     ? daveSay(`
@@ -11679,7 +11799,7 @@ chatFeed.innerHTML = baseHtml + swapHtml + deckLinkHtml;
             const spaceLeft = 40 - getTotalCards();
 const classArray = Array.from(activeClasses).sort();
 const heroName =
-    heroMap[classArray.join(',')] ||
+    resolveHeroName(classArray) ||
     `a ${classArray.join(' / ')} Hero`;
 
 /*
@@ -13378,7 +13498,7 @@ function getExportHeroData() {
         };
     }
 
-    const heroName = heroMap[classArray.join(',')] || `Any ${classArray.join(' / ')} Hero`;
+    const heroName = resolveHeroName(classArray) || `Any ${classArray.join(' / ')} Hero`;
 
     return {
         heroName,
