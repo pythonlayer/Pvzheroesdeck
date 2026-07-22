@@ -7567,6 +7567,27 @@ gradeButtons.forEach(button => {
 
         if (!bestDeck) bestDeck = [];
 
+        // If even the "closest we got" pass came up short (not enough owned,
+        // playable cards for these classes to reach 40), don't just hand
+        // back a half-empty deck - fill the rest with the strongest
+        // available cards, same as "Finish deck for me" would, and be
+        // upfront that some of it will need crafting.
+        const ownedCount = getFinishDeckCount(bestDeck);
+        let neededCraftTopUp = false;
+        if (ownedCount < 40) {
+            neededCraftTopUp = true;
+            bestDeck = buildFastCompletion(
+                bestDeck,
+                profiles[0],
+                idealCurve,
+                verdictCtx,
+                false,
+                false,
+                false, // ownedOnly off for this pass, so it can actually finish
+                heroName
+            );
+        }
+
         bestDeck = polishFinishedDeck(
             bestDeck,
             new Map(), // nothing locked, everything came from the collection filter
@@ -7582,6 +7603,18 @@ gradeButtons.forEach(button => {
 
         if (collectionPanel) collectionPanel.classList.add('hidden');
         renderSeeds();
+
+        if (neededCraftTopUp) {
+            const finalCount = getFinishDeckCount(bestDeck);
+            const message = ownedCount > 0
+                ? `Your collection only had ${ownedCount} playable card${ownedCount === 1 ? '' : 's'} for this hero, so I filled the remaining ${finalCount - ownedCount} slots with the strongest cards available — you'll need to craft those.`
+                : `Your collection didn't have enough playable cards for this hero, so this deck is built from the strongest cards available — you'll need to craft most of it.`;
+            if (typeof daveSay === 'function') {
+                daveSay(message);
+            } else {
+                console.warn(message);
+            }
+        }
     }
 
     const getTotalCards = () => currentSeeds.reduce((sum, seed) => {
@@ -7995,6 +8028,26 @@ function syncDeckIdentityFromSeeds() {
         return;
     }
 
+    const errorBanner = document.getElementById("deckImageUploadError");
+    let errorHideTimer = null;
+
+    function showUploadError(message) {
+        console.error("Deck recognition failed:", message);
+        if (!errorBanner) return;
+        errorBanner.textContent = message;
+        errorBanner.classList.remove("hidden");
+        clearTimeout(errorHideTimer);
+        errorHideTimer = setTimeout(() => {
+            errorBanner.classList.add("hidden");
+        }, 10000);
+    }
+
+    function clearUploadError() {
+        if (!errorBanner) return;
+        clearTimeout(errorHideTimer);
+        errorBanner.classList.add("hidden");
+    }
+
     let recognitionInProgress = false;
 
     function setUploadLoading(isLoading) {
@@ -8092,9 +8145,20 @@ function syncDeckIdentityFromSeeds() {
             );
 
             setUploadLoading(true);
+            clearUploadError();
 
             console.log(
                 "Uploading deck image and running recognition..."
+            );
+
+            // Free-tier Render services spin down after inactivity and can
+            // take 30-60s to wake back up on the first request. Give it a
+            // generous window, but don't let it hang forever with no
+            // feedback.
+            const controller = new AbortController();
+            const timeoutId = setTimeout(
+                () => controller.abort(),
+                60000
             );
 
             try {
@@ -8103,6 +8167,7 @@ function syncDeckIdentityFromSeeds() {
                     {
                         method: "POST",
                         body: formData,
+                        signal: controller.signal,
                     }
                 );
 
@@ -8131,11 +8196,24 @@ function syncDeckIdentityFromSeeds() {
 
                 setDeckFromRecognition(result);
             } catch (error) {
-                console.error(
-                    "Deck recognition failed:",
-                    error
-                );
+                if (error.name === "AbortError") {
+                    showUploadError(
+                        "The recognition server didn't respond in time. It may be waking up from sleep (free hosting) - try again in a moment."
+                    );
+                } else if (error instanceof TypeError) {
+                    // fetch() throws a bare TypeError for network failures
+                    // and CORS blocks alike, with no further detail exposed
+                    // to JS.
+                    showUploadError(
+                        "Couldn't reach the recognition server. It may be offline, or blocking requests from this page (CORS)."
+                    );
+                } else {
+                    showUploadError(
+                        error.message || "Deck recognition failed for an unknown reason."
+                    );
+                }
             } finally {
+                clearTimeout(timeoutId);
                 setUploadLoading(false);
                 fileInput.value = "";
             }
@@ -11964,24 +12042,44 @@ starterTargetCopies = Math.max(
                     if (missing > 0) {
                         const perCopyCraftCost = sparkCostFor(addName);
                         const craftCost = perCopyCraftCost * missing;
-                        // If the user has never told us how many sparks they
-                        // have, don't assume zero and push them to scrap
-                        // cards for no reason - just show the craft cost.
                         const knowsBalance = hasEnteredSparks();
-                        const shortfall = knowsBalance ? Math.max(0, craftCost - ownedSparks) : 0;
+                        const shortfall = knowsBalance ? Math.max(0, craftCost - ownedSparks) : craftCost;
 
                         craftInfo = {
                             craftCost,
                             missing,
-                            affordable: !knowsBalance || shortfall === 0,
+                            affordable: knowsBalance && shortfall === 0,
                             knowsBalance,
                             scrapPlan: null
                         };
 
-                        if (knowsBalance && craftCost > 0 && shortfall > 0) {
+                        // Whether or not we know the user's balance, work out
+                        // what it'd take to scrap-fund the gap, so we can
+                        // actually answer "is this worth it" instead of just
+                        // pointing at a cost number.
+                        if (craftCost > 0 && shortfall > 0) {
                             const protectedNames = new Set(currentSeeds.map(s => s.name));
                             protectedNames.add(addName);
                             craftInfo.scrapPlan = findScrapSuggestions(shortfall, protectedNames);
+                        }
+
+                        // Worth-it read: how many sparks this swap costs per
+                        // point of rating gained. Cheap-and-strong swaps are
+                        // clearly worth it; expensive swaps for a small bump
+                        // usually aren't, especially if they cost real
+                        // collection value (not just banked sparks) to fund.
+                        if (craftCost > 0 && maxImprovement > 0) {
+                            const costPerPoint = craftCost / maxImprovement;
+                            if (costPerPoint <= 150) {
+                                craftInfo.verdict = 'good';
+                                craftInfo.verdictText = 'Worth it — solid gain for the cost.';
+                            } else if (costPerPoint <= 400) {
+                                craftInfo.verdict = 'fair';
+                                craftInfo.verdictText = "Fair trade, but not a slam dunk.";
+                            } else {
+                                craftInfo.verdict = 'steep';
+                                craftInfo.verdictText = "Steep price for a gain this small — probably not worth scrapping for.";
+                            }
                         }
                     }
                 }
@@ -12015,23 +12113,17 @@ starterTargetCopies = Math.max(
                             <span class="swap-tag">In</span>
                         </div>
                     </div>
-                    <button class="add-rec-btn generate-btn" data-remove="${bestSwapIdea.removeCard}" data-add="${bestSwapIdea.addCard}">
-                        Make the swap
+                    <button class="add-rec-btn generate-btn" data-remove="${bestSwapIdea.removeCard}" data-add="${bestSwapIdea.addCard}" data-craft-needed="${craftInfo ? '1' : '0'}">
+                        ${craftInfo ? 'Review & swap' : 'Make the swap'}
                     </button>
                 </div>`;
 
                     if (craftInfo) {
-                        if (!craftInfo.knowsBalance) {
-                            swapHtml += `
-                <div class="craft-suggestion craft-affordable">
-                    <div class="craft-suggestion-label">Craft cost</div>
-                    <div class="craft-suggestion-body">
-                        ${escapeHtml(topName)} costs <strong>${craftInfo.craftCost.toLocaleString()}</strong>
-                        <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"> to craft.
-                        Add your Sparks balance in My Collection and I'll tell you if you can afford it.
-                    </div>
-                </div>`;
-                        } else if (craftInfo.affordable) {
+                        const verdictHtml = craftInfo.verdictText
+                            ? `<div class="craft-suggestion-verdict craft-verdict-${craftInfo.verdict}">${escapeHtml(craftInfo.verdictText)}</div>`
+                            : '';
+
+                        if (craftInfo.affordable) {
                             swapHtml += `
                 <div class="craft-suggestion craft-affordable">
                     <div class="craft-suggestion-label">You can craft this now</div>
@@ -12040,10 +12132,16 @@ starterTargetCopies = Math.max(
                         <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"> to craft
                         (you have ${ownedSparks.toLocaleString()}).
                     </div>
+                    ${verdictHtml}
                 </div>`;
                         } else if (craftInfo.scrapPlan) {
                             const plan = craftInfo.scrapPlan;
-                            const shortfall = craftInfo.craftCost - ownedSparks;
+                            const shortfall = craftInfo.knowsBalance
+                                ? craftInfo.craftCost - ownedSparks
+                                : craftInfo.craftCost;
+                            const balanceLine = craftInfo.knowsBalance
+                                ? `You have ${ownedSparks.toLocaleString()} sparks — short by ${shortfall.toLocaleString()}.`
+                                : `You haven't told me your Sparks balance, so here's what it'd take to craft this from scratch:`;
 
                             if (plan.picks.length > 0) {
                                 const rows = plan.picks.map(p => {
@@ -12055,21 +12153,24 @@ starterTargetCopies = Math.max(
                 <div class="craft-suggestion craft-needs-scrap">
                     <div class="craft-suggestion-label">Craft needed: ${craftInfo.craftCost.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
                     <div class="craft-suggestion-body">
-                        You have ${ownedSparks.toLocaleString()} sparks — short by ${shortfall.toLocaleString()}.
+                        ${balanceLine}
                         These barely see play, so scrap them to cover it:
                     </div>
                     <ul class="craft-scrap-list">${rows}</ul>
                     ${plan.stillShort > 0
                         ? `<div class="craft-suggestion-warning">Still short ${plan.stillShort.toLocaleString()} sparks even after scrapping everything unused in your collection.</div>`
                         : ''}
+                    ${verdictHtml}
                 </div>`;
                             } else {
                                 swapHtml += `
                 <div class="craft-suggestion craft-needs-scrap">
                     <div class="craft-suggestion-label">Craft needed: ${craftInfo.craftCost.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
                     <div class="craft-suggestion-body">
-                        You have ${ownedSparks.toLocaleString()} sparks and nothing obvious in your collection worth scrapping for it yet.
+                        ${balanceLine}
+                        Nothing obvious in your collection is worth scrapping for it yet.
                     </div>
+                    ${verdictHtml}
                 </div>`;
                             }
                         }
@@ -12103,6 +12204,28 @@ chatFeed.innerHTML = baseHtml + swapHtml + deckLinkHtml;
                     swapBtn.addEventListener('click', (e) => {
                         const removeName = e.target.getAttribute('data-remove');
                         const addName = e.target.getAttribute('data-add');
+
+                        if (e.target.getAttribute('data-craft-needed') === '1' && craftInfo) {
+                            const addDisplay = addName.replace(/_/g, ' ');
+                            const lines = [`You don't have enough copies of ${addDisplay} for this swap.`];
+                            lines.push(`Crafting it costs ${craftInfo.craftCost.toLocaleString()} sparks.`);
+
+                            if (craftInfo.scrapPlan && craftInfo.scrapPlan.picks.length > 0) {
+                                const scrapList = craftInfo.scrapPlan.picks
+                                    .map(p => `${p.copies}x ${p.name.replace(/_/g, ' ')}`)
+                                    .join(', ');
+                                lines.push(`To cover it, you'd scrap: ${scrapList}.`);
+                            }
+                            if (craftInfo.verdictText) {
+                                lines.push(craftInfo.verdictText);
+                            }
+                            lines.push('Make this swap anyway?');
+
+                            if (!confirm(lines.join('\n'))) {
+                                return;
+                            }
+                        }
+
                         applyFullSwap(removeName, addName);
                     });
                 }
@@ -12796,13 +12919,52 @@ function buildFastCompletion(
         }
 
         /*
+         * The "only top off existing singletons" restriction can dead-end -
+         * e.g. every singleton is already maxed out under a budget rule, so
+         * none of them can actually take another copy. If that happens,
+         * don't just give up; open the pool back up to any eligible card so
+         * we still make progress toward 40.
+         */
+        if (!bestName && onlyExisting) {
+            for (const candidateName of allCandidateNames) {
+                if (
+                    !canFinishAddCard(
+                        candidateName,
+                        deck,
+                        workingClasses,
+                        isBudget,
+                        isSuperBudget,
+                        ownedOnly
+                    )
+                ) {
+                    continue;
+                }
+
+                const candidateScore = getFastFinishCandidateScore(
+                    candidateName,
+                    deck,
+                    seedNames,
+                    profile,
+                    idealCurve,
+                    verdictCtx,
+                    heroName
+                );
+
+                if (candidateScore > bestCandidateScore) {
+                    bestCandidateScore = candidateScore;
+                    bestName = candidateName;
+                }
+            }
+        }
+
+        /*
          * Nothing eligible inside the locked classes (this happens a lot with
          * ownedOnly, when the collection just doesn't have enough playables
          * in those 2 classes). Rather than quitting early and handing back a
          * short deck, fall back to any owned/eligible card regardless of
          * class so we still reach 40.
          */
-        if (!bestName && !onlyExisting) {
+        if (!bestName) {
             for (const candidateName of allCandidateNames) {
                 if (
                     !canFinishAddCard(
@@ -13870,6 +14032,64 @@ function generateDeckName(deck, isPlant) {
 
     
     const downloadBtn = document.getElementById('downloadImageBtn');
+
+    // --- Save deck as JSON, shaped like an entry in deck_database_final.json,
+    // so it can be dropped straight into that file to teach Dave about it ---
+    const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+    if (downloadJsonBtn) {
+        downloadJsonBtn.addEventListener('click', () => {
+            if (!currentSeeds.length) {
+                alert('Add some cards to the deck first.');
+                return;
+            }
+
+            const deckName = (typeof getCurrentDeckName === 'function')
+                ? getCurrentDeckName()
+                : 'Custom Deck';
+
+            const cardsArray = currentSeeds
+                // Same "xN Card_Name" shape parseCardEntry/getVerdictContext expect.
+                .map(s => `x${s.count} ${s.name}`);
+
+            const nowIso = new Date().toISOString();
+
+            const deckEntry = {
+                name: deckName,
+                cards: cardsArray,
+                upload_date: nowIso,
+                credit: "You",
+                youtube_url: "",
+                youtube_title: ""
+            };
+
+            // Key it the same way the rest of the database is keyed: a
+            // slugified name plus a timestamp so it can't collide with an
+            // existing entry.
+            const slug = deckName
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '') || 'custom_deck';
+            const deckKey = `${slug}_${Date.now()}`;
+
+            const output = { [deckKey]: deckEntry };
+
+            const blob = new Blob(
+                [JSON.stringify(output, null, 2)],
+                { type: 'application/json' }
+            );
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${slug}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        });
+    }
+
     function toImageFilename(name) {
     return name
         .replace(/_/g, ' ')

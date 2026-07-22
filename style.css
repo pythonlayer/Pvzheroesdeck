@@ -3456,6 +3456,26 @@ button:disabled, input:disabled, #moreBtn:disabled { opacity: 0.5; cursor: not-a
     padding-left: 18px;
 }
 
+.craft-suggestion-verdict {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    font-weight: 600;
+    font-size: 0.92em;
+}
+
+.craft-verdict-good {
+    color: #6fd66f;
+}
+
+.craft-verdict-fair {
+    color: #ffd54f;
+}
+
+.craft-verdict-steep {
+    color: #ff8a65;
+}
+
 .craft-scrap-list li {
     color: #eee;
     margin-bottom: 3px;
@@ -4198,7 +4218,9 @@ button:disabled, input:disabled, #moreBtn:disabled { opacity: 0.5; cursor: not-a
 }
 
 #downloadImageBtn,
-#downloadImageBtn.generate-btn {
+#downloadJsonBtn,
+#downloadImageBtn.generate-btn ,
+#downloadJsonBtn.generate-btn{
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -4227,7 +4249,9 @@ button:disabled, input:disabled, #moreBtn:disabled { opacity: 0.5; cursor: not-a
 }
 
 #downloadImageBtn:hover,
-#downloadImageBtn.generate-btn:hover {
+#downloadJsonBtn:hover,
+#downloadImageBtn.generate-btn:hover ,
+#downloadJsonBtn.generate-btn:hover{
   background: rgba(0, 180, 216, 0.22) !important;
   border-color: rgba(0, 180, 216, 0.75) !important;
   color: #7be7ff !important;
@@ -4235,19 +4259,25 @@ button:disabled, input:disabled, #moreBtn:disabled { opacity: 0.5; cursor: not-a
 }
 
 #downloadImageBtn:active,
-#downloadImageBtn.generate-btn:active {
+#downloadJsonBtn:active,
+#downloadImageBtn.generate-btn:active ,
+#downloadJsonBtn.generate-btn:active{
   transform: translateY(0) !important;
   background: rgba(0, 180, 216, 0.14) !important;
 }
 
 #downloadImageBtn:focus-visible,
-#downloadImageBtn.generate-btn:focus-visible {
+#downloadJsonBtn:focus-visible,
+#downloadImageBtn.generate-btn:focus-visible ,
+#downloadJsonBtn.generate-btn:focus-visible{
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.22) !important;
 }
 
 #downloadImageBtn:disabled,
-#downloadImageBtn.generate-btn:disabled {
+#downloadJsonBtn:disabled,
+#downloadImageBtn.generate-btn:disabled ,
+#downloadJsonBtn.generate-btn:disabled{
   opacity: 0.6 !important;
   cursor: not-allowed !important;
   transform: none !important;
@@ -4261,7 +4291,9 @@ button:disabled, input:disabled, #moreBtn:disabled { opacity: 0.5; cursor: not-a
   }
 
   #downloadImageBtn,
-  #downloadImageBtn.generate-btn {
+#downloadJsonBtn,
+  #downloadImageBtn.generate-btn ,
+#downloadJsonBtn.generate-btn{
     min-height: 46px !important;
     font-size: 0.92rem !important;
   }
@@ -7101,6 +7133,22 @@ header,
     opacity: 1;
 }
 
+.deck-image-upload-error {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(220, 53, 69, 0.12);
+    border: 1px solid rgba(220, 53, 69, 0.4);
+    color: #ff6b6b;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.deck-image-upload-error.hidden {
+    display: none;
+}
+
 @keyframes deck-upload-spin {
     to {
         transform: rotate(360deg);
@@ -8861,7 +8909,9 @@ This prevents the inner duplicate from creating a second box.
 }
 
 #crafterView #downloadImageBtn,
-#crafterView #downloadImageBtn.generate-btn {
+#downloadJsonBtn,
+#crafterView #downloadImageBtn.generate-btn ,
+#downloadJsonBtn.generate-btn{
     flex: none !important;
 
     width: auto !important;
@@ -8906,18 +8956,22 @@ This prevents the inner duplicate from creating a second box.
 }
 
 #crafterView #downloadImageBtn:hover,
-#crafterView #downloadImageBtn.generate-btn:hover {
+#downloadJsonBtn:hover,
+#crafterView #downloadImageBtn.generate-btn:hover ,
+#downloadJsonBtn.generate-btn:hover{
     background: rgba(255, 255, 255, 0.085) !important;
     color: #ffffff !important;
     border-color: rgba(255, 255, 255, 0.2) !important;
     transform: translateY(-1px) !important;
 }
 
-#crafterView #downloadImageBtn:active {
+#crafterView #downloadImageBtn:active ,
+#downloadJsonBtn:active{
     transform: translateY(0) !important;
 }
 
-#crafterView #downloadImageBtn svg {
+#crafterView #downloadImageBtn svg,
+#downloadJsonBtn svg {
     flex: none !important;
 
     width: 16px !important;
@@ -8936,7 +8990,9 @@ This prevents the inner duplicate from creating a second box.
     }
 
     #crafterView #downloadImageBtn,
-    #crafterView #downloadImageBtn.generate-btn {
+#downloadJsonBtn,
+    #crafterView #downloadImageBtn.generate-btn ,
+#downloadJsonBtn.generate-btn{
         width: 100% !important;
         min-height: 42px !important;
         font-size: 12px !important;
