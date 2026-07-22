@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <title>Gargticia Deck Guide - PvZH Vault</title>
+  <meta name="description" content="Master the Gargticia control-ramp deck for Immorticia in Plants vs. Zombies Heroes. Complete guide with mulligan strategy, defensive sequencing, and teleport Garg finishes." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://pvzhvault.com/decks/gargticia" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/deck-style.css" />
+
+  <!-- Integrated Hero Portrait Styling Adjustments -->
+  <style>
+    .hero-avatar-container {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .hero-avatar {
+      width: 110px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 20px rgba(179, 136, 255, 0.5)) drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+      transition: transform var(--transition);
+    }
+    .hero-avatar:hover {
+      transform: scale(1.08) rotate(2deg);
+    }
+  </style>
+
+  <!-- Structured data: Article + Breadcrumbs -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Gargticia Deck Guide — Immorticia, Plants vs. Zombies Heroes",
+    "description": "Complete strategy guide for Gargticia, the #3 rated Immorticia deck in the June 2026 PvZH meta, combining early Beastly control with high-value Brainy teleport Gargantuars.",
+    "datePublished": "2026-06-12",
+    "dateModified": "2026-06-12",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://pvzhvault.com/decks/gargticia" },
+    "about": { "@type": "VideoGame", "name": "Plants vs. Zombies Heroes" },
+    "author": { "@type": "Organization", "name": "PvZH Deck Builder & Database", "url": "https://pvzhvault.com" },
+    "publisher": { "@type": "Organization", "name": "PvZH Deck Builder & Database", "url": "https://pvzhvault.com" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://pvzhvault.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Top 10 Immorticia Decks", "item": "https://pvzhvault.com/best-immorticia-decks" },
+      { "@type": "ListItem", "position": 3, "name": "Gargticia", "item": "https://pvzhvault.com/decks/gargticia" }
+    ]
+  }
+  </script>
+</head>
+
+<body class="guide-page">
+  <!-- Reading Progress Bar -->
+  <div class="progress-track">
+    <div class="progress-bar" id="readingProgress"></div>
+  </div>
+
+  <header class="guide-hero">
+    <div class="lawn-stripes"></div>
+    <div class="sun-glow"></div>
+
+    <div class="guide-hero-inner">
+      <nav class="breadcrumbs">
+        <a href="/best-immorticia-decks">← Back to Top 10 Immorticia Decks</a>
+      </nav>
+
+      <!-- Immorticia Character Asset Integration -->
+      <div class="hero-avatar-container">
+        <img src="/hero_images/Immorticia.webp" alt="Immorticia Portrait" class="hero-avatar" loading="eager">
+      </div>
+
+      <div class="hero-pill-row">
+        <span class="hero-pill hero-pill-accent">★ Grade A Deck</span>
+        <span class="hero-pill">🧠 Zombie Faction • Immorticia • Brainy/Beastly</span>
+      </div>
+
+      <h1 class="title-zombies">Gargticia</h1>
+      <p class="hero-subtitle">Survive the early-game heat with premium control options, then swing the match completely by teleporting in game-ending Gargantuars.</p>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <strong>#3</strong>
+          <span>Rank on <a href="/best-immorticia-decks" style="color: var(--sun); text-decoration: underline;">Immorticia Guide</a></span>
+        </div>
+        <div class="hero-stat">
+          <strong>94.05</strong>
+          <span>Composite Score</span>
+        </div>
+        <div class="hero-stat">
+          <strong>Control / Ramp</strong>
+          <span>Archetype</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="guide-layout">
+    <!-- Sidebar with Visual Deck Grid -->
+    <aside class="guide-sidebar">
+      <div class="toc-card">
+        <div class="toc-label">Decklist (40)</div>
+
+        <button class="copy-btn" id="copyDeckBtn" data-deck-code="4x Cheese Cutter&#10;4x Nibble&#10;4x Teleport&#10;4x Cyborg Zombie&#10;4x Extinction Event&#10;4x Teleportation Zombie&#10;4x Area 22&#10;3x Rocket Science&#10;3x King of the Grill&#10;3x Garg Throwing Garg&#10;3x Nurse Garg">
+          📋 Copy Deck Code
+        </button>
+
+        <div class="deck-image-container">
+          <div class="visual-deck-grid">
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Cheese_Cutter.png" alt="Cheese Cutter" loading="lazy">
+                <span class="card-quantity">4</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Nibble.png" alt="Nibble" loading="lazy">
+                <span class="card-quantity">4</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Teleport.png" alt="Teleport" loading="lazy">
+                <span class="card-quantity">4</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Cyborg_Zombie.png" alt="Cyborg Zombie" loading="lazy">
+                <span class="card-quantity">4</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Extinction_Event.png" alt="Extinction Event" loading="lazy">
+                <span class="card-quantity">4</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Teleportation_Zombie.png" alt="Teleportation Zombie" loading="lazy">
+                <span class="card-quantity">4</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Area_22.png" alt="Area 22" loading="lazy">
+                <span class="card-quantity">4</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Rocket_Science.png" alt="Rocket Science" loading="lazy">
+                <span class="card-quantity">3</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/King_of_the_Grill.png" alt="King of the Grill" loading="lazy">
+                <span class="card-quantity">3</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Garg_Throwing_Garg.png" alt="Garg Throwing Garg" loading="lazy">
+                <span class="card-quantity">3</span>
+              </div>
+            </div>
+            <div class="visual-card-item">
+              <div class="card-image-wrapper" tabindex="0">
+                <img src="/card_images/Nurse_Garg.png" alt="Nurse Garg" loading="lazy">
+                <span class="card-quantity">3</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Strategy Article Content -->
+    <article class="guide-article">
+      <section class="content-card reveal is-visible">
+        <h2>Overview & Win Condition</h2>
+        <p><strong>Gargticia</strong> handles the biggest flaw of classic Gargantar strategies: predictability. Traditionally, committing 5 to 7 brains during the Zombie Phase leaves you completely wide open to hard counter-plays like Shamrocket, Doom-shroom, or aggressive bounce mechanics.</p>
+        <p>This list systematically rewrites that match-up using the Brainy class's premier teleportation matrix. By stabilizing early turns with efficient bodies like <strong>Cheese Cutter</strong> and <strong>Cyborg Zombie</strong>, you buy time until the mid-to-late game. From Turn 6 onward, your massive threats reveal themselves entirely during the Trick Phase, immediately swinging combat dynamics or healing your hero out of lethal range via <strong>Nurse Garg</strong>.</p>
+      </section>
+
+      <section class="content-card reveal is-visible">
+        <h2>Key Combo Pieces</h2>
+        <div class="method-grid">
+          <div class="method-box">
+            <span class="method-icon">🦖</span>
+            <h3>Teleport Phase Shifts</h3>
+            <p>Both standard Teleports and Teleportation Zombies are the primary enablers. They guarantee your high-cost heavy-hitters land on the board without giving your opponent a single chance to use proactive removal.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon">🍖</span>
+            <h3>Garg Throwing Garg</h3>
+            <p>Your ultimate response sponge. Dropping this colossal threat into a lane with minor plant attackers creates an endless loop of punishing field presence that swarms other lanes with randomly generated Gargs.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon">🩸</span>
+            <h3>Nurse Garg & Area 22</h3>
+            <p>The ultimate comeback engine. Sticking Nurse Garg directly into Area 22 transforms her into a terrifying 8/8 Frenzy behemoth, healing your Hero for huge point clusters while crushing through defensive chump blocks.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-card reveal is-visible">
+        <h2>Mulligan Strategy</h2>
+        <p>Your objective during the mulligan is to establish immediate lane control while holding onto at least one operational trick-enabler.</p>
+        <div class="method-grid">
+          <div class="method-box">
+            <span class="method-icon">🟢</span>
+            <h3>Always Keep</h3>
+            <p>Cheese Cutter and Teleportation Zombie. Cheese Cutter demands instant responses from the Plant Hero on Turn 1, drawing out crucial early resources or snow-balling cheap Gourmet discounts. Teleportation Zombie builds your bridge into the mid-game loop.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon">⚠️</span>
+            <h3>Vs. Aggro/Swarm</h3>
+            <p>Nibble and Extinction Event. Throw away any high-cost Gargs in your opening hand. You cannot allow Kabloom or Solar swarm variants to establish wide fields before you even hit your ramp phase threshold.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-card reveal is-visible">
+        <h2>Turn-By-Turn Sequence</h2>
+        <p><strong>Early Game (Turns 1-3):</strong> Play actively but defensively. Establish Cheese Cutter early on to siphon card advantage or force sub-optimal blocks. Utilize Cyborg Zombie to check lanes; his death action guarantees a Vengeful Cyborg to keep your mid-game curved out smoothly. Keep a brain open for Nibble to weaken early threats.</p>
+        <p><strong>Mid-Game Transition (Turns 4-6):</strong> Pass your Zombie Phases holding ample brains. Use Extinction Event to sweep away stacked tribal lanes (like Shrooms or Peas) and Rocket Science for any early heavy drops. Deploy Area 22 onto lanes where you want your Cyborg or Vengeful Cyborg to dominate trades via Frenzy breakthroughs.</p>
+        <p><strong>Late Game Domination (Turns 7+):</strong> Now you dictate the pace entirely. Pass standard zombie deployment, then drop standard Teleports or use existing Teleportation Zombie fields during the Trick Phase. Bring in King of the Grill for infinite card generation, or surprise-block a colossal threat with Garg Throwing Garg. If your health total is dangerously low, drop Nurse Garg directly into an open or favorable lane to stabilize instantly.</p>
+      </section>
+
+      <section class="content-card reveal is-visible">
+        <h2>Common Mistakes</h2>
+        <p><strong>Playing Gargs Proactively.</strong> Dropping King of the Grill or Nurse Garg dry on Turn 6 or 7 during the main Zombie Phase invites total ruin against smart opponents holding hard removal. Only take the risk if you've exhaustively tracked their card resources or if they are entirely tapped out of sun.</p>
+        <p><strong>Wasting Area 22 on Small Units.</strong> While putting Area 22 on a Cheese Cutter can feel rewarding early on, this deck operates optimally when its environments support massive targets. Save the environments to grant Frenzy to your late-game Gargs so they aren't completely walled out by 1/1 chump blockers.</p>
+        <p><strong>Over-committing to a Full Board.</strong> Gargantuars take up significant real estate on the field. Be mindful of your lane spacing; over-filling lanes with early control options can accidentally clog your board, preventing you from teleporting in your win conditions when the opportunity strikes.</p>
+      </section>
+    </article>
+  </div>
+
+  <button class="back-to-top" id="backToTopBtn" aria-label="Back to top">↑</button>
+
+  <script>
+    // Copy function logic
+    document.getElementById('copyDeckBtn').addEventListener('click', async function() {
+      const btn = this;
+      const code = btn.getAttribute('data-deck-code');
+      try {
+        await navigator.clipboard.writeText(code);
+        btn.classList.add('copied');
+        btn.innerText = '✔ Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerText = '📋 Copy Deck Code';
+        }, 2000);
+      } catch (err) {
+        console.error('Copy failed', err);
+      }
+    });
+
+    // Simple scroll tracker for top bar
+    window.addEventListener('scroll', () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('readingProgress').style.width = scrolled + '%';
+
+      const btt = document.getElementById('backToTopBtn');
+      if (winScroll > 300) { btt.classList.add('is-shown'); }
+      else { btt.classList.remove('is-shown'); }
+    });
+
+    document.getElementById('backToTopBtn').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>

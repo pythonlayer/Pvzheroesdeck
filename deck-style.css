@@ -1,0 +1,598 @@
+/* Base Variables & Reset */
+:root {
+  --bg-color: #0e1015;
+  --panel-bg: rgba(30, 25, 45, 0.65);
+  --panel-border: rgba(138, 43, 226, 0.3);
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent-purple: #9d4edd;
+  --accent-glow: #c77dff;
+  --zombie-green: #39ff14;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(157, 78, 221, 0.08), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(57, 255, 20, 0.05), transparent 25%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3 {
+  font-family: 'Titan One', cursive;
+  font-weight: normal;
+  letter-spacing: 1px;
+}
+
+/* Typography & Links */
+p {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+a { text-decoration: none; }
+
+/* Navigation */
+.top-nav {
+  padding: 1.5rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.back-link {
+  color: var(--text-muted);
+  font-weight: 700;
+  transition: color 0.2s;
+}
+
+.back-link:hover { color: var(--accent-glow); }
+
+/* Hero Section */
+.deck-hero {
+  position: relative;
+  text-align: center;
+  padding: 4rem 2rem;
+  overflow: hidden;
+}
+
+.glow-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(157, 78, 221, 0.2) 0%, rgba(0,0,0,0) 70%);
+  z-index: -1;
+}
+
+.faction-badge {
+  display: inline-block;
+  background: rgba(157, 78, 221, 0.2);
+  color: var(--accent-glow);
+  padding: 0.4rem 1rem;
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--panel-border);
+}
+
+.deck-hero h1 {
+  font-size: 4rem;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}
+
+.deck-meta {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  background: rgba(0,0,0,0.4);
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+.meta-item strong { display: block; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; }
+.grade { color: #f59e0b; font-weight: 800; }
+
+/* Main Layout */
+.deck-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+/* Glassmorphism Panels */
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar & Decklist */
+.decklist-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 0.5rem;
+}
+
+.copy-btn {
+  width: 100%;
+  background: var(--accent-purple);
+  color: white;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.copy-btn:hover { background: var(--accent-glow); }
+.copy-btn:active { transform: scale(0.98); }
+
+.card-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card-list li {
+  background: rgba(0,0,0,0.3);
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  border-left: 4px solid var(--accent-purple);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.card-list li:hover {
+  transform: translateX(5px);
+  background: rgba(157, 78, 221, 0.15);
+}
+
+.card-list li::before {
+  content: attr(data-cost);
+  background: #1e1e1e;
+  color: #a3e635;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-right: 1rem;
+  border: 1px solid #333;
+}
+
+/* Guide Content area */
+.guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.guide-section h2 {
+  color: var(--accent-glow);
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.guide-section h3 {
+  font-size: 1.3rem;
+  margin: 1.5rem 0 0.5rem;
+  color: #fff;
+}
+
+/* Mulligan Grid */
+.mulligan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.mulligan-box {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.2);
+  border-top: 3px solid;
+}
+
+.mulligan-box.keep { border-color: var(--zombie-green); }
+.mulligan-box.situational { border-color: #f59e0b; }
+
+.mulligan-box h3 { margin-top: 0; font-size: 1.1rem; }
+.mulligan-box p { margin-bottom: 0; font-size: 0.95rem; }
+
+/* Table styling for substitutions */
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 1.5rem;
+}
+
+.sub-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.sub-table th, .sub-table td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.sub-table th {
+  color: var(--text-muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 900px) {
+  .deck-container { grid-template-columns: 1fr; }
+  .deck-hero h1 { font-size: 3rem; }
+  .mulligan-grid { grid-template-columns: 1fr; }
+}
+/* --- Overhauled Circular Token Grid --- */
+.visual-deck-grid {
+  display: grid;
+  /* Slightly wider minimum space to allow circular assets breathing room */
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  gap: 16px;
+  margin-top: 1.5rem;
+}
+
+.card-token {
+  position: relative;
+  width: 100%;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+
+/* The circular outer frame containing the portrait */
+.token-frame {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Forces a perfect square, which becomes a perfect circle */
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(157, 78, 221, 0.15) 0%, rgba(20, 15, 35, 0.6) 100%);
+  border: 2px solid var(--panel-border);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  overflow: hidden; /* Elegantly crops square asset source images into clean circles */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Image scaling fixes */
+.token-frame img {
+  width: 105%; /* Slight over-scale to fill out the circle nicely without revealing edge gaps */
+  height: 105%;
+  object-fit: cover; /* Keeps aspect ratios native without squishing */
+  transition: filter 0.2s ease;
+}
+
+/* Hover Effects */
+.card-token:hover {
+  transform: scale(1.08);
+}
+
+.card-token:hover .token-frame {
+  border-color: var(--accent-glow);
+  box-shadow: 0 0 15px rgba(199, 125, 255, 0.6);
+}
+
+/* Perfect floating quantity badge alignment */
+.card-qty {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #111;
+  color: var(--zombie-green);
+  font-family: 'Titan One', cursive;
+  font-size: 0.95rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--accent-purple);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.6);
+  z-index: 2; /* Ensures it stays stacked cleanly over the token border frame */
+}
+
+/* Button Success State */
+.copy-btn.success {
+  background: var(--zombie-green);
+  color: #000;
+}
+/* ==========================================================================
+   PvZH Vault — Top 10 Decks Guide
+   Design system: night-lawn base · sun-gold accent · plant/zombie factions
+   ========================================================================== */
+:root {
+  /* Core surface palette (night lawn) */
+  --bg-color: #0e1413;
+  --bg-deep: #0a0f0e;
+  --card-bg: #1b2420;
+  --card-bg-2: #161e1b;
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+
+  /* Text */
+  --text-primary: #f2f5ef;
+  --text-secondary: #9fb0a3;
+
+  /* Accent: PvZ sun currency */
+  --sun: #ffc83d;
+  --sun-soft: rgba(255, 200, 61, 0.14);
+  --sun-glow: rgba(255, 200, 61, 0.35);
+
+  /* Factions */
+  --plant: #7be04f;
+  --plant-soft: rgba(123, 224, 79, 0.14);
+  --zombie: #b388ff;
+  --zombie-soft: rgba(179, 136, 255, 0.14);
+
+  /* Grades */
+  --grade-a: #7be04f;
+  --grade-b: #ffc83d;
+
+  /* Type */
+  --font-display: 'Titan One', 'Arial Black', system-ui, sans-serif;
+  --font-sans: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --transition: 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --max-width: 1100px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body.guide-page {
+  font-family: var(--font-sans);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--text-primary); text-decoration: none; transition: color var(--transition); }
+h1, h2, h3 { line-height: 1.15; letter-spacing: 0.01em; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; }
+
+/* Progress tracker bar */
+.progress-track {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: transparent;
+  z-index: 1000;
+}
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--zombie), var(--sun));
+  box-shadow: 0 0 12px var(--sun-glow);
+}
+
+/* Hero elements styling */
+.guide-hero {
+  position: relative;
+  padding: 90px 20px 70px;
+  background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-color) 100%);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  overflow: hidden;
+}
+.lawn-stripes {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    100deg,
+    rgba(179, 136, 255, 0.03) 0px,
+    rgba(179, 136, 255, 0.03) 90px,
+    transparent 90px,
+    transparent 180px
+  );
+  pointer-events: none;
+}
+.sun-glow {
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 720px;
+  height: 420px;
+  background: radial-gradient(ellipse at center, rgba(179, 136, 255, 0.25) 0%, transparent 65%);
+  pointer-events: none;
+}
+.guide-hero-inner { position: relative; z-index: 1; max-width: 840px; margin: 0 auto; }
+.breadcrumbs { align-self: flex-start; margin-bottom: 40px; font-size: 0.88rem; }
+.breadcrumbs a { color: var(--text-secondary); font-weight: 600; }
+.breadcrumbs a:hover { color: var(--sun); }
+
+.hero-pill-row { display: flex; gap: 12px; margin-bottom: 26px; justify-content: center; }
+.hero-pill { padding: 7px 16px; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; border-radius: 100px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-secondary); }
+.hero-pill-accent { background: var(--sun-soft); color: var(--sun); border-color: rgba(255, 200, 61, 0.35); }
+
+.title-zombies { color: var(--zombie); text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35), 0 0 26px rgba(179, 136, 255, 0.45); }
+.hero-subtitle { font-size: 1.12rem; color: var(--text-secondary); max-width: 660px; margin: 0 auto 18px; }
+.hero-stats { display: flex; gap: 36px; padding: 22px 44px; background: rgba(27, 36, 32, 0.7); border: 1px solid var(--border); border-radius: var(--radius-lg); backdrop-filter: blur(10px); justify-content: center; }
+.hero-stat { display: flex; flex-direction: column; align-items: center; }
+.hero-stat strong { font-family: var(--font-display); font-size: 1.6rem; color: var(--sun); }
+.hero-stat span { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px; }
+
+/* Structural Layout elements */
+.guide-layout { max-width: var(--max-width); margin: 0 auto; padding: 60px 20px; display: grid; grid-template-columns: 280px 1fr; gap: 48px; align-items: start; }
+.guide-sidebar { position: sticky; top: 28px; display: flex; flex-direction: column; gap: 20px; }
+.toc-card { background: var(--card-bg-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; }
+.toc-label { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--sun); letter-spacing: 0.08em; margin-bottom: 14px; }
+
+/* Content Article Card mappings */
+.guide-article { display: flex; flex-direction: column; gap: 56px; min-width: 0; }
+.content-card h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--border); position: relative; }
+.content-card h2::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 72px; height: 3px; background: linear-gradient(90deg, var(--zombie), var(--sun)); border-radius: 2px; }
+.content-card p { color: var(--text-secondary); margin-bottom: 20px; font-size: 1.05rem; }
+.content-card p strong { color: var(--text-primary); }
+
+/* Method/Mulligan Matrix */
+.method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; margin-top: 8px; }
+.method-box { background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: var(--radius-md); }
+.method-icon { font-size: 1.4rem; display: block; margin-bottom: 10px; }
+.method-box h3 { color: var(--text-primary); font-size: 1.05rem; margin-bottom: 8px; font-weight: 800; }
+.method-box p { font-size: 0.9rem; margin: 0; }
+
+/* Deck Action Button Configuration */
+.copy-btn {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 800;
+  padding: 11px 18px;
+  border-radius: 100px;
+  background: var(--sun-soft);
+  color: var(--sun);
+  border: 1px solid rgba(255, 200, 61, 0.4);
+  cursor: pointer;
+  margin-bottom: 18px;
+  transition: all var(--transition);
+}
+.copy-btn:hover { background: var(--sun); color: #1a1407; box-shadow: 0 4px 16px var(--sun-glow); }
+.copy-btn.copied { background: var(--plant); border-color: var(--plant); color: #0c2003; }
+
+/* ==========================================================================
+   Deck card image grid — Core System Implementations
+   ========================================================================== */
+.deck-image-container {
+  margin: 4px 0 0px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.visual-deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.visual-card-item { 
+  position: relative; 
+  width: 100%; 
+  aspect-ratio: 3 / 4; 
+}
+
+.card-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  transition: transform var(--transition), z-index 0s;
+  cursor: zoom-in;
+}
+
+.card-image-wrapper:hover,
+.card-image-wrapper:focus-visible {
+  transform: scale(1.9);
+  z-index: 20;
+}
+
+.card-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.card-quantity {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.88);
+  color: var(--sun);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 0.72rem;
+  line-height: 1;
+  border: 1px solid rgba(255, 200, 61, 0.35);
+}
+
+/* Floating interface elements */
+.back-to-top {
+  position: fixed;
+  bottom: 26px; right: 26px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe18a, var(--sun) 70%);
+  color: #6b4d00;
+  font-size: 1.4rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 22px var(--sun-glow);
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition: opacity var(--transition), transform var(--transition);
+  z-index: 900;
+}
+.back-to-top.is-shown { opacity: 1; transform: none; pointer-events: auto; }
+
+/* Responsive breaklines */
+@media (max-width: 900px) {
+  .guide-layout { grid-template-columns: 1fr; gap: 32px; }
+  .guide-sidebar { position: relative; top: 0; max-height: none; }
+  .toc-card { flex: 1; }
+}
+@media (max-width: 600px) {
+  .visual-deck-grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
+  .card-image-wrapper:hover, .card-image-wrapper:focus-visible { transform: scale(1.5); }
+}

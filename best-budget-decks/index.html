@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TKRPPRCNM4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-TKRPPRCNM4');
+</script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <title>Top 10 Budget Decks — PvZH Tier List (June 2026)</title>
+  <meta name="description" content="The 10 best budget decks in Plants vs. Zombies Heroes for June 2026, ranked across seven plant and zombie heroes with spark costs, scores, full 40-card lists, and one-tap copy codes." />
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <link rel="canonical" href="https://pvzhvault.com/best-budget-decks" />
+  <meta name="theme-color" content="#0e1413" />
+  <meta name="author" content="PvZH Deck Builder & Database" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="PvZH Vault — Deck Builder & Database" />
+  <meta property="og:title" content="Top 10 Budget Decks — PvZH Tier List (June 2026)" />
+  <meta property="og:description" content="Ranked budget decks with spark costs, scores, grades, full 40-card lists, and copyable deck codes. Updated for the June 2026 meta." />
+  <meta property="og:url" content="https://pvzhvault.com/best-budget-decks" />
+  <meta property="og:image" content="https://pvzhvault.com/assets/og-budget-decks-june-2026.png" />
+  <meta property="og:image:alt" content="Top 10 budget decks in Plants vs. Zombies Heroes, June 2026 edition" />
+  <meta property="article:published_time" content="2026-06-16T08:00:00+00:00" />
+  <meta property="article:modified_time" content="2026-06-16T08:00:00+00:00" />
+  <meta property="article:section" content="Deck Guides" />
+  <meta property="article:tag" content="PvZH" />
+  <meta property="article:tag" content="Budget Decks" />
+  <meta property="article:tag" content="Plants vs Zombies Heroes" />
+  <meta property="article:tag" content="deck tier list" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Top 10 Budget Decks — PvZH (June 2026)" />
+  <meta name="twitter:description" content="Ranked budget meta decks with spark costs, full card lists, scores, and copyable deck codes." />
+  <meta name="twitter:image" content="https://pvzhvault.com/assets/og-budget-decks-june-2026.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/guide-style.css" />
+  <link rel="icon" type="image/png" href="/pvzhvault_favicon.png">
+
+  <!-- Page-scoped additions: ranking summary table + S-tier grade + hero/sparks/year columns (uses shared design tokens) -->
+  <style>
+    .rank-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .rank-table { width: 100%; border-collapse: collapse; font-size: 0.93rem; min-width: 880px; }
+    .rank-table th, .rank-table td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .rank-table th {
+      font-size: 0.76rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--sun); background: var(--card-bg);
+    }
+    .rank-table tbody tr { background: var(--card-bg-2); transition: background var(--transition); }
+    .rank-table tbody tr:hover { background: var(--card-bg); }
+    .rank-table tbody tr:last-child td { border-bottom: none; }
+    .rank-table .t-rank { font-family: var(--font-display); color: var(--text-secondary); }
+    .rank-table tbody tr:first-child .t-rank { color: var(--sun); }
+    .rank-table .t-deck a { color: var(--text-primary); font-weight: 800; }
+    .rank-table .t-deck a:hover { color: var(--sun); }
+    .rank-table .t-score { font-weight: 800; color: var(--text-primary); }
+    .rank-table .t-spark { font-weight: 700; color: var(--text-primary); }
+    .rank-table .t-grade-s { color: var(--grade-s, #ffd54a); font-weight: 800; }
+    .rank-table .t-grade-a { color: var(--grade-a); font-weight: 800; }
+    .rank-table .t-grade-b { color: var(--grade-b); font-weight: 800; }
+    .rank-table .t-num, .rank-table .t-author, .rank-table .t-hero, .rank-table .t-year { color: var(--text-secondary); }
+
+    /* S-tier score badge (shared CSS ships grade-a / grade-b; add the gold S here) */
+    .score-badge.grade-s {
+      background: linear-gradient(135deg, rgba(255,213,74,0.18), rgba(255,170,30,0.12));
+      border-color: var(--grade-s, #ffd54a);
+      color: var(--grade-s, #ffd54a);
+    }
+    /* Spark cost badge accent */
+    .stat-badge.spark-badge { color: var(--text-primary); font-weight: 800; }
+  </style>
+
+  <!-- Structured data: Article -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Top 10 Budget Decks in Plants vs. Zombies Heroes — June 2026 Tier List",
+    "description": "A data-backed tier list of the 10 best budget decks for the June 2026 PvZH meta, spanning seven plant and zombie heroes, with spark costs, scores, grades, full card lists, and ranking methodology.",
+    "datePublished": "2026-06-16",
+    "dateModified": "2026-06-16",
+    "image": "https://pvzhvault.com/assets/og-budget-decks-june-2026.png",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://pvzhvault.com/best-budget-decks" },
+    "about": { "@type": "VideoGame", "name": "Plants vs. Zombies Heroes" },
+    "author": { "@type": "Organization", "name": "PvZH Deck Builder & Database", "url": "https://pvzhvault.com" },
+    "publisher": { "@type": "Organization", "name": "PvZH Deck Builder & Database", "url": "https://pvzhvault.com" }
+  }
+  </script>
+
+  <!-- Structured data: ranked list of decks -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Top 10 Budget Decks — June 2026",
+    "itemListOrder": "https://schema.org/ItemListOrderDescending",
+    "numberOfItems": 10,
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1,  "name": "Leafy Pot",                "url": "https://pvzhvault.com/decks/leafy-pot" },
+      { "@type": "ListItem", "position": 2,  "name": "Beeting Off",              "url": "https://pvzhvault.com/decks/beeting-off" },
+      { "@type": "ListItem", "position": 3,  "name": "Budget Leafy",             "url": "https://pvzhvault.com/decks/budget-leafy" },
+      { "@type": "ListItem", "position": 4,  "name": "Budget Flag Swarm",        "url": "https://pvzhvault.com/decks/budget-flag-swarm" },
+      { "@type": "ListItem", "position": 5,  "name": "Pod Fighter",              "url": "https://pvzhvault.com/decks/pod-fighter" },
+      { "@type": "ListItem", "position": 6,  "name": "Budget Agro",              "url": "https://pvzhvault.com/best-budget-decks#deck-budget-agro" },
+      { "@type": "ListItem", "position": 7,  "name": "The Affordable Care Act",  "url": "https://pvzhvault.com/best-budget-decks#deck-affordable-care-act" },
+      { "@type": "ListItem", "position": 8,  "name": "Flets",                    "url": "https://pvzhvault.com/best-budget-decks#deck-flets" },
+      { "@type": "ListItem", "position": 9,  "name": "Rigid Leafy",              "url": "https://pvzhvault.com/best-budget-decks#deck-rigid-leafy" },
+      { "@type": "ListItem", "position": 10, "name": "Burst Flare",              "url": "https://pvzhvault.com/best-budget-decks#deck-burst-flare" }
+    ]
+  }
+  </script>
+
+  <!-- Structured data: FAQ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the best budget deck in Plants vs. Zombies Heroes right now?",
+        "acceptedAnswer": { "@type": "Answer", "text": "As of June 2026, Leafy Pot on Captain Combustible is the highest-rated budget deck in our database with a 95.05 composite score, an S grade, and a perfect 100 synergy rating. It costs around 17,200 sparks to craft and plays as a top-tier leafy aggro deck." }
+      },
+      {
+        "@type": "Question",
+        "name": "What are Sparks in PvZH?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Sparks are the crafting currency in Plants vs. Zombies Heroes. You earn them by recycling cards you do not need and spend them to craft new ones. A deck's spark cost is the total to craft every card in it, so a lower number means it is cheaper to build." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the cheapest deck in this guide?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Burst Flare on Solar Flare is the cheapest list at about 5,200 sparks, followed by Budget Agro on Captain Combustible at 6,200 and Budget Flag Swarm on Z-Mech at 6,800." }
+      },
+      {
+        "@type": "Question",
+        "name": "How are these budget decks ranked?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Each deck is scored across four pillars — performance, consistency, synergy, and curve health — then graded and ordered by composite value. Spark cost is shown alongside for budget context but is not one of the scored pillars." }
+      },
+      {
+        "@type": "Question",
+        "name": "How many cards are in a Plants vs. Zombies Heroes deck?",
+        "acceptedAnswer": { "@type": "Answer", "text": "A PvZH deck contains exactly 40 cards, with a maximum of 4 copies of any single card. Every budget list in this guide follows that format." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Structured data: Breadcrumbs -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home",   "item": "https://pvzhvault.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://pvzhvault.com/#guides" },
+      { "@type": "ListItem", "position": 3, "name": "Top 10 Budget Decks — June 2026", "item": "https://pvzhvault.com/best-budget-decks" }
+    ]
+  }
+  </script>
+</head>
+
+<body class="guide-page">
+  <div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+
+  <header class="guide-hero">
+    <div class="lawn-stripes" aria-hidden="true"></div>
+    <div class="sun-glow" aria-hidden="true"></div>
+
+    <div class="guide-hero-inner">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a><span aria-hidden="true">/</span>
+        <a href="/#guides">Guides</a><span aria-hidden="true">/</span>
+        <span aria-current="page">Top 10 Budget Decks</span>
+      </nav>
+
+      <div class="hero-pill-row">
+        <span class="hero-pill hero-pill-accent">🪙 June 2026 Edition</span>
+        <span class="hero-pill">💰 Budget Deck Guide · Cheap to Craft</span>
+      </div>
+
+      <h1>Top 10 Best <span class="title-plants">Budget</span> Decks</h1>
+
+      <p class="hero-subtitle">
+        The strongest decks you can build on a low spark budget this month — ranked across seven plant and zombie heroes by composite score, with craft costs and full 40-card lists you can copy in one tap.
+      </p>
+
+      <p class="hero-byline">
+        By <strong>PvZH Deck Builder &amp; Database</strong> · Published <time datetime="2026-06-16">June 16, 2026</time> · Updated <time datetime="2026-06-16">June 16, 2026</time>
+      </p>
+
+      <div class="hero-stats" aria-label="Guide summary">
+        <div class="hero-stat"><strong>10</strong><span>ranked decks</span></div>
+        <div class="hero-stat"><strong>95.05</strong><span>top score</span></div>
+        <div class="hero-stat"><strong>5,200</strong><span>lowest sparks</span></div>
+        <div class="hero-stat"><strong>40</strong><span>cards per list</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="guide-layout">
+    <aside class="guide-sidebar">
+      <div class="toc-card">
+        <p class="toc-label">On this page</p>
+        <nav class="toc-nav" id="tocNav" aria-label="Table of contents">
+          <a href="#overview">Overview</a>
+          <a href="#rankings-table">Rankings at a glance</a>
+          <a href="#methodology">How rankings work</a>
+          <a href="#ranked-list">Top 10 decks</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+      </div>
+
+      <div class="toc-card jump-card">
+        <p class="toc-label">Jump to a deck</p>
+        <nav class="toc-nav deck-jump" id="deckJump" aria-label="Deck quick links"></nav>
+      </div>
+    </aside>
+
+    <article class="guide-article">
+      <section id="overview" class="content-card reveal">
+        <h2>Overview: building on a budget in the June 2026 meta</h2>
+        <p>
+          <strong>Sparks</strong> are PvZH's crafting currency — you earn them by recycling cards you don't need and spend them to craft new ones. A deck's spark cost is simply the total to craft every card in it, so a lower number means a cheaper build and a faster path to a competitive ladder deck. This top 10 collects the strongest decks you can assemble without breaking the bank, spanning both sides of the lawn: eight plant lists and two zombie lists across seven heroes.
+        </p>
+        <p>
+          <a href="#deck-leafy-pot">Leafy Pot</a> on Captain Combustible takes the crown at a 95.05 composite score and a perfect 100 synergy — a genuine top-meta aggro deck you can mostly craft from commons and rares. From there it's a balance of price and power: the cheapest entries are <a href="#deck-burst-flare">Burst Flare</a> on Solar Flare (≈5,200 sparks), <a href="#deck-budget-agro">Budget Agro</a> on Captain Combustible (≈6,200), and <a href="#deck-budget-flag-swarm">Budget Flag Swarm</a> on Z-Mech (≈6,800), which together make the perfect first decks for new players on either faction.
+        </p>
+      </section>
+
+      <section id="rankings-table" class="content-card reveal">
+        <h2>Rankings at a glance</h2>
+        <p class="section-note">Composite scores out of 100, with craft cost in sparks. Computed from our live user database.</p>
+        <div class="rank-table-wrap">
+          <table class="rank-table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Deck</th>
+                <th scope="col">Hero</th>
+                <th scope="col">Sparks</th>
+                <th scope="col">Score</th>
+                <th scope="col">Grade</th>
+                <th scope="col">Synergy</th>
+                <th scope="col">Power</th>
+                <th scope="col">Consistency</th>
+                <th scope="col">Year</th>
+                <th scope="col">Author</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="t-rank">#1</td><td class="t-deck"><a href="#deck-leafy-pot">Leafy Pot</a></td><td class="t-hero">Captain Combustible</td><td class="t-spark">17,200</td><td class="t-score">95.05</td><td class="t-grade-s">S</td><td class="t-num">100</td><td class="t-num">85</td><td class="t-num">91</td><td class="t-year">2025</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#2</td><td class="t-deck"><a href="#deck-beeting-off">Beeting Off</a></td><td class="t-hero">Grass Knuckles</td><td class="t-spark">17,600</td><td class="t-score">90.55</td><td class="t-grade-a">A</td><td class="t-num">93</td><td class="t-num">79</td><td class="t-num">86</td><td class="t-year">2026</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#3</td><td class="t-deck"><a href="#deck-budget-leafy">Budget Leafy</a></td><td class="t-hero">Green Shadow</td><td class="t-spark">14,100</td><td class="t-score">88.7</td><td class="t-grade-a">A</td><td class="t-num">99</td><td class="t-num">65</td><td class="t-num">91</td><td class="t-year">2025</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#4</td><td class="t-deck"><a href="#deck-budget-flag-swarm">Budget Flag Swarm</a></td><td class="t-hero">Z-Mech</td><td class="t-spark">6,800</td><td class="t-score">88.1</td><td class="t-grade-a">A</td><td class="t-num">99</td><td class="t-num">63</td><td class="t-num">91</td><td class="t-year">2025</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#5</td><td class="t-deck"><a href="#deck-pod-fighter">Pod Fighter</a></td><td class="t-hero">Captain Combustible</td><td class="t-spark">18,300</td><td class="t-score">85.6</td><td class="t-grade-b">B</td><td class="t-num">90</td><td class="t-num">65</td><td class="t-num">92</td><td class="t-year">2018</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#6</td><td class="t-deck"><a href="#deck-budget-agro">Budget Agro</a></td><td class="t-hero">Captain Combustible</td><td class="t-spark">6,200</td><td class="t-score">83.9</td><td class="t-grade-b">B</td><td class="t-num">99</td><td class="t-num">50</td><td class="t-num">85</td><td class="t-year">2016</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#7</td><td class="t-deck"><a href="#deck-affordable-care-act">The Affordable Care Act</a></td><td class="t-hero">Chompzilla</td><td class="t-spark">9,300</td><td class="t-score">83.55</td><td class="t-grade-b">B</td><td class="t-num">98</td><td class="t-num">49</td><td class="t-num">91</td><td class="t-year">2020</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#8</td><td class="t-deck"><a href="#deck-flets">Flets</a></td><td class="t-hero">The Smash</td><td class="t-spark">19,300</td><td class="t-score">83.5</td><td class="t-grade-b">B</td><td class="t-num">99</td><td class="t-num">49</td><td class="t-num">83</td><td class="t-year">2022</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#9</td><td class="t-deck"><a href="#deck-rigid-leafy">Rigid Leafy</a></td><td class="t-hero">Green Shadow</td><td class="t-spark">9,600</td><td class="t-score">83.15</td><td class="t-grade-b">B</td><td class="t-num">99</td><td class="t-num">45</td><td class="t-num">100</td><td class="t-year">2025</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#10</td><td class="t-deck"><a href="#deck-burst-flare">Burst Flare</a></td><td class="t-hero">Solar Flare</td><td class="t-spark">5,200</td><td class="t-score">83.05</td><td class="t-grade-b">B</td><td class="t-num">99</td><td class="t-num">46</td><td class="t-num">92</td><td class="t-year">2025</td><td class="t-author">Justeeni</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="methodology" class="content-card reveal">
+        <h2>How these decks are ranked</h2>
+        <p class="section-note">Every deck is scored across four pillars, then graded and ordered by composite value. Spark cost is shown for budget context but is not one of the scored pillars.</p>
+        <div class="method-grid">
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">⚔</span>
+            <h3>Performance</h3>
+            <p>Calculated from core popularity metrics against the current highest-tier meta envelopes.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">♻</span>
+            <h3>Consistency</h3>
+            <p>Analyzes draw patterns, heavily favoring optimized 3x and 4x card sets over inconsistent singletons.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">🔗</span>
+            <h3>Synergy</h3>
+            <p>Determined by a continuous co-occurrence matrix evaluated across all interconnected cards.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">📈</span>
+            <h3>Curve health</h3>
+            <p>Measures macro-curve values against target historical archetypes to penalize awkward spacing.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="ranked-list" class="content-card reveal">
+        <div class="section-header">
+          <div>
+            <h2>The top 10 budget decks, ranked</h2>
+            <p class="section-note">Live data processed and ranked by our internal algorithmic evaluation matrix.</p>
+          </div>
+        </div>
+
+        <div class="deck-toolbar" role="region" aria-label="Search decks">
+          <div class="search-wrap" style="max-width: 100%; flex: 1;">
+            <input id="deckSearch" type="search" placeholder="Search decks, heroes, or cards… e.g. Bonk Choy" aria-label="Search decks, heroes, or cards" />
+          </div>
+        </div>
+        <p class="filter-empty" id="filterEmpty" hidden>No decks match that search. Try clearing it or searching a different card.</p>
+
+        <ol class="deck-list" id="deckList">
+  <!-- DECK 1 -->
+  <li class="deck-card faction-plants reveal" id="deck-leafy-pot" data-faction="plants" data-name="Leafy Pot" data-hero="Captain Combustible">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Captain_Combustible.webp" alt="Captain Combustible" class="deck-hero-avatar" width="160" height="200" fetchpriority="high" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#1</span>
+          <span class="faction-tag faction-tag-plants">☀ Captain Combustible</span>
+          <span class="deck-label deck-label-best">Best overall</span>
+        </div>
+        <h3>Leafy Pot</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 95.05 · Grade: S</span>
+          <span class="stat-badge spark-badge">Sparks: 17,200</span>
+          <span class="stat-badge">Synergy: 100</span>
+          <span class="stat-badge">Power: 85</span>
+          <span class="stat-badge">Consistency: 91</span>
+          <span class="stat-badge">Year: 2025</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["2x Banana Bomb", "4x Bonk Choy", "4x Clique Peas", "4x Berry Blast", "4x Cabbage Pult", "2x Pea Patch", "4x Poison Ivy", "4x Typical Beanstalk", "4x Savage Spinach", "4x Potted Powerhouse", "4x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">The strongest budget-viable deck in the database and a flawless 100 synergy score. It's the same leafy Captain Combustible aggro that competes at the very top of the meta, built largely from cheap commons and rares — Potted Powerhouse, Savage Spinach, and Poison Ivy push the damage while Espresso Fiesta closes the game. At around 17,200 sparks it isn't the cheapest list here, but pound-for-pound it's the best deck a newer player can craft, with the super-rare Espresso Fiesta the one real premium investment.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/leafy-pot">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 2 -->
+  <li class="deck-card faction-plants reveal" id="deck-beeting-off" data-faction="plants" data-name="Beeting Off" data-hero="Grass Knuckles">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Grass_Knuckles.webp" alt="Grass Knuckles" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#2</span>
+          <span class="faction-tag faction-tag-plants">☀ Grass Knuckles</span>
+          <span class="deck-label">Top contender</span>
+        </div>
+        <h3>Beeting Off</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 90.55 · Grade: A</span>
+          <span class="stat-badge spark-badge">Sparks: 17,600</span>
+          <span class="stat-badge">Synergy: 93</span>
+          <span class="stat-badge">Power: 79</span>
+          <span class="stat-badge">Consistency: 86</span>
+          <span class="stat-badge">Year: 2026</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bonk Choy", "4x Clique Peas", "4x Forget-Me-Nuts", "4x Cabbage Pult", "2x Pismashio", "3x Fertilizer", "3x Steel Magnolia", "3x Blockbuster", "3x Red Stinger", "3x Tough Beets", "3x Super-Phat Beets", "4x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">A Grass Knuckles beet-and-pea midrange that grinds out value. Red Stinger, Tough Beets, and Super-Phat Beets snowball stats while Fertilizer and Steel Magnolia push the buffs through, Blockbuster clears the way, and Espresso Fiesta supplies the reach finish. At about 17,600 sparks it's a sturdy, synergy-rich ladder deck that rewards patient, board-building play.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/beeting-off">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 3 -->
+  <li class="deck-card faction-plants reveal" id="deck-budget-leafy" data-faction="plants" data-name="Budget Leafy" data-hero="Green Shadow">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Green_Shadow.webp" alt="Green Shadow" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#3</span>
+          <span class="faction-tag faction-tag-plants">☀ Green Shadow</span>
+          <span class="deck-label">High tier</span>
+        </div>
+        <h3>Budget Leafy</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 88.7 · Grade: A</span>
+          <span class="stat-badge spark-badge">Sparks: 14,100</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 65</span>
+          <span class="stat-badge">Consistency: 91</span>
+          <span class="stat-badge">Year: 2025</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bonk Choy", "4x Clique Peas", "4x Shellery", "4x Cabbage Pult", "4x Pea Patch", "4x Typical Beanstalk", "2x Plant Food", "4x Savage Spinach", "4x Jumping Bean", "4x Tricorn", "2x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">Green Shadow's bean-and-pea budget build, carrying a near-top 99 synergy score. Pea Patch, Savage Spinach, Shellery, and Jumping Bean keep the lanes stocked cheaply, Typical Beanstalk refills the hand, and a light splash of Plant Food plus Espresso Fiesta adds the punch. At around 14,100 sparks it's one of the best-value ways into a competitive Green Shadow shell.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/budget-leafy">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 4 -->
+  <li class="deck-card faction-zombies reveal" id="deck-budget-flag-swarm" data-faction="zombies" data-name="Budget Flag Swarm" data-hero="Z-Mech">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Z_Mech.webp" alt="Z-Mech" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#4</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Z-Mech</span>
+          <span class="deck-label">Strong &amp; cheap</span>
+        </div>
+        <h3>Budget Flag Swarm</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 88.1 · Grade: A</span>
+          <span class="stat-badge spark-badge">Sparks: 6,800</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 63</span>
+          <span class="stat-badge">Consistency: 91</span>
+          <span class="stat-badge">Year: 2025</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bungee Plumber", "4x Leftovers", "4x Mystery Egg", "4x Tennis Champ", "4x Unlife of the Party", "4x Middle Manager", "4x Flag Zombie", "2x Meteor Z", "2x Cosmic Sports Star", "4x Going Viral", "4x Primeval Yeti"]'></div>
+        </div>
+        <p class="deck-summary">One of the best deals on the page — a complete, 99-synergy Z-Mech swarm for just 6,800 sparks. Flag Zombie and Middle Manager ramp the brains, Tennis Champ, Mystery Egg, and Unlife of the Party flood cheap sports bodies, and Going Viral plus Primeval Yeti add reach and value on top. Genuinely strong for the price and an ideal first zombie deck for ladder.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/budget-flag-swarm">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 5 -->
+  <li class="deck-card faction-plants reveal" id="deck-pod-fighter" data-faction="plants" data-name="Pod Fighter" data-hero="Captain Combustible">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Captain_Combustible.webp" alt="Captain Combustible" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#5</span>
+          <span class="faction-tag faction-tag-plants">☀ Captain Combustible</span>
+          <span class="deck-label">Reliable pick</span>
+        </div>
+        <h3>Pod Fighter</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-b">Score: 85.6 · Grade: B</span>
+          <span class="stat-badge spark-badge">Sparks: 18,300</span>
+          <span class="stat-badge">Synergy: 90</span>
+          <span class="stat-badge">Power: 65</span>
+          <span class="stat-badge">Consistency: 92</span>
+          <span class="stat-badge">Year: 2018</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["3x Puff Shroom", "4x Bonk Choy", "2x Torchwood", "4x Berry Blast", "4x Fireweed", "4x Pea Patch", "4x Split Pea", "4x Poison Ivy", "3x Repeat Moss", "4x Savage Spinach", "4x Pod Fighter"]'></div>
+        </div>
+        <p class="deck-summary">A 2018 Captain Combustible build wrapped around Pod Fighter and a pea-shooting core. Split Pea, Fireweed, and Repeat Moss chip from multiple lanes while Poison Ivy and Savage Spinach press the advantage. At around 18,300 sparks it's pricier than its grade suggests, but it's a fun, durable midrange option for fans of the multi-lane plant archetype.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/pod-fighter">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 6 -->
+  <li class="deck-card faction-plants reveal" id="deck-budget-agro" data-faction="plants" data-name="Budget Agro" data-hero="Captain Combustible">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Captain_Combustible.webp" alt="Captain Combustible" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#6</span>
+          <span class="faction-tag faction-tag-plants">☀ Captain Combustible</span>
+          <span class="deck-label">Budget aggro</span>
+        </div>
+        <h3>Budget Agro</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-b">Score: 83.9 · Grade: B</span>
+          <span class="stat-badge spark-badge">Sparks: 6,200</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 50</span>
+          <span class="stat-badge">Consistency: 85</span>
+          <span class="stat-badge">Year: 2016</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["3x Bonk Choy", "4x Poison Mushroom", "4x Berry Blast", "3x Fire Peashooter", "4x Wild Berry", "3x Fertilizer", "3x Grow-Shroom", "4x Poison Ivy", "2x Plant Food", "4x Repeat Moss", "4x Whipvine", "2x Cherry Bomb"]'></div>
+        </div>
+        <p class="deck-summary">An old-school 2016 Captain Combustible aggro list and one of the cheapest decks here at 6,200 sparks. Wild Berry, Berry Blast, and Fire Peashooter apply early pressure, Poison Ivy and Whipvine grind in chip damage, and Cherry Bomb plus Plant Food close things out. The ceiling is low, but a rock-bottom price and a 99 synergy score make it a great launchpad for a new account.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 7 -->
+  <li class="deck-card faction-plants reveal" id="deck-affordable-care-act" data-faction="plants" data-name="The Affordable Care Act" data-hero="Chompzilla">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Chompzilla.webp" alt="Chompzilla" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#7</span>
+          <span class="faction-tag faction-tag-plants">☀ Chompzilla</span>
+          <span class="deck-label">Niche brew</span>
+        </div>
+        <h3>The Affordable Care Act</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-b">Score: 83.55 · Grade: B</span>
+          <span class="stat-badge spark-badge">Sparks: 9,300</span>
+          <span class="stat-badge">Synergy: 98</span>
+          <span class="stat-badge">Power: 49</span>
+          <span class="stat-badge">Consistency: 91</span>
+          <span class="stat-badge">Year: 2020</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Li&#39;l Buddy", "4x Apple Saucer", "4x Pepper M.D.", "4x Ketchup Mechanic", "4x Magnifying Grass", "2x Whack-a-Zombie", "4x Heartichoke", "4x Plant Food", "4x Venus Flytraplanet", "4x Power Flower", "2x Squash"]'></div>
+        </div>
+        <p class="deck-summary">A health-and-value Chompzilla brew — the name says it all. Heartichoke and Plant Food keep Chompzilla topped up, Power Flower and Venus Flytraplanet act as the payoffs, and Li'l Buddy, Apple Saucer, Ketchup Mechanic, and Magnifying Grass supply the bodies and removal. Around 9,300 sparks for a 98-synergy package that wins by out-grinding the opponent as much as out-damaging them.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 8 -->
+  <li class="deck-card faction-zombies reveal" id="deck-flets" data-faction="zombies" data-name="Flets" data-hero="The Smash">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/The_Smash.webp" alt="The Smash" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#8</span>
+          <span class="faction-tag faction-tag-zombies">🧠 The Smash</span>
+          <span class="deck-label">Off-meta pick</span>
+        </div>
+        <h3>Flets</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-b">Score: 83.5 · Grade: B</span>
+          <span class="stat-badge spark-badge">Sparks: 19,300</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 49</span>
+          <span class="stat-badge">Consistency: 83</span>
+          <span class="stat-badge">Year: 2022</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Camel Crossing", "4x Cat Lady", "2x Dog Walker", "4x Fraidy Cat", "4x Healthy Treat", "4x Teacher", "4x Flag Zombie", "2x Leftovers", "4x Zookeeper", "2x Area 22", "4x Going Viral", "2x Primeval Yeti"]'></div>
+        </div>
+        <p class="deck-summary">A pet-and-teammate tribal deck for The Smash — the priciest list here at 19,300 sparks, but a tightly-knit 99-synergy build. Cat Lady, Fraidy Cat, and Zookeeper stack the pet payoffs while Teacher, Flag Zombie, and Going Viral keep the engine fed and the brains flowing. More of a characterful off-meta pick than a pure value play given the cost, but a blast to pilot.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 9 -->
+  <li class="deck-card faction-plants reveal" id="deck-rigid-leafy" data-faction="plants" data-name="Rigid Leafy" data-hero="Green Shadow">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Green_Shadow.webp" alt="Green Shadow" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#9</span>
+          <span class="faction-tag faction-tag-plants">☀ Green Shadow</span>
+          <span class="deck-label">Playable niche</span>
+        </div>
+        <h3>Rigid Leafy</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-b">Score: 83.15 · Grade: B</span>
+          <span class="stat-badge spark-badge">Sparks: 9,600</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 45</span>
+          <span class="stat-badge">Consistency: 100</span>
+          <span class="stat-badge">Year: 2025</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bonk Choy", "4x Shellery", "4x Cabbage Pult", "4x Lightning Reed", "4x Pea Patch", "4x Typical Beanstalk", "4x Plant Food", "4x Savage Spinach", "4x Jumping Bean", "4x Tricorn"]'></div>
+        </div>
+        <p class="deck-summary">Green Shadow's hyper-consistent leafy variant — ten cards, every one a four-of, for a flawless 100 consistency score. It drops Espresso Fiesta entirely in favor of Lightning Reed and a full Plant Food set, trading the reach finisher for a deck that plays out almost identically every game. At 9,600 sparks it's the pick if you value rock-solid reliability over explosiveness.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- DECK 10 -->
+  <li class="deck-card faction-plants reveal" id="deck-burst-flare" data-faction="plants" data-name="Burst Flare" data-hero="Solar Flare">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Solar_Flare.webp" alt="Solar Flare" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#10</span>
+          <span class="faction-tag faction-tag-plants">☀ Solar Flare</span>
+          <span class="deck-label">Honorable mention</span>
+        </div>
+        <h3>Burst Flare</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-b">Score: 83.05 · Grade: B</span>
+          <span class="stat-badge spark-badge">Sparks: 5,200</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 46</span>
+          <span class="stat-badge">Consistency: 92</span>
+          <span class="stat-badge">Year: 2025</span>
+          <span class="stat-badge">By: Justeeni</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["3x Puff Shroom", "3x Kernel-Pult", "4x Poison Mushroom", "4x Shroom For Two", "4x Berry Blast", "4x Buff Shroom", "4x Wild Berry", "4x Cro-Magnolia", "4x Bloomerang", "2x Elderberry", "4x Power Flower"]'></div>
+        </div>
+        <p class="deck-summary">The cheapest deck on the page at just 5,200 sparks, and the only entry here from author Justeeni. It's a mushroom-and-berry Solar Flare aggro brew: Buff Shroom, Shroom For Two, and Wild Berry build a wide cheap board, Bloomerang and Cro-Magnolia add reach, and Power Flower tops the curve. A perfect ultra-budget starting point for new Solar Flare players.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+</ol>
+      </section>
+
+      <section id="faq" class="content-card reveal">
+        <h2>Frequently asked questions</h2>
+        <div class="faq-grid">
+          <details class="faq-item">
+            <summary>What is the best budget deck right now?</summary>
+            <p>As of June 2026, <a href="#deck-leafy-pot">Leafy Pot</a> on Captain Combustible is the highest-rated budget deck in our database with a 95.05 composite score, an S grade, and a perfect 100 synergy rating. It costs around 17,200 sparks and plays as a genuine top-tier leafy aggro deck.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What are Sparks in PvZH?</summary>
+            <p>Sparks are the crafting currency in Plants vs. Zombies Heroes. You earn them by recycling cards you don't need and spend them to craft new ones. A deck's <strong>spark cost</strong> is the total to craft every card in it, so a lower number means a cheaper build.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What's the cheapest deck in this guide?</summary>
+            <p><a href="#deck-burst-flare">Burst Flare</a> on Solar Flare is the cheapest at about <strong>5,200 sparks</strong>, followed by <a href="#deck-budget-agro">Budget Agro</a> on Captain Combustible (≈6,200) and <a href="#deck-budget-flag-swarm">Budget Flag Swarm</a> on Z-Mech (≈6,800).</p>
+          </details>
+          <details class="faq-item">
+            <summary>How are these budget decks ranked?</summary>
+            <p>Each deck is scored across four pillars — performance, consistency, synergy, and curve health — then graded and ordered by composite value. Spark cost is shown alongside for budget context but is not one of the scored pillars.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How many cards are in a PvZH deck?</summary>
+            <p>A Plants vs. Zombies Heroes deck contains exactly 40 cards, with a maximum of 4 copies of any single card. Every budget list in this guide follows that format.</p>
+          </details>
+        </div>
+        <p style="margin-top: 22px;">Looking for more? Check out our overall <a href="/best-decks-pvzh-june-2026">Top 10 Best Decks in PvZH</a> tier list for the strongest builds across every hero.</p>
+      </section>
+    </article>
+  </main>
+
+  <button class="back-to-top" id="backToTop" type="button" aria-label="Back to top">🪙</button>
+
+  <script src="/app.js" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      /* ---------- Render deck card grids from data-cards ---------- */
+      const deckContainers = document.querySelectorAll('.singleDeckVisual');
+
+      deckContainers.forEach(container => {
+        const rawData = container.getAttribute('data-cards');
+        if (!rawData) return;
+
+        let cardsArray = [];
+        try { cardsArray = JSON.parse(rawData); }
+        catch (e) { console.error('Failed to parse deck cards:', e); return; }
+
+        container.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        let totalCards = 0;
+
+        cardsArray.forEach(cardRaw => {
+          let quantityStr = '1x';
+          let qty = 1;
+          let parsedCardName = cardRaw.trim();
+
+          const match = cardRaw.match(/^(\d+)x?\s+(.+)$/i);
+          if (match) {
+            qty = parseInt(match[1], 10) || 1;
+            quantityStr = qty + 'x';
+            parsedCardName = match[2].trim();
+          }
+          totalCards += qty;
+
+          const nameWithUnderscores = parsedCardName.replace(/\s+/g, '_');
+          const pngUrl = `/card_images/${nameWithUnderscores}.png`;
+          const webpUrl = `/card_images/${nameWithUnderscores}.webp`;
+
+          const cardEl = document.createElement('div');
+          cardEl.className = 'visual-card-item';
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'card-image-wrapper';
+          wrapper.tabIndex = 0;
+
+          const img = document.createElement('img');
+          img.src = pngUrl;
+          img.onerror = function () { this.onerror = null; this.src = webpUrl; };
+          img.alt = parsedCardName + ' — PvZH card';
+          img.title = quantityStr + ' ' + parsedCardName;
+          img.loading = 'lazy';
+          img.decoding = 'async';
+
+          const qtyEl = document.createElement('span');
+          qtyEl.className = 'card-quantity';
+          qtyEl.textContent = quantityStr;
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(qtyEl);
+          cardEl.appendChild(wrapper);
+          fragment.appendChild(cardEl);
+        });
+
+        container.appendChild(fragment);
+
+        // Fill card-count badge + store plain-text list for the copy button
+        const deckCard = container.closest('.deck-card');
+        if (deckCard) {
+          const countBadge = deckCard.querySelector('[data-count]');
+          if (countBadge) countBadge.textContent = totalCards + ' cards';
+          deckCard.dataset.decklist = cardsArray.join('\n');
+          deckCard.dataset.cardnames = cardsArray.join(' ').toLowerCase();
+        }
+      });
+
+      /* ---------- Copy deck list ---------- */
+      document.querySelectorAll('[data-copy]').forEach(btn => {
+        btn.setAttribute('aria-live', 'polite');
+        btn.addEventListener('click', async () => {
+          const deckCard = btn.closest('.deck-card');
+          const name = deckCard.dataset.name || 'Deck';
+          const hero = deckCard.dataset.hero || '';
+          const header = hero ? `${name} — ${hero}, PvZH (pvzhvault.com)` : `${name} — PvZH (pvzhvault.com)`;
+          const list = `${header}\n${deckCard.dataset.decklist || ''}`;
+          try {
+            await navigator.clipboard.writeText(list);
+            const original = btn.textContent;
+            btn.textContent = '✔ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+          } catch (e) {
+            btn.textContent = 'Copy failed';
+            setTimeout(() => { btn.textContent = '📋 Copy deck list'; }, 1600);
+          }
+        });
+      });
+
+      /* ---------- Build "Jump to a deck" sidebar links ---------- */
+      const deckJump = document.getElementById('deckJump');
+      if (deckJump) {
+        document.querySelectorAll('.deck-card').forEach((card, i) => {
+          const a = document.createElement('a');
+          a.href = '#' + card.id;
+          a.innerHTML = `<span class="jump-rank">#${i + 1}</span> ${card.dataset.name}`;
+          a.classList.add(card.dataset.faction === 'zombies' ? 'jump-zombies' : 'jump-plants');
+          deckJump.appendChild(a);
+        });
+      }
+
+      /* ---------- Search filter (matches deck name, hero, and card names) ---------- */
+      const searchInput = document.getElementById('deckSearch');
+      const emptyMsg = document.getElementById('filterEmpty');
+
+      function applyFilters() {
+        const q = (searchInput.value || '').trim().toLowerCase();
+        let visible = 0;
+        document.querySelectorAll('.deck-card').forEach(card => {
+          const text = (card.dataset.name + ' ' + (card.dataset.hero || '') + ' ' + (card.dataset.cardnames || '')).toLowerCase();
+          const show = !q || text.includes(q);
+          card.classList.toggle('is-hidden', !show);
+          if (show) visible++;
+        });
+        emptyMsg.hidden = visible !== 0;
+      }
+      searchInput.addEventListener('input', applyFilters);
+
+      /* ---------- Scrollspy for TOC ---------- */
+      const tocLinks = document.querySelectorAll('#tocNav a');
+      const sections = [...tocLinks].map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+      const spy = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.toggle('is-current', a.getAttribute('href') === '#' + entry.target.id));
+          }
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      sections.forEach(s => spy.observe(s));
+
+      /* ---------- Reveal on scroll (respects reduced motion) ---------- */
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReduced && 'IntersectionObserver' in window) {
+        const revealer = new IntersectionObserver(entries => {
+          entries.forEach(e => {
+            if (e.isIntersecting) { e.target.classList.add('is-visible'); revealer.unobserve(e.target); }
+          });
+        }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
+        document.querySelectorAll('.reveal').forEach(el => revealer.observe(el));
+      } else {
+        document.querySelectorAll('.reveal').forEach(el => el.classList.add('is-visible'));
+      }
+
+      /* ---------- Reading progress bar ---------- */
+      const bar = document.getElementById('progressBar');
+      const onScroll = () => {
+        const h = document.documentElement;
+        const pct = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+        bar.style.width = pct + '%';
+        backToTop.classList.toggle('is-shown', h.scrollTop > 600);
+      };
+
+      /* ---------- Back to top ---------- */
+      const backToTop = document.getElementById('backToTop');
+      backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' }));
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TKRPPRCNM4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-TKRPPRCNM4');
+</script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <title>Best Deck for Every Hero in PvZH — Tier List (June 2026)</title>
+  <meta name="description" content="The single best deck for every hero in Plants vs. Zombies Heroes, June 2026. The top-rated build for all 22 plant and zombie heroes with scores, grades, full 40-card lists, and one-tap copy codes." />
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <link rel="canonical" href="https://pvzhvault.com/best-deck-for-every-hero" />
+  <meta name="theme-color" content="#0e1413" />
+  <meta name="author" content="PvZH Deck Builder & Database" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="PvZH Vault — Deck Builder & Database" />
+  <meta property="og:title" content="Best Deck for Every Hero in PvZH — Tier List (June 2026)" />
+  <meta property="og:description" content="The top-rated deck for all 22 heroes in Plants vs. Zombies Heroes, with scores, grades, full 40-card lists, and copyable deck codes. Updated for the June 2026 meta." />
+  <meta property="og:url" content="https://pvzhvault.com/best-deck-for-every-hero" />
+  <meta property="og:image" content="https://pvzhvault.com/assets/og-best-deck-for-every-hero-june-2026.png" />
+  <meta property="og:image:alt" content="The best deck for every hero in Plants vs. Zombies Heroes, June 2026 edition" />
+  <meta property="article:published_time" content="2026-06-16T08:00:00+00:00" />
+  <meta property="article:modified_time" content="2026-06-16T08:00:00+00:00" />
+  <meta property="article:section" content="Deck Guides" />
+  <meta property="article:tag" content="PvZH" />
+  <meta property="article:tag" content="best deck per hero" />
+  <meta property="article:tag" content="Plants vs Zombies Heroes" />
+  <meta property="article:tag" content="deck tier list" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Best Deck for Every Hero in PvZH (June 2026)" />
+  <meta name="twitter:description" content="The top-rated deck for all 22 PvZH heroes with full card lists, scores, and copyable deck codes." />
+  <meta name="twitter:image" content="https://pvzhvault.com/assets/og-best-deck-for-every-hero-june-2026.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/guide-style.css" />
+  <link rel="icon" type="image/png" href="/pvzhvault_favicon.png">
+
+  <!-- Page-scoped additions: ranking table + S grade + faction-grouped hero index + faction filter (uses shared design tokens) -->
+  <style>
+    .rank-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .rank-table { width: 100%; border-collapse: collapse; font-size: 0.93rem; min-width: 820px; }
+    .rank-table th, .rank-table td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .rank-table th {
+      font-size: 0.76rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--sun); background: var(--card-bg);
+    }
+    .rank-table tbody tr { background: var(--card-bg-2); transition: background var(--transition); }
+    .rank-table tbody tr:hover { background: var(--card-bg); }
+    .rank-table tbody tr:last-child td { border-bottom: none; }
+    .rank-table .t-rank { font-family: var(--font-display); color: var(--text-secondary); }
+    .rank-table tbody tr:first-child .t-rank { color: var(--sun); }
+    .rank-table .t-hero a { color: var(--text-primary); font-weight: 800; }
+    .rank-table .t-hero a:hover { color: var(--sun); }
+    .rank-table .t-score { font-weight: 800; color: var(--text-primary); }
+    .rank-table .t-grade-s { color: var(--grade-s, #ffd54a); font-weight: 800; }
+    .rank-table .t-grade-a { color: var(--grade-a); font-weight: 800; }
+    .rank-table .t-grade-b { color: var(--grade-b); font-weight: 800; }
+    .rank-table .t-num, .rank-table .t-author, .rank-table .t-deck { color: var(--text-secondary); }
+
+    /* S-tier score badge (shared CSS ships grade-a / grade-b; add the gold S here) */
+    .score-badge.grade-s {
+      background: linear-gradient(135deg, rgba(255,213,74,0.18), rgba(255,170,30,0.12));
+      border-color: var(--grade-s, #ffd54a);
+      color: var(--grade-s, #ffd54a);
+    }
+
+    /* Faction-grouped hero index in the sidebar */
+    .jump-group-label {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--sun); margin: 14px 0 6px; padding: 0;
+    }
+    .jump-group-label:first-child { margin-top: 0; }
+
+    /* Faction filter buttons */
+    .faction-filter { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ff-btn {
+      font-family: inherit; font-size: 0.85rem; font-weight: 800;
+      padding: 8px 14px; border-radius: var(--radius-sm, 8px);
+      border: 1px solid var(--border); background: var(--card-bg-2);
+      color: var(--text-secondary); cursor: pointer; transition: all var(--transition);
+    }
+    .ff-btn:hover { color: var(--text-primary); border-color: var(--sun); }
+    .ff-btn.is-active { background: var(--sun); border-color: var(--sun); color: #1a1200; }
+  </style>
+
+  <!-- Structured data: Article -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Best Deck for Every Hero in Plants vs. Zombies Heroes — June 2026 Tier List",
+    "description": "The single highest-rated deck for all 22 heroes in the June 2026 PvZH meta, across both factions, with scores, grades, full card lists, and ranking methodology.",
+    "datePublished": "2026-06-16",
+    "dateModified": "2026-06-16",
+    "image": "https://pvzhvault.com/assets/og-best-deck-for-every-hero-june-2026.png",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://pvzhvault.com/best-deck-for-every-hero" },
+    "about": { "@type": "VideoGame", "name": "Plants vs. Zombies Heroes" },
+    "author": { "@type": "Organization", "name": "PvZH Deck Builder & Database", "url": "https://pvzhvault.com" },
+    "publisher": { "@type": "Organization", "name": "PvZH Deck Builder & Database", "url": "https://pvzhvault.com" }
+  }
+  </script>
+
+  <!-- Structured data: list of best deck per hero -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Best Deck for Every Hero — June 2026",
+    "itemListOrder": "https://schema.org/ItemListOrderDescending",
+    "numberOfItems": 20,
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1,  "name": "Solar Flare — Fig Lottery",                      "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-solar-flare" },
+      { "@type": "ListItem", "position": 2,  "name": "Captain Combustible — Reflourished",             "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-captain-combustible" },
+      { "@type": "ListItem", "position": 3,  "name": "Spudow — Soteria",                               "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-spudow" },
+      { "@type": "ListItem", "position": 4,  "name": "Rustbolt — BoSS",                                "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-rustbolt" },
+      { "@type": "ListItem", "position": 5,  "name": "Chompzilla — Ringspresso",                       "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-chompzilla" },
+      { "@type": "ListItem", "position": 6,  "name": "Grass Knuckles — Fertilize Me",                  "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-grass-knuckles" },
+      { "@type": "ListItem", "position": 7,  "name": "Green Shadow — Bean Pea Leafy",                  "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-green-shadow" },
+      { "@type": "ListItem", "position": 8,  "name": "Immorticia — Secret Swimmer Blob",              "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-immorticia" },
+      { "@type": "ListItem", "position": 9,  "name": "Neptuna — muglord",                             "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-neptuna" },
+      { "@type": "ListItem", "position": 10, "name": "Z-Mech — Flag Leftovers",                        "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-z-mech" },
+      { "@type": "ListItem", "position": 11, "name": "Wall-Knight — Knighty Knight MF",                "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-wall-knight" },
+      { "@type": "ListItem", "position": 12, "name": "Super Brainz / Huge-Gigantacus — Conjure Leap", "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-super-brainz-huge-gigantacus" },
+      { "@type": "ListItem", "position": 13, "name": "Professor Brainstorm — Trickstache",            "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-professor-brainstorm" },
+      { "@type": "ListItem", "position": 14, "name": "Electric Boogaloo — C-Swarm",                    "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-electric-boogaloo" },
+      { "@type": "ListItem", "position": 15, "name": "The Smash — Countersmash",                       "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-the-smash" },
+      { "@type": "ListItem", "position": 16, "name": "Nightcap — Toyota Controlla",                    "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-nightcap" },
+      { "@type": "ListItem", "position": 17, "name": "Citron / Beta-Carrotina — carroot",             "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-citron-beta-carrotina" },
+      { "@type": "ListItem", "position": 18, "name": "Rose — Heal Midrose",                            "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-rose" },
+      { "@type": "ListItem", "position": 19, "name": "Impfinity — Dino-Conjure",                       "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-impfinity" },
+      { "@type": "ListItem", "position": 20, "name": "Brain Freeze — Teched Lock-In",                  "url": "https://pvzhvault.com/best-deck-for-every-hero#deck-brain-freeze" }
+    ]
+  }
+  </script>
+
+  <!-- Structured data: FAQ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the best deck in Plants vs. Zombies Heroes right now?",
+        "acceptedAnswer": { "@type": "Answer", "text": "As of June 2026, Fig Lottery on Solar Flare is the highest-rated deck in our database with a 99.2 composite score, an S grade, and perfect 100 ratings for both synergy and power. The best zombie deck overall is BoSS on Rustbolt at 98.65." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the best deck for my hero in PvZH?",
+        "acceptedAnswer": { "@type": "Answer", "text": "This guide lists the single highest-rated deck for all 22 heroes. Use the hero index in the sidebar, the at-a-glance table, or the search and faction filters to jump straight to your hero. For example, the best Solar Flare deck is Fig Lottery and the best Rustbolt deck is BoSS." }
+      },
+      {
+        "@type": "Question",
+        "name": "Which heroes have S-tier decks?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Ten heroes have S-grade decks this month: Solar Flare (Fig Lottery), Captain Combustible (Reflourished), Spudow (Soteria), Rustbolt (BoSS), Chompzilla (Ringspresso), Grass Knuckles (Fertilize Me), Green Shadow (Bean Pea Leafy), Immorticia (Secret Swimmer Blob), Neptuna (muglord), and Z-Mech (Flag Leftovers)." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why are some heroes grouped together?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Super Brainz and Huge-Gigantacus both lead the Brainy and Sneaky classes, and Citron and Beta-Carrotina both lead the Guardian and Smarty classes, so the same deck list works on either hero in each pair. That is why 22 heroes produce 20 entries." }
+      },
+      {
+        "@type": "Question",
+        "name": "How are these decks ranked?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Each deck is scored across four pillars — performance, consistency, synergy, and curve health — then graded and ordered by composite value drawn from our live user database." }
+      },
+      {
+        "@type": "Question",
+        "name": "How many cards are in a Plants vs. Zombies Heroes deck?",
+        "acceptedAnswer": { "@type": "Answer", "text": "A PvZH deck contains exactly 40 cards, with a maximum of 4 copies of any single card. Every list in this guide follows that format." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Structured data: Breadcrumbs -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home",   "item": "https://pvzhvault.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://pvzhvault.com/#guides" },
+      { "@type": "ListItem", "position": 3, "name": "Best Deck for Every Hero — June 2026", "item": "https://pvzhvault.com/best-deck-for-every-hero" }
+    ]
+  }
+  </script>
+</head>
+
+<body class="guide-page">
+  <div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+
+  <header class="guide-hero">
+    <div class="lawn-stripes" aria-hidden="true"></div>
+    <div class="sun-glow" aria-hidden="true"></div>
+
+    <div class="guide-hero-inner">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a><span aria-hidden="true">/</span>
+        <a href="/#guides">Guides</a><span aria-hidden="true">/</span>
+        <span aria-current="page">Best Deck for Every Hero</span>
+      </nav>
+
+      <div class="hero-pill-row">
+        <span class="hero-pill hero-pill-accent">🏆 June 2026 Edition</span>
+        <span class="hero-pill">🃏 Best Deck Per Hero · All 22 Heroes</span>
+      </div>
+
+      <h1>Best Deck for <span class="title-plants">Every Hero</span></h1>
+
+      <p class="hero-subtitle">
+        The single highest-rated deck for all 22 heroes in Plants vs. Zombies Heroes — every plant and zombie hero, ranked by composite score, with full 40-card lists you can copy in one tap. Use the hero index, table, or filters below to jump straight to yours.
+      </p>
+
+      <p class="hero-byline">
+        By <strong>PvZH Deck Builder &amp; Database</strong> · Published <time datetime="2026-06-20">June 20, 2026</time> · Updated <time datetime="2026-06-20">June 20, 2026</time>
+      </p>
+
+      <div class="hero-stats" aria-label="Guide summary">
+        <div class="hero-stat"><strong>22</strong><span>heroes covered</span></div>
+        <div class="hero-stat"><strong>10</strong><span>S-tier decks</span></div>
+        <div class="hero-stat"><strong>99.2</strong><span>top score</span></div>
+        <div class="hero-stat"><strong>40</strong><span>cards per list</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="guide-layout">
+    <aside class="guide-sidebar">
+      <div class="toc-card">
+        <p class="toc-label">On this page</p>
+        <nav class="toc-nav" id="tocNav" aria-label="Table of contents">
+          <a href="#overview">Overview</a>
+          <a href="#rankings-table">Every hero at a glance</a>
+          <a href="#methodology">How rankings work</a>
+          <a href="#ranked-list">Best deck per hero</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+      </div>
+
+      <div class="toc-card jump-card">
+        <p class="toc-label">Jump to your hero</p>
+        <nav class="toc-nav deck-jump" id="deckJump" aria-label="Hero quick links"></nav>
+      </div>
+    </aside>
+
+    <article class="guide-article">
+      <section id="overview" class="content-card reveal">
+        <h2>Overview: the best deck for every hero</h2>
+        <p>
+          This is the hub: the single best-rated deck for <strong>all 22 heroes</strong> in Plants vs. Zombies Heroes, pulled from our live user database and ordered by composite score. Whether you main a plant or a zombie, your hero's strongest current list is here — with the full 40 cards, a one-tap copy button, and the scores behind the ranking. Two pairs of heroes share a class identity and therefore a deck: <strong>Super Brainz / Huge-Gigantacus</strong> (both Brainy and Sneaky) and <strong>Citron / Beta-Carrotina</strong> (both Guardian and Smarty), which is why 22 heroes produce 20 entries.
+        </p>
+        <p>
+          At the very top, <a href="#deck-solar-flare">Fig Lottery</a> on Solar Flare is the best deck in the game right now at a 99.2 score with perfect 100 synergy and 100 power, just ahead of <a href="#deck-captain-combustible">Reflourished</a> (Captain Combustible) and <a href="#deck-spudow">Soteria</a> (Spudow). The best zombie deck overall is <a href="#deck-rustbolt">BoSS</a> on Rustbolt. Ten heroes carry an S-grade list this month; the rest sit comfortably in A, with only Brain Freeze's <a href="#deck-brain-freeze">Teched Lock-In</a> landing in B. To find your hero fast, use the faction-grouped hero index in the sidebar, the table below, or the search and <strong>Plants / Zombies</strong> filters on the deck list.
+        </p>
+      </section>
+
+      <section id="rankings-table" class="content-card reveal">
+        <h2>Every hero at a glance</h2>
+        <p class="section-note">The top deck for each hero, ranked by composite score (out of 100) from our live user database.</p>
+        <div class="rank-table-wrap">
+          <table class="rank-table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Hero</th>
+                <th scope="col">Best deck</th>
+                <th scope="col">Score</th>
+                <th scope="col">Grade</th>
+                <th scope="col">Synergy</th>
+                <th scope="col">Power</th>
+                <th scope="col">Consistency</th>
+                <th scope="col">Author</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="t-rank">#1</td><td class="t-hero"><a href="#deck-solar-flare">☀ Solar Flare</a></td><td class="t-deck">Fig Lottery</td><td class="t-score">99.2</td><td class="t-grade-s">S</td><td class="t-num">100</td><td class="t-num">100</td><td class="t-num">84</td><td class="t-author">Salt</td></tr>
+              <tr><td class="t-rank">#2</td><td class="t-hero"><a href="#deck-captain-combustible">☀ Captain Combustible</a></td><td class="t-deck">Reflourished</td><td class="t-score">98.95</td><td class="t-grade-s">S</td><td class="t-num">99</td><td class="t-num">100</td><td class="t-num">86</td><td class="t-author">Xera, Maker</td></tr>
+              <tr><td class="t-rank">#3</td><td class="t-hero"><a href="#deck-spudow">☀ Spudow</a></td><td class="t-deck">Soteria</td><td class="t-score">98.95</td><td class="t-grade-s">S</td><td class="t-num">99</td><td class="t-num">100</td><td class="t-num">86</td><td class="t-author">Xera</td></tr>
+              <tr><td class="t-rank">#4</td><td class="t-hero"><a href="#deck-rustbolt">🧠 Rustbolt</a></td><td class="t-deck">BoSS</td><td class="t-score">98.65</td><td class="t-grade-s">S</td><td class="t-num">99</td><td class="t-num">99</td><td class="t-num">86</td><td class="t-author">Non</td></tr>
+              <tr><td class="t-rank">#5</td><td class="t-hero"><a href="#deck-chompzilla">☀ Chompzilla</a></td><td class="t-deck">Ringspresso</td><td class="t-score">96.5</td><td class="t-grade-s">S</td><td class="t-num">99</td><td class="t-num">93</td><td class="t-num">79</td><td class="t-author">Xera, Slewer, MakeMeACoffee</td></tr>
+              <tr><td class="t-rank">#6</td><td class="t-hero"><a href="#deck-grass-knuckles">☀ Grass Knuckles</a></td><td class="t-deck">Fertilize Me</td><td class="t-score">96.3</td><td class="t-grade-s">S</td><td class="t-num">99</td><td class="t-num">90</td><td class="t-num">93</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#7</td><td class="t-hero"><a href="#deck-green-shadow">☀ Green Shadow</a></td><td class="t-deck">Bean Pea Leafy</td><td class="t-score">95.7</td><td class="t-grade-s">S</td><td class="t-num">99</td><td class="t-num">88</td><td class="t-num">93</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#8</td><td class="t-hero"><a href="#deck-immorticia">🧠 Immorticia</a></td><td class="t-deck">Secret Swimmer Blob</td><td class="t-score">95.6</td><td class="t-grade-s">S</td><td class="t-num">92</td><td class="t-num">96</td><td class="t-num">92</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#9</td><td class="t-hero"><a href="#deck-neptuna">🧠 Neptuna</a></td><td class="t-deck">muglord</td><td class="t-score">95.35</td><td class="t-grade-s">S</td><td class="t-num">99</td><td class="t-num">88</td><td class="t-num">86</td><td class="t-author">Xera</td></tr>
+              <tr><td class="t-rank">#10</td><td class="t-hero"><a href="#deck-z-mech">🧠 Z-Mech</a></td><td class="t-deck">Flag Leftovers</td><td class="t-score">95.3</td><td class="t-grade-s">S</td><td class="t-num">99</td><td class="t-num">87</td><td class="t-num">91</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#11</td><td class="t-hero"><a href="#deck-wall-knight">☀ Wall-Knight</a></td><td class="t-deck">Knighty Knight MF</td><td class="t-score">94.5</td><td class="t-grade-a">A</td><td class="t-num">99</td><td class="t-num">84</td><td class="t-num">93</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#12</td><td class="t-hero"><a href="#deck-super-brainz-huge-gigantacus">🧠 Super Brainz / Huge-Gigantacus</a></td><td class="t-deck">Conjure Leap</td><td class="t-score">94.15</td><td class="t-grade-a">A</td><td class="t-num">89</td><td class="t-num">96</td><td class="t-num">84</td><td class="t-author">Bomi</td></tr>
+              <tr><td class="t-rank">#13</td><td class="t-hero"><a href="#deck-professor-brainstorm">🧠 Professor Brainstorm</a></td><td class="t-deck">Trickstache</td><td class="t-score">93.3</td><td class="t-grade-a">A</td><td class="t-num">84</td><td class="t-num">100</td><td class="t-num">78</td><td class="t-author">StarStormvZ</td></tr>
+              <tr><td class="t-rank">#14</td><td class="t-hero"><a href="#deck-electric-boogaloo">🧠 Electric Boogaloo</a></td><td class="t-deck">C-Swarm</td><td class="t-score">93.25</td><td class="t-grade-a">A</td><td class="t-num">99</td><td class="t-num">80</td><td class="t-num">92</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#15</td><td class="t-hero"><a href="#deck-the-smash">🧠 The Smash</a></td><td class="t-deck">Countersmash</td><td class="t-score">93.1</td><td class="t-grade-a">A</td><td class="t-num">91</td><td class="t-num">91</td><td class="t-num">79</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#16</td><td class="t-hero"><a href="#deck-nightcap">☀ Nightcap</a></td><td class="t-deck">Toyota Controlla</td><td class="t-score">92.75</td><td class="t-grade-a">A</td><td class="t-num">97</td><td class="t-num">82</td><td class="t-num">84</td><td class="t-author">Xera, Natz</td></tr>
+              <tr><td class="t-rank">#17</td><td class="t-hero"><a href="#deck-citron-beta-carrotina">☀ Citron / Beta-Carrotina</a></td><td class="t-deck">carroot</td><td class="t-score">92.4</td><td class="t-grade-a">A</td><td class="t-num">96</td><td class="t-num">82</td><td class="t-num">84</td><td class="t-author">Natz</td></tr>
+              <tr><td class="t-rank">#18</td><td class="t-hero"><a href="#deck-rose">☀ Rose</a></td><td class="t-deck">Heal Midrose</td><td class="t-score">91.5</td><td class="t-grade-a">A</td><td class="t-num">99</td><td class="t-num">74</td><td class="t-num">93</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#19</td><td class="t-hero"><a href="#deck-impfinity">🧠 Impfinity</a></td><td class="t-deck">Dino-Conjure</td><td class="t-score">91.3</td><td class="t-grade-a">A</td><td class="t-num">90</td><td class="t-num">84</td><td class="t-num">92</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#20</td><td class="t-hero"><a href="#deck-brain-freeze">🧠 Brain Freeze</a></td><td class="t-deck">Teched Lock-In</td><td class="t-score">87.2</td><td class="t-grade-b">B</td><td class="t-num">83</td><td class="t-num">79</td><td class="t-num">89</td><td class="t-author">FryEmUp</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="methodology" class="content-card reveal">
+        <h2>How these decks are ranked</h2>
+        <p class="section-note">Every deck is scored across four pillars, then graded and ordered by composite value.</p>
+        <div class="method-grid">
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">⚔</span>
+            <h3>Performance</h3>
+            <p>Calculated from core popularity metrics against the current highest-tier meta envelopes.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">♻</span>
+            <h3>Consistency</h3>
+            <p>Analyzes draw patterns, heavily favoring optimized 3x and 4x card sets over inconsistent singletons.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">🔗</span>
+            <h3>Synergy</h3>
+            <p>Determined by a continuous co-occurrence matrix evaluated across all interconnected cards.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">📈</span>
+            <h3>Curve health</h3>
+            <p>Measures macro-curve values against target historical archetypes to penalize awkward spacing.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="ranked-list" class="content-card reveal">
+        <div class="section-header">
+          <div>
+            <h2>The best deck for each hero</h2>
+            <p class="section-note">Ordered by composite score. Filter by faction or search any hero or card to find yours.</p>
+          </div>
+        </div>
+
+        <div class="deck-toolbar" role="region" aria-label="Search and filter decks">
+          <div class="search-wrap" style="max-width: 100%; flex: 1;">
+            <input id="deckSearch" type="search" placeholder="Search heroes or cards… e.g. Rustbolt or Cob Cannon" aria-label="Search heroes or cards" />
+          </div>
+          <div class="faction-filter" id="factionFilter" role="group" aria-label="Filter by faction">
+            <button type="button" class="ff-btn is-active" data-faction="all">All 22</button>
+            <button type="button" class="ff-btn" data-faction="plants">☀ Plants</button>
+            <button type="button" class="ff-btn" data-faction="zombies">🧠 Zombies</button>
+          </div>
+        </div>
+        <p class="filter-empty" id="filterEmpty" hidden>No heroes match that search. Try clearing it or searching a different card.</p>
+
+        <ol class="deck-list" id="deckList">
+  <!-- #1 -->
+  <li class="deck-card faction-plants reveal" id="deck-solar-flare" data-faction="plants" data-name="Fig Lottery" data-hero="Solar Flare">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Solar_Flare.webp" alt="Solar Flare" class="deck-hero-avatar" width="160" height="200" fetchpriority="high" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#1</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label deck-label-best">Best overall</span>
+        </div>
+        <h3>Solar Flare — Fig Lottery</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 99.2 · Grade: S</span>
+          <span class="stat-badge">Synergy: 100</span>
+          <span class="stat-badge">Power: 100</span>
+          <span class="stat-badge">Consistency: 84</span>
+          <span class="stat-badge">By: Salt</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Li&#39;l Buddy", "3x Reincarnation", "4x Berry Blast", "4x Fireweed", "4x Pepper M.D.", "2x Imitater", "4x Ketchup Mechanic", "2x Veloci-Radish Packmate", "4x Fig", "4x Astrocado", "3x Cob Cannon", "2x Three Headed Chomper"]'></div>
+        </div>
+        <p class="deck-summary">The single highest-rated deck in the database, and the best Solar Flare list — a perfect 100 in both synergy and power. Fig, Astrocado, and Reincarnation set up enormous value swings while Pepper M.D., Ketchup Mechanic, and Cob Cannon supply the payoffs. A high-roll finisher deck that can end games out of nowhere.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #2 -->
+  <li class="deck-card faction-plants reveal" id="deck-captain-combustible" data-faction="plants" data-name="Reflourished" data-hero="Captain Combustible">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Captain_Combustible.webp" alt="Captain Combustible" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#2</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Captain Combustible — Reflourished</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 98.95 · Grade: S</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 100</span>
+          <span class="stat-badge">Consistency: 86</span>
+          <span class="stat-badge">By: Xera, Maker</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["3x Bonk Choy", "4x Clique Peas", "2x Reincarnation", "4x Berry Blast", "3x Fireweed", "4x Split Pea", "3x Imitater", "3x Sizzle", "4x Fig", "4x Gatling Pea", "3x Apotatosaurus", "3x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">The premier Captain Combustible build, stacking Reincarnation, Imitater, and Fig value onto a single threat before Espresso Fiesta's bonus attacks close it out. Split Pea and Gatling Pea pressure multiple lanes while Apotatosaurus offers a backup haymaker — a near-flawless 99/100 power-and-synergy package.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #3 -->
+  <li class="deck-card faction-plants reveal" id="deck-spudow" data-faction="plants" data-name="Soteria" data-hero="Spudow">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Spudow.webp" alt="Spudow" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#3</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Spudow — Soteria</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 98.95 · Grade: S</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 100</span>
+          <span class="stat-badge">Consistency: 86</span>
+          <span class="stat-badge">By: Xera</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Forget-Me-Nuts", "4x Galacta-Cactus", "4x Berry Blast", "3x Tricarrotops", "3x Imitater", "3x Pear Cub", "3x Shamrocket", "3x Sizzle", "2x Blockbuster", "4x Starch Lord", "4x Fig", "3x Soul Patch"]'></div>
+        </div>
+        <p class="deck-summary">Spudow's top-tier midrange and a perfect 100 power score. Starch Lord, Galacta-Cactus, and Tricarrotops build relentless board presence while Shamrocket and Blockbuster clear blockers and Soul Patch plus Fig keep the curve smooth. Tied for the second-best deck in the game.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #4 -->
+  <li class="deck-card faction-zombies reveal" id="deck-rustbolt" data-faction="zombies" data-name="BoSS" data-hero="Rustbolt">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Rustbolt.webp" alt="Rustbolt" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#4</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">S-tier · Best zombie</span>
+        </div>
+        <h3>Rustbolt — BoSS</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 98.65 · Grade: S</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 99</span>
+          <span class="stat-badge">Consistency: 86</span>
+          <span class="stat-badge">By: Non</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["2x Black Hole", "3x Planetary Gladiator", "3x Rolling Stone", "4x Teleport", "4x Middle Manager", "3x Cell Phone Zombie", "4x Flag Zombie", "3x Jurassic Fossilhead", "4x Teleportation Zombie", "3x Going Viral", "3x Zom-Blob", "4x Stompadon"]'></div>
+        </div>
+        <p class="deck-summary">The best zombie deck on the page — a Rustbolt control list built around oversized Stompadon and Planetary Gladiator finishers. Teleport and Teleportation Zombie cheat tempo, Black Hole and Rolling Stone clear threats, and Flag Zombie plus Middle Manager ramp the brains. Nearly flawless across the board at 99/99.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #5 -->
+  <li class="deck-card faction-plants reveal" id="deck-chompzilla" data-faction="plants" data-name="Ringspresso" data-hero="Chompzilla">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Chompzilla.webp" alt="Chompzilla" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#5</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Chompzilla — Ringspresso</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 96.5 · Grade: S</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 93</span>
+          <span class="stat-badge">Consistency: 79</span>
+          <span class="stat-badge">By: Xera, Slewer, MakeMeACoffee</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Li&#39;l Buddy", "4x Bonk Choy", "4x Clique Peas", "3x Sun Shroom", "3x Pepper M.D.", "2x Eyespore", "3x Water Balloons", "3x Flourish", "4x Ketchup Mechanic", "3x Onion Rings", "2x Apotatosaurus", "2x Cob Cannon", "3x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">A team-built Chompzilla engine that floods the board with Ketchup Mechanic and Onion Rings before ramping into a Cob Cannon or Apotatosaurus. Sun Shroom and Pepper M.D. push the mana, and Espresso Fiesta is the closer that turns one ringed-up body into game over.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #6 -->
+  <li class="deck-card faction-plants reveal" id="deck-grass-knuckles" data-faction="plants" data-name="Fertilize Me" data-hero="Grass Knuckles">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Grass_Knuckles.webp" alt="Grass Knuckles" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#6</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Grass Knuckles — Fertilize Me</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 96.3 · Grade: S</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 90</span>
+          <span class="stat-badge">Consistency: 93</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bonk Choy", "4x Clique Peas", "4x Forget-Me-Nuts", "4x Sting Bean", "4x Cabbage Pult", "4x Fertilizer", "3x Shamrocket", "3x Steel Magnolia", "3x Blockbuster", "3x Plant Food", "4x Gatling Pea"]'></div>
+        </div>
+        <p class="deck-summary">Grass Knuckles' Fertilizer-fueled pea shell, pushing Sting Bean and a full Gatling Pea set through with Steel Magnolia and Plant Food buffs. Shamrocket and Blockbuster clear the way for a consistent, high-synergy beatdown with a strong 93 consistency score.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #7 -->
+  <li class="deck-card faction-plants reveal" id="deck-green-shadow" data-faction="plants" data-name="Bean Pea Leafy" data-hero="Green Shadow">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Green_Shadow.webp" alt="Green Shadow" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#7</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Green Shadow — Bean Pea Leafy</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 95.7 · Grade: S</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 88</span>
+          <span class="stat-badge">Consistency: 93</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bonk Choy", "4x Clique Peas", "4x Lima Pleurodon", "3x Cabbage Pult", "4x Pea Patch", "4x Typical Beanstalk", "3x Jelly Bean", "4x Savage Spinach", "3x Gatling Pea", "4x Brainana", "3x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">Green Shadow's bean-and-pea midrange, with Typical Beanstalk, Lima Pleurodon, and Brainana refilling the hand while Pea Patch and Savage Spinach keep the lanes stocked. Espresso Fiesta provides the reach when a leafy threat outgrows the board — a deck that rarely stumbles.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #8 -->
+  <li class="deck-card faction-zombies reveal" id="deck-immorticia" data-faction="zombies" data-name="Secret Swimmer Blob" data-hero="Immorticia">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Immorticia.webp" alt="Immorticia" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#8</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Immorticia — Secret Swimmer Blob</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 95.6 · Grade: S</span>
+          <span class="stat-badge">Synergy: 92</span>
+          <span class="stat-badge">Power: 96</span>
+          <span class="stat-badge">Consistency: 92</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Cheese Cutter", "4x Dog Walker", "2x Fraidy Cat", "4x Secret Agent", "4x Teleport", "3x Lurch For Lunch", "4x Synchronized Swimmer", "4x Teleportation Zombie", "4x Area 22", "3x Brain Vendor", "4x Zom-Blob"]'></div>
+        </div>
+        <p class="deck-summary">An amphibious Immorticia tempo deck built on Synchronized Swimmer and Secret Agent, with Teleport tricks and Zom-Blob value. Area 22 and Brain Vendor keep the board and hand stocked for a relentless, evasive offense that's tough to race.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #9 -->
+  <li class="deck-card faction-zombies reveal" id="deck-neptuna" data-faction="zombies" data-name="muglord" data-hero="Neptuna">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Neptuna.webp" alt="Neptuna" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#9</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Neptuna — muglord</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 95.35 · Grade: S</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 88</span>
+          <span class="stat-badge">Consistency: 86</span>
+          <span class="stat-badge">By: Xera</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["3x Black Hole", "4x Buried Treasure", "3x Rolling Stone", "4x Middle Manager", "2x Barrel of Barrels", "4x Dr. Spacetime", "3x Flag Zombie", "3x Going Viral", "4x Raiding Raptor", "3x Pogo Zombie", "4x Intergalactic Warlord", "3x Mixed-Up Gravedigger"]'></div>
+        </div>
+        <p class="deck-summary">Neptuna's gravestone control, ramping through Buried Treasure and Dr. Spacetime into Intergalactic Warlord and Raiding Raptor. Black Hole and Rolling Stone keep the board clear while Mixed-Up Gravedigger and Pogo Zombie add resilient, recurring value.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #10 -->
+  <li class="deck-card faction-zombies reveal" id="deck-z-mech" data-faction="zombies" data-name="Flag Leftovers" data-hero="Z-Mech">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Z_Mech.webp" alt="Z-Mech" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#10</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Z-Mech — Flag Leftovers</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 95.3 · Grade: S</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 87</span>
+          <span class="stat-badge">Consistency: 91</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bungee Plumber", "4x Genetic Experiment", "4x Healthy Treat", "4x Leftovers", "4x Quickdraw Con Man", "4x Middle Manager", "4x Flag Zombie", "4x Quazard", "4x Going Viral", "2x Primeval Yeti", "2x Coffee Zombie"]'></div>
+        </div>
+        <p class="deck-summary">Z-Mech's sports-and-Leftovers swarm, with Flag Zombie and Middle Manager ramping into a wide, snowballing board. Quazard, Quickdraw Con Man, and Going Viral add reach and value, making this the strongest Z-Mech list available right now.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #11 -->
+  <li class="deck-card faction-plants reveal" id="deck-wall-knight" data-faction="plants" data-name="Knighty Knight MF" data-hero="Wall-Knight">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Wall_Knight.webp" alt="Wall-Knight" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#11</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>Wall-Knight — Knighty Knight MF</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 94.5 · Grade: A</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 84</span>
+          <span class="stat-badge">Consistency: 93</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Li&#39;l Buddy", "4x Forget-Me-Nuts", "4x Photosynthesizer", "4x Tricarrotops", "3x Twin Sunflower", "4x Ketchup Mechanic", "3x Blockbuster", "4x Elderberry", "3x Aloesaurus", "3x Astrocado", "4x Cob Cannon"]'></div>
+        </div>
+        <p class="deck-summary">Wall-Knight's Cob Cannon midrange, with Photosynthesizer and Twin Sunflower ramping toward Cob Cannon and Astrocado payoffs. Tricarrotops and Elderberry pile on stats for a sturdy, 93-consistency value plan that grinds opponents down.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #12 -->
+  <li class="deck-card faction-zombies reveal" id="deck-super-brainz-huge-gigantacus" data-faction="zombies" data-name="Conjure Leap" data-hero="Super Brainz / Huge-Gigantacus">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Super_Brainz.webp" alt="Super Brainz / Huge-Gigantacus" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#12</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>Super Brainz / Huge-Gigantacus — Conjure Leap</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 94.15 · Grade: A</span>
+          <span class="stat-badge">Synergy: 89</span>
+          <span class="stat-badge">Power: 96</span>
+          <span class="stat-badge">Consistency: 84</span>
+          <span class="stat-badge">By: Bomi</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Buried Treasure", "3x Interdimensional Zombie", "4x Teleport", "4x Dr. Spacetime", "4x Evolutionary Leap", "2x Teleportation Zombie", "2x Transformation Station", "2x Laser Base Alpha", "4x Raiding Raptor", "4x Mad Chemist", "4x Thinking Cap", "3x Trickster"]'></div>
+        </div>
+        <p class="deck-summary">A transform-and-conjure shell that pairs Evolutionary Leap and Transformation Station with Dr. Spacetime value. Raiding Raptor and Mad Chemist anchor the board while Trickster and Thinking Cap add reach. Since Super Brainz and Huge-Gigantacus share the Brainy and Sneaky classes, this exact list runs on either hero.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #13 -->
+  <li class="deck-card faction-zombies reveal" id="deck-professor-brainstorm" data-faction="zombies" data-name="Trickstache" data-hero="Professor Brainstorm">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Professor_Brainstorm.webp" alt="Professor Brainstorm" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#13</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>Professor Brainstorm — Trickstache</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 93.3 · Grade: A</span>
+          <span class="stat-badge">Synergy: 84</span>
+          <span class="stat-badge">Power: 100</span>
+          <span class="stat-badge">Consistency: 78</span>
+          <span class="stat-badge">By: StarStormvZ</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bungee Plumber", "3x Grave Robber", "4x Mustache Waxer", "4x Teleport", "3x Barrel Of Deadbeards", "2x Exploding Fruitcake", "2x Final Mission", "4x Quazard", "2x Duckstache", "4x Fun-Dead Raiser", "2x Rocket Science", "2x Viking", "4x Trickster"]'></div>
+        </div>
+        <p class="deck-summary">Professor Brainstorm's mustache-trick aggro with a perfect 100 power score. Mustache Waxer, Quazard, and Fun-Dead Raiser bring the beef while Trickster and Exploding Fruitcake transform and clear. Explosive, if streaky — the 78 consistency reflects its reliance on drawing the right pieces.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #14 -->
+  <li class="deck-card faction-zombies reveal" id="deck-electric-boogaloo" data-faction="zombies" data-name="C-Swarm" data-hero="Electric Boogaloo">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Electric_Boogaloo.webp" alt="Electric Boogaloo" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#14</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>Electric Boogaloo — C-Swarm</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 93.25 · Grade: A</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 80</span>
+          <span class="stat-badge">Consistency: 92</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bungee Plumber", "4x Cheese Cutter", "4x Mystery Egg", "4x Quickdraw Con Man", "4x Secret Agent", "4x Unlife of the Party", "4x Exploding Fruitcake", "2x Quazard", "4x Synchronized Swimmer", "3x Area 22", "3x Maniacal Laugh"]'></div>
+        </div>
+        <p class="deck-summary">Electric Boogaloo's amphibious swarm, flooding cheap bodies with Mystery Egg, Cheese Cutter, and Synchronized Swimmer. Maniacal Laugh and Area 22 push the snowball while Exploding Fruitcake clears blockers — a fast, consistent 99-synergy aggro plan.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #15 -->
+  <li class="deck-card faction-zombies reveal" id="deck-the-smash" data-faction="zombies" data-name="Countersmash" data-hero="The Smash">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/The_Smash.webp" alt="The Smash" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#15</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>The Smash — Countersmash</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 93.1 · Grade: A</span>
+          <span class="stat-badge">Synergy: 91</span>
+          <span class="stat-badge">Power: 91</span>
+          <span class="stat-badge">Consistency: 79</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Black Hole", "4x Cheese Cutter", "4x Genetic Experiment", "4x Healthy Treat", "2x Rolling Stone", "4x Middle Manager", "4x Teacher", "4x Cyborg Zombie", "4x Alien Ooze", "4x Going Viral", "1x Knockout", "1x Weed Spray"]'></div>
+        </div>
+        <p class="deck-summary">The Smash's Hearty tempo deck, leaning on Cyborg Zombie, Alien Ooze, and Genetic Experiment with Black Hole and Rolling Stone for removal. Teacher and Middle Manager keep the engine fed through the midgame, with Knockout and Weed Spray as flexible tech answers.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #16 -->
+  <li class="deck-card faction-plants reveal" id="deck-nightcap" data-faction="plants" data-name="Toyota Controlla" data-hero="Nightcap">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Nightcap.webp" alt="Nightcap" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#16</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>Nightcap — Toyota Controlla</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 92.75 · Grade: A</span>
+          <span class="stat-badge">Synergy: 97</span>
+          <span class="stat-badge">Power: 82</span>
+          <span class="stat-badge">Consistency: 84</span>
+          <span class="stat-badge">By: Xera, Natz</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Primal Peashooter", "4x Reincarnation", "2x Banana Launcher", "4x Berry Blast", "3x Fireweed", "2x Imitater", "4x Sizzle", "3x Shrinking Violet", "4x Fig", "4x Brainana", "4x Winter Melon", "2x Dark Matter Dragonfruit"]'></div>
+        </div>
+        <p class="deck-summary">Nightcap's trick-control deck, weaving Sizzle, Winter Melon, and Shrinking Violet around Fig and Brainana value. Reincarnation and Dark Matter Dragonfruit give it reach and inevitability in the late game, where its 97-synergy engine takes over.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #17 -->
+  <li class="deck-card faction-plants reveal" id="deck-citron-beta-carrotina" data-faction="plants" data-name="carroot" data-hero="Citron / Beta-Carrotina">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Citron.webp" alt="Citron / Beta-Carrotina" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#17</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>Citron / Beta-Carrotina — carroot</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 92.4 · Grade: A</span>
+          <span class="stat-badge">Synergy: 96</span>
+          <span class="stat-badge">Power: 82</span>
+          <span class="stat-badge">Consistency: 84</span>
+          <span class="stat-badge">By: Natz</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Forget-Me-Nuts", "2x Galacta-Cactus", "4x Garlic", "4x Lima Pleurodon", "4x Photosynthesizer", "3x Laser Cattail", "4x Tricarrotops", "3x Blockbuster", "2x Red Stinger", "4x Starch Lord", "4x Brainana", "2x Poppin&#39; Poppies"]'></div>
+        </div>
+        <p class="deck-summary">A root-and-carrot midrange wrapped around Starch Lord and Tricarrotops, with Photosynthesizer ramp and Laser Cattail pressure. Blockbuster and Galacta-Cactus clear the path. Because Citron and Beta-Carrotina both lead the Guardian and Smarty classes, this list runs on either hero.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #18 -->
+  <li class="deck-card faction-plants reveal" id="deck-rose" data-faction="plants" data-name="Heal Midrose" data-hero="Rose">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Rose.webp" alt="Rose" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#18</span>
+          <span class="faction-tag faction-tag-plants">☀ Plants</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>Rose — Heal Midrose</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 91.5 · Grade: A</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 74</span>
+          <span class="stat-badge">Consistency: 93</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Li&#39;l Buddy", "4x Kernel-Pult", "4x Pepper M.D.", "3x Cool Bean", "4x Ketchup Mechanic", "3x Rescue Radish", "4x Aloesaurus", "3x Astrocado", "4x Brainana", "4x Cob Cannon", "3x Dark Matter Dragonfruit"]'></div>
+        </div>
+        <p class="deck-summary">Rose's healing midrange, with Aloesaurus, Cool Bean, and Pepper M.D. controlling tempo while Cob Cannon and Dark Matter Dragonfruit close. A 99-synergy, 93-consistency grind that wears opponents down over the long game.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #19 -->
+  <li class="deck-card faction-zombies reveal" id="deck-impfinity" data-faction="zombies" data-name="Dino-Conjure" data-hero="Impfinity">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Impfinity.webp" alt="Impfinity" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#19</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">A-tier</span>
+        </div>
+        <h3>Impfinity — Dino-Conjure</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 91.3 · Grade: A</span>
+          <span class="stat-badge">Synergy: 90</span>
+          <span class="stat-badge">Power: 84</span>
+          <span class="stat-badge">Consistency: 92</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Barrel of Barrels", "4x Bungee Plumber", "2x Buried Treasure", "4x Quickdraw Con Man", "4x Dr. Spacetime", "4x Exploding Fruitcake", "3x Quazard", "4x Laser Base Alpha", "4x Raiding Raptor", "3x Unexpected Gifts", "4x Tankylosaurus"]'></div>
+        </div>
+        <p class="deck-summary">Impfinity's conjure-dino shell, ramping via Barrel of Barrels and Dr. Spacetime into Tankylosaurus and Raiding Raptor. Laser Base Alpha and Unexpected Gifts bury opponents in card advantage for a grindy, 92-consistency value plan.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #20 -->
+  <li class="deck-card faction-zombies reveal" id="deck-brain-freeze" data-faction="zombies" data-name="Teched Lock-In" data-hero="Brain Freeze">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Brain_Freeze.webp" alt="Brain Freeze" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#20</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Zombies</span>
+          <span class="deck-label">B-tier</span>
+        </div>
+        <h3>Brain Freeze — Teched Lock-In</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-b">Score: 87.2 · Grade: B</span>
+          <span class="stat-badge">Synergy: 83</span>
+          <span class="stat-badge">Power: 79</span>
+          <span class="stat-badge">Consistency: 89</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Cheese Cutter", "4x Dog Walker", "4x Nibble", "4x Cyborg Zombie", "4x Extinction Event", "4x Area 22", "1x Laser Base Alpha", "3x Raiding Raptor", "4x Pogo Zombie", "4x Cryo-Yeti", "4x Mixed-Up Gravedigger"]'></div>
+        </div>
+        <p class="deck-summary">Brain Freeze's tech-heavy freeze control and the lone B-tier on the page. Extinction Event and Nibble handle threats, Cryo-Yeti and Cyborg Zombie hold the line, and Mixed-Up Gravedigger grinds value — a workable but lower-ceiling option for the hero.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+</ol>
+      </section>
+
+      <section id="faq" class="content-card reveal">
+        <h2>Frequently asked questions</h2>
+        <div class="faq-grid">
+          <details class="faq-item">
+            <summary>What is the best deck in PvZH right now?</summary>
+            <p>As of June 2026, <a href="#deck-solar-flare">Fig Lottery</a> on Solar Flare is the highest-rated deck in our database at a 99.2 composite score, with perfect 100 ratings for both synergy and power. The best zombie deck overall is <a href="#deck-rustbolt">BoSS</a> on Rustbolt at 98.65.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What is the best deck for my hero?</summary>
+            <p>This guide lists the single highest-rated deck for all 22 heroes. Use the <strong>Jump to your hero</strong> index in the sidebar, the table above, or the search and faction filters to land on yours. Every entry includes the full 40-card list and a one-tap copy button.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Which heroes have S-tier decks?</summary>
+            <p>Ten this month: Solar Flare, Captain Combustible, Spudow, Rustbolt, Chompzilla, Grass Knuckles, Green Shadow, Immorticia, Neptuna, and Z-Mech. Every other hero sits in A, except Brain Freeze, whose best list lands in B.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Why are some heroes grouped together?</summary>
+            <p><strong>Super Brainz</strong> and <strong>Huge-Gigantacus</strong> both lead the Brainy and Sneaky classes, and <strong>Citron</strong> and <strong>Beta-Carrotina</strong> both lead the Guardian and Smarty classes. Heroes that share a class pair can run the same deck, so 22 heroes produce 20 entries.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How are these decks ranked?</summary>
+            <p>Each deck is scored across four pillars — performance, consistency, synergy, and curve health — then graded and ordered by composite value drawn from our live user database.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How many cards are in a PvZH deck?</summary>
+            <p>A Plants vs. Zombies Heroes deck contains exactly 40 cards, with a maximum of 4 copies of any single card. Every list in this guide follows that format.</p>
+          </details>
+        </div>
+        <p style="margin-top: 22px;">Looking for the cross-hero power ranking? See our <a href="/best-decks-pvzh-june-2026">Top 10 Best Decks in PvZH</a>, or browse by archetype with our <a href="/best-espresso-fiesta-decks">Espresso Fiesta</a>, <a href="/best-bad-moon-rising-decks">Bad Moon Rising</a>, and <a href="/best-budget-decks">Budget</a> deck guides.</p>
+      </section>
+    </article>
+  </main>
+
+  <button class="back-to-top" id="backToTop" type="button" aria-label="Back to top">🏆</button>
+
+  <script src="/app.js" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      /* ---------- Render deck card grids from data-cards ---------- */
+      const deckContainers = document.querySelectorAll('.singleDeckVisual');
+
+      deckContainers.forEach(container => {
+        const rawData = container.getAttribute('data-cards');
+        if (!rawData) return;
+
+        let cardsArray = [];
+        try { cardsArray = JSON.parse(rawData); }
+        catch (e) { console.error('Failed to parse deck cards:', e); return; }
+
+        container.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        let totalCards = 0;
+
+        cardsArray.forEach(cardRaw => {
+          let quantityStr = '1x';
+          let qty = 1;
+          let parsedCardName = cardRaw.trim();
+
+          const match = cardRaw.match(/^(\d+)x?\s+(.+)$/i);
+          if (match) {
+            qty = parseInt(match[1], 10) || 1;
+            quantityStr = qty + 'x';
+            parsedCardName = match[2].trim();
+          }
+          totalCards += qty;
+
+          const nameWithUnderscores = parsedCardName.replace(/\s+/g, '_');
+          const pngUrl = `/card_images/${nameWithUnderscores}.png`;
+          const webpUrl = `/card_images/${nameWithUnderscores}.webp`;
+
+          const cardEl = document.createElement('div');
+          cardEl.className = 'visual-card-item';
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'card-image-wrapper';
+          wrapper.tabIndex = 0;
+
+          const img = document.createElement('img');
+          img.src = pngUrl;
+          img.onerror = function () { this.onerror = null; this.src = webpUrl; };
+          img.alt = parsedCardName + ' — PvZH card';
+          img.title = quantityStr + ' ' + parsedCardName;
+          img.loading = 'lazy';
+          img.decoding = 'async';
+
+          const qtyEl = document.createElement('span');
+          qtyEl.className = 'card-quantity';
+          qtyEl.textContent = quantityStr;
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(qtyEl);
+          cardEl.appendChild(wrapper);
+          fragment.appendChild(cardEl);
+        });
+
+        container.appendChild(fragment);
+
+        // Fill card-count badge + store plain-text list for the copy button
+        const deckCard = container.closest('.deck-card');
+        if (deckCard) {
+          const countBadge = deckCard.querySelector('[data-count]');
+          if (countBadge) countBadge.textContent = totalCards + ' cards';
+          deckCard.dataset.decklist = cardsArray.join('\n');
+          deckCard.dataset.cardnames = cardsArray.join(' ').toLowerCase();
+        }
+      });
+
+      /* ---------- Copy deck list ---------- */
+      document.querySelectorAll('[data-copy]').forEach(btn => {
+        btn.setAttribute('aria-live', 'polite');
+        btn.addEventListener('click', async () => {
+          const deckCard = btn.closest('.deck-card');
+          const name = deckCard.dataset.name || 'Deck';
+          const hero = deckCard.dataset.hero || '';
+          const header = hero ? `${name} — ${hero}, PvZH (pvzhvault.com)` : `${name} — PvZH (pvzhvault.com)`;
+          const list = `${header}\n${deckCard.dataset.decklist || ''}`;
+          try {
+            await navigator.clipboard.writeText(list);
+            const original = btn.textContent;
+            btn.textContent = '✔ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+          } catch (e) {
+            btn.textContent = 'Copy failed';
+            setTimeout(() => { btn.textContent = '📋 Copy deck list'; }, 1600);
+          }
+        });
+      });
+
+      /* ---------- Build faction-grouped "Jump to your hero" index ---------- */
+      const deckJump = document.getElementById('deckJump');
+      if (deckJump) {
+        const cards = [...document.querySelectorAll('.deck-card')];
+        const groups = { plants: [], zombies: [] };
+        cards.forEach((card, i) => {
+          const fac = card.dataset.faction === 'zombies' ? 'zombies' : 'plants';
+          groups[fac].push({ id: card.id, hero: card.dataset.hero, rank: i + 1 });
+        });
+        [['plants', '☀ Plant heroes'], ['zombies', '🧠 Zombie heroes']].forEach(([key, label]) => {
+          if (!groups[key].length) return;
+          const h = document.createElement('p');
+          h.className = 'jump-group-label';
+          h.textContent = label;
+          deckJump.appendChild(h);
+          groups[key].forEach(item => {
+            const a = document.createElement('a');
+            a.href = '#' + item.id;
+            a.innerHTML = `<span class="jump-rank">#${item.rank}</span> ${item.hero}`;
+            a.classList.add(key === 'zombies' ? 'jump-zombies' : 'jump-plants');
+            deckJump.appendChild(a);
+          });
+        });
+      }
+
+      /* ---------- Search + faction filter ---------- */
+      const searchInput = document.getElementById('deckSearch');
+      const emptyMsg = document.getElementById('filterEmpty');
+      let activeFaction = 'all';
+
+      function applyFilters() {
+        const q = (searchInput.value || '').trim().toLowerCase();
+        let visible = 0;
+        document.querySelectorAll('.deck-card').forEach(card => {
+          const text = (card.dataset.name + ' ' + (card.dataset.hero || '') + ' ' + (card.dataset.cardnames || '')).toLowerCase();
+          const facOk = activeFaction === 'all' || card.dataset.faction === activeFaction;
+          const show = facOk && (!q || text.includes(q));
+          card.classList.toggle('is-hidden', !show);
+          if (show) visible++;
+        });
+        emptyMsg.hidden = visible !== 0;
+      }
+      searchInput.addEventListener('input', applyFilters);
+
+      const ffButtons = document.querySelectorAll('#factionFilter .ff-btn');
+      ffButtons.forEach(b => b.addEventListener('click', () => {
+        ffButtons.forEach(x => x.classList.remove('is-active'));
+        b.classList.add('is-active');
+        activeFaction = b.dataset.faction || 'all';
+        applyFilters();
+      }));
+
+      /* ---------- Scrollspy for TOC ---------- */
+      const tocLinks = document.querySelectorAll('#tocNav a');
+      const sections = [...tocLinks].map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+      const spy = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.toggle('is-current', a.getAttribute('href') === '#' + entry.target.id));
+          }
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      sections.forEach(s => spy.observe(s));
+
+      /* ---------- Reveal on scroll (respects reduced motion) ---------- */
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReduced && 'IntersectionObserver' in window) {
+        const revealer = new IntersectionObserver(entries => {
+          entries.forEach(e => {
+            if (e.isIntersecting) { e.target.classList.add('is-visible'); revealer.unobserve(e.target); }
+          });
+        }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
+        document.querySelectorAll('.reveal').forEach(el => revealer.observe(el));
+      } else {
+        document.querySelectorAll('.reveal').forEach(el => el.classList.add('is-visible'));
+      }
+
+      /* ---------- Reading progress bar ---------- */
+      const bar = document.getElementById('progressBar');
+      const onScroll = () => {
+        const h = document.documentElement;
+        const pct = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+        bar.style.width = pct + '%';
+        backToTop.classList.toggle('is-shown', h.scrollTop > 600);
+      };
+
+      /* ---------- Back to top ---------- */
+      const backToTop = document.getElementById('backToTop');
+      backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' }));
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    });
+  </script>
+</body>
+</html>

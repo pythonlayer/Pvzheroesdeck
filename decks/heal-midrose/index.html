@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <title>Heal Midrose Deck Guide - PvZH Vault</title>
+  <meta name="description" content="Master the Heal Midrose deck in Plants vs. Zombies Heroes. Complete guide featuring mulligan strategy, card substitutions, and turn-by-turn gameplans." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://pvzhvault.com/decks/heal-midrose" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/deck-style.css" />
+
+  <style>
+    .hero-avatar-container {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .hero-avatar {
+      width: 110px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 20px rgba(179, 136, 255, 0.5)) drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+      transition: transform var(--transition);
+    }
+    .hero-avatar:hover {
+      transform: scale(1.08) rotate(2deg);
+    }
+  </style>
+</head>
+
+<body class="guide-page">
+  <div class="progress-track">
+    <div class="progress-bar" id="readingProgress"></div>
+  </div>
+
+  <header class="guide-hero">
+    <div class="lawn-stripes"></div>
+    <div class="sun-glow"></div>
+
+    <div class="guide-hero-inner">
+      <nav class="breadcrumbs">
+        <a href="/best-decks-pvzh-june-2026/">← Back to June 2026 Guide</a>
+      </nav>
+
+      <div class="hero-avatar-container">
+        <img src="/hero_images/Rose.webp" alt="Rose Portrait" class="hero-avatar" loading="eager">
+      </div>
+
+      <div class="hero-pill-row">
+        <span class="hero-pill hero-pill-accent">★ Tier A Deck</span>
+        <span class="hero-pill">🌱 Plant Faction • Rose</span>
+      </div>
+
+      <h1 class="title-plants">Heal Midrose</h1>
+      <p class="hero-subtitle">A stubborn sustain deck that snowballs small heals into gigantic board control, then locks the zombie hero out with protected threats and overwhelming late-game plants.</p>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <strong>#5</strong>
+          <span>Rank on <a href="/best-decks-pvzh-june-2026/" style="color: var(--sun); text-decoration: underline;">June Meta</a></span>
+        </div>
+        <div class="hero-stat">
+          <strong>54K</strong>
+          <span>Sparks Cost</span>
+        </div>
+        <div class="hero-stat">
+          <strong>Heal / Midrange</strong>
+          <span>Archetype</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="guide-layout">
+    <aside class="guide-sidebar">
+      <div class="toc-card">
+        <div class="toc-label">Decklist (40)</div>
+
+        <button class="copy-btn" id="copyDeckBtn" data-deck-code="4x Li'l Buddy&#10;3x Primal Peashooter&#10;4x Sun Shroom&#10;1x Twin Sunflower&#10;4x Pepper M.D.&#10;4x Cross-Pollination&#10;3x Ketchup Mechanic&#10;2x Shrinking Violet&#10;4x Aloesaurus&#10;4x Brainana&#10;3x Cob Cannon&#10;3x Winter Melon&#10;1x Dark Matter Dragonfruit">
+          📋 Copy Deck Code
+        </button>
+
+        <div class="deck-image-container">
+          <div class="visual-deck-grid">
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Li'l_Buddy.png" alt="Li'l Buddy" loading="lazy"><span class="card-quantity">4</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Primal_Peashooter.png" alt="Primal Peashooter" loading="lazy"><span class="card-quantity">3</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Sun_Shroom.png" alt="Sun Shroom" loading="lazy"><span class="card-quantity">4</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Twin_Sunflower.png" alt="Twin Sunflower" loading="lazy"><span class="card-quantity">1</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Pepper_M.D..png" alt="Pepper M.D." loading="lazy"><span class="card-quantity">4</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Cross-Pollination.png" alt="Cross-Pollination" loading="lazy"><span class="card-quantity">4</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Ketchup_Mechanic.png" alt="Ketchup Mechanic" loading="lazy"><span class="card-quantity">3</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Shrinking_Violet.png" alt="Shrinking Violet" loading="lazy"><span class="card-quantity">2</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Aloesaurus.png" alt="Aloesaurus" loading="lazy"><span class="card-quantity">4</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Brainana.png" alt="Brainana" loading="lazy"><span class="card-quantity">4</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Cob_Cannon.png" alt="Cob Cannon" loading="lazy"><span class="card-quantity">3</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Winter_Melon.png" alt="Winter Melon" loading="lazy"><span class="card-quantity">3</span></div></div>
+            <div class="visual-card-item"><div class="card-image-wrapper" tabindex="0"><img src="/card_images/Dark_Matter_Dragonfruit.png" alt="Dark Matter Dragonfruit" loading="lazy"><span class="card-quantity">1</span></div></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <article class="guide-article">
+      <section class="content-card reveal is-visible">
+        <h2>Overview & Win Condition</h2>
+        <p><strong>Heal Midrose</strong> is built to survive the early turns, stabilize with constant healing triggers, then take over the board with efficient midgame bodies and oppressive finishers. Every point of healing matters because it buys time for your scaling plants to become impossible to remove cleanly.</p>
+        <p>Your main route to victory is to establish a durable board with <strong>Pepper M.D.</strong>, <strong>Aloesaurus</strong>, and <strong>Brainana</strong>, then force the zombie hero into a resource squeeze. Once the board is under control, <strong>Cob Cannon</strong>, <strong>Winter Melon</strong>, and <strong>Dark Matter Dragonfruit</strong> end games through raw inevitability.</p>
+      </section>
+
+      <section class="content-card reveal is-visible">
+        <h2>Mulligan Strategy</h2>
+        <p>You want a hand that starts the healing engine early and gives you one clean stabilization tool against aggro.</p>
+        <div class="method-grid">
+          <div class="method-box">
+            <span class="method-icon">🟢</span>
+            <h3>Always Keep</h3>
+            <p>Li'l Buddy, Sun Shroom, and Pepper M.D. These cards give you early tempo, healing synergy, and a smooth path into your stronger turns.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon">⚠️</span>
+            <h3>Vs. Aggro</h3>
+            <p>Primal Peashooter and Shrinking Violet. They help reset lanes, control burst damage, and buy enough time for your heals to matter.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-card reveal is-visible">
+        <h2>Turn-By-Turn Sequence</h2>
+        <p><strong>Early Setup (Turns 1-3):</strong> Open with Sun Shroom or Li'l Buddy whenever possible. Your goal is not to race, but to create a board that can be healed efficiently while contesting zombie chip damage. Use Primal Peashooter to stall a dangerous lane and keep the board from snowballing against you.</p>
+        <p><strong>Mid-Game Compression (Turns 4-5):</strong> This is the core of the deck. Pepper M.D. makes every heal translate into real pressure, while Ketchup Mechanic turns a surviving board into a threat the opponent cannot ignore. Brainana is often your pivot turn against trick-heavy decks, since it locks them out of the clean answer they need.</p>
+        <p><strong>Lethal Execution (Turns 6+):</strong> Once you are ahead, stop playing reactively. Drop Cob Cannon and Winter Melon to lock lanes and remove counterplay, then finish with Dark Matter Dragonfruit if the game drags on. If the zombie hero is already low, a protected board plus repeated healing is often enough to end it without needing a flashy combo.</p>
+      </section>
+    </article>
+  </div>
+
+  <button class="back-to-top" id="backToTopBtn" aria-label="Back to top">↑</button>
+
+  <script>
+    document.getElementById('copyDeckBtn').addEventListener('click', async function() {
+      const btn = this;
+      const code = btn.getAttribute('data-deck-code');
+      try {
+        await navigator.clipboard.writeText(code);
+        btn.classList.add('copied');
+        btn.innerText = '✔ Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerText = '📋 Copy Deck Code';
+        }, 2000);
+      } catch (err) {
+        console.error('Copy failed', err);
+      }
+    });
+
+    window.addEventListener('scroll', () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('readingProgress').style.width = scrolled + '%';
+
+      const btt = document.getElementById('backToTopBtn');
+      if (winScroll > 300) { btt.classList.add('is-shown'); }
+      else { btt.classList.remove('is-shown'); }
+    });
+
+    document.getElementById('backToTopBtn').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>

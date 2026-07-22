@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TKRPPRCNM4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-TKRPPRCNM4');
+</script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <title>Top 10 Best Decks in PvZH — Tier List (July 2026)</title>
+  <meta name="description" content="The definitive tier list of the 10 best decks in Plants vs. Zombies Heroes for July 2026, ranked across every hero and both factions with scores, grades, build cost, full 40-card lists, and one-tap copy codes." />
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <link rel="canonical" href="https://pvzhvault.com/best-decks-pvzh-july-2026" />
+  <meta name="theme-color" content="#0e1413" />
+  <meta name="author" content="PvZH Deck Builder & Database" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="PvZH Vault — Deck Builder & Database" />
+  <meta property="og:title" content="Top 10 Best Decks in PvZH — Tier List (July 2026)" />
+  <meta property="og:description" content="The definitive PvZH tier list for July 2026: the 10 strongest decks across every hero, with scores, grades, build cost, full 40-card lists, and copyable deck codes." />
+  <meta property="og:url" content="https://pvzhvault.com/best-decks-pvzh-july-2026" />
+  <meta property="og:image" content="https://pvzhvault.com/assets/og-best-decks-july-2026.png" />
+  <meta property="og:image:alt" content="Top 10 best decks in Plants vs. Zombies Heroes, July 2026 tier list" />
+  <meta property="article:published_time" content="2026-07-01T08:00:00+00:00" />
+  <meta property="article:modified_time" content="2026-07-01T08:00:00+00:00" />
+  <meta property="article:section" content="Deck Guides" />
+  <meta property="article:tag" content="PvZH" />
+  <meta property="article:tag" content="best decks" />
+  <meta property="article:tag" content="tier list" />
+  <meta property="article:tag" content="Plants vs Zombies Heroes" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Top 10 Best Decks in PvZH — Tier List (July 2026)" />
+  <meta name="twitter:description" content="The 10 strongest PvZH decks this month with scores, grades, build cost, full card lists, and copyable deck codes." />
+  <meta name="twitter:image" content="https://pvzhvault.com/assets/og-best-decks-july-2026.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/guide-style.css" />
+
+  <!-- Page-scoped additions: ranking table + gold S + cost badges + faction filter + related grid -->
+  <style>
+    .rank-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .rank-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 1040px; }
+    .rank-table th, .rank-table td { padding: 11px 13px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .rank-table th {
+      font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--sun); background: var(--card-bg);
+    }
+    .rank-table tbody tr { background: var(--card-bg-2); transition: background var(--transition); }
+    .rank-table tbody tr:hover { background: var(--card-bg); }
+    .rank-table tbody tr:last-child td { border-bottom: none; }
+    .rank-table .t-rank { font-family: var(--font-display); color: var(--text-secondary); }
+    .rank-table tbody tr:first-child .t-rank { color: var(--sun); }
+    .rank-table .t-deck a { color: var(--text-primary); font-weight: 800; }
+    .rank-table .t-deck a:hover { color: var(--sun); }
+    .rank-table .t-score { font-weight: 800; color: var(--text-primary); }
+    .rank-table .t-grade-s { color: var(--grade-s, #ffd54a); font-weight: 800; }
+    .rank-table .t-grade-a { color: var(--grade-a); font-weight: 800; }
+    .rank-table .t-num, .rank-table .t-author, .rank-table .t-cost, .rank-table .t-date, .rank-table .t-hero { color: var(--text-secondary); }
+
+    /* S-tier score badge (shared CSS ships grade-a / grade-b; add the gold S here) */
+    .score-badge.grade-s {
+      background: linear-gradient(135deg, rgba(255,213,74,0.18), rgba(255,170,30,0.12));
+      border-color: var(--grade-s, #ffd54a);
+      color: var(--grade-s, #ffd54a);
+    }
+
+    /* Cost badges */
+    .stat-badge.cost-p2w {
+      color: #efc94a; border-color: rgba(239,201,74,0.55);
+      background: linear-gradient(135deg, rgba(239,201,74,0.16), rgba(239,201,74,0.05)); font-weight: 800;
+    }
+    .stat-badge.cost-expensive { color: var(--text-secondary); font-weight: 700; }
+
+    /* Faction filter buttons */
+    .faction-filter { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ff-btn {
+      font-family: inherit; font-size: 0.85rem; font-weight: 800;
+      padding: 8px 14px; border-radius: var(--radius-sm, 8px);
+      border: 1px solid var(--border); background: var(--card-bg-2);
+      color: var(--text-secondary); cursor: pointer; transition: all var(--transition);
+    }
+    .ff-btn:hover { color: var(--text-primary); border-color: var(--sun); }
+    .ff-btn.is-active { background: var(--sun); border-color: var(--sun); color: #1a1200; }
+
+    /* Related guides grid */
+    .related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-top: 6px; }
+    .related-card {
+      display: block; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-md);
+      background: var(--card-bg-2); transition: all var(--transition);
+    }
+    .related-card:hover { border-color: var(--sun); background: var(--card-bg); transform: translateY(-2px); }
+    .related-card strong { display: block; color: var(--text-primary); font-weight: 800; margin-bottom: 2px; }
+    .related-card span { font-size: 0.85rem; color: var(--text-secondary); }
+  </style>
+
+  <!-- Structured data: Article -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Top 10 Best Decks in Plants vs. Zombies Heroes — July 2026 Tier List",
+    "description": "The definitive ranking of the 10 strongest decks in the July 2026 PvZH meta, across every hero and both factions, with scores, grades, build cost, full card lists, and ranking methodology.",
+    "datePublished": "2026-07-01",
+    "dateModified": "2026-07-01",
+    "image": "https://pvzhvault.com/assets/og-best-decks-july-2026.png",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://pvzhvault.com/best-decks-pvzh-july-2026" },
+    "about": { "@type": "VideoGame", "name": "Plants vs. Zombies Heroes" },
+    "author": { "@type": "Organization", "name": "PvZH Deck Builder & Database", "url": "https://pvzhvault.com" },
+    "publisher": { "@type": "Organization", "name": "PvZH Deck Builder & Database", "url": "https://pvzhvault.com" }
+  }
+  </script>
+
+  <!-- Structured data: ranked list -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Top 10 Best Decks in PvZH — July 2026",
+    "itemListOrder": "https://schema.org/ItemListOrderDescending",
+    "numberOfItems": 10,
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1,  "name": "Soteria (Spudow)",                        "url": "https://pvzhvault.com/decks/soteria" },
+      { "@type": "ListItem", "position": 2,  "name": "Reflourished (Captain Combustible)",      "url": "https://pvzhvault.com/decks/reflourished" },
+      { "@type": "ListItem", "position": 3,  "name": "pot mop (Captain Combustible)",           "url": "https://pvzhvault.com/decks/pot-mop" },
+      { "@type": "ListItem", "position": 4,  "name": "Secret Swimmer Blob (Immorticia)",        "url": "https://pvzhvault.com/decks/secret-swimmer-blob" },
+      { "@type": "ListItem", "position": 5,  "name": "BPL (Green Shadow)",                      "url": "https://pvzhvault.com/decks/bpl" },
+      { "@type": "ListItem", "position": 6,  "name": "CGP dark ages (Z-Mech)",                  "url": "https://pvzhvault.com/best-decks-pvzh-july-2026#deck-cgp-dark-ages" },
+      { "@type": "ListItem", "position": 7,  "name": "pyromania (Z-Mech)",                      "url": "https://pvzhvault.com/best-decks-pvzh-july-2026#deck-pyromania" },
+      { "@type": "ListItem", "position": 8,  "name": "Cartas Buenas (Green Shadow)",            "url": "https://pvzhvault.com/best-decks-pvzh-july-2026#deck-cartas-buenas" },
+      { "@type": "ListItem", "position": 9,  "name": "Chemotherapy (Wall-Knight)",              "url": "https://pvzhvault.com/best-decks-pvzh-july-2026#deck-chemotherapy" },
+      { "@type": "ListItem", "position": 10, "name": "Treat or Tricksterazzi (Rustbolt)",       "url": "https://pvzhvault.com/best-decks-pvzh-july-2026#deck-treat-or-tricksterazzi" }
+    ]
+  }
+  </script>
+
+  <!-- Structured data: FAQ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the best deck in Plants vs. Zombies Heroes in July 2026?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Soteria, a Spudow deck, is the best deck in PvZH this month with a 99.3 composite score, an S grade, and perfect 100 ratings for both synergy and power. It is a plant midrange deck built around Starch Lord, Galacta-Cactus, and Tricarrotops." }
+      },
+      {
+        "@type": "Question",
+        "name": "What are the S-tier decks this month?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Three decks reach S-tier in July 2026: Soteria on Spudow (99.3), Reflourished on Captain Combustible (98.92), and pot mop, also on Captain Combustible (96.35). All three are plant decks. Every other deck in the top 10 sits in A-tier." }
+      },
+      {
+        "@type": "Question",
+        "name": "What do the Cost labels Expensive and P2W mean?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Cost reflects how demanding a deck is to build. Expensive decks require significant crafting investment, while P2W (pay-to-win) decks lean heavily on premium legendary cards that are quickest to obtain by spending. Every deck in this top 10 falls into one of those two brackets, so none are cheap to assemble." }
+      },
+      {
+        "@type": "Question",
+        "name": "How are the best decks ranked?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Each deck is scored across four pillars — performance, consistency, synergy, and curve health — then graded and ordered by composite value drawn from our live user database. Build cost is shown for context but is not one of the scored pillars." }
+      },
+      {
+        "@type": "Question",
+        "name": "How many cards are in a Plants vs. Zombies Heroes deck?",
+        "acceptedAnswer": { "@type": "Answer", "text": "A PvZH deck contains exactly 40 cards, with a maximum of 4 copies of any single card. Every deck in this tier list follows that format." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Structured data: Breadcrumbs -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home",   "item": "https://pvzhvault.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://pvzhvault.com/#guides" },
+      { "@type": "ListItem", "position": 3, "name": "Top 10 Best Decks — July 2026", "item": "https://pvzhvault.com/best-decks-pvzh-july-2026" }
+    ]
+  }
+  </script>
+</head>
+
+<body class="guide-page">
+  <div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+
+  <header class="guide-hero">
+    <div class="lawn-stripes" aria-hidden="true"></div>
+    <div class="sun-glow" aria-hidden="true"></div>
+
+    <div class="guide-hero-inner">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a><span aria-hidden="true">/</span>
+        <a href="/#guides">Guides</a><span aria-hidden="true">/</span>
+        <span aria-current="page">Top 10 Best Decks — July 2026</span>
+      </nav>
+
+      <div class="hero-pill-row">
+        <span class="hero-pill hero-pill-accent">🏆 July 2026 Edition</span>
+        <span class="hero-pill">📊 The Definitive PvZH Tier List</span>
+      </div>
+
+      <h1>Top 10 <span class="title-plants">Best Decks</span> in PvZH</h1>
+
+      <p class="hero-subtitle">
+        The strongest decks in Plants vs. Zombies Heroes right now — the definitive July 2026 tier list, ranked across every hero and both factions by composite score, with build cost, full 40-card lists, and one-tap copy codes.
+      </p>
+
+      <p class="hero-byline">
+        By <strong>PvZH Deck Builder &amp; Database</strong> · Published <time datetime="2026-07-01">July 1, 2026</time> · Updated <time datetime="2026-07-01">July 1, 2026</time>
+      </p>
+
+      <div class="hero-stats" aria-label="Guide summary">
+        <div class="hero-stat"><strong>10</strong><span>ranked decks</span></div>
+        <div class="hero-stat"><strong>99.3</strong><span>top score</span></div>
+        <div class="hero-stat"><strong>3</strong><span>S-tier decks</span></div>
+        <div class="hero-stat"><strong>40</strong><span>cards per list</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="guide-layout">
+    <aside class="guide-sidebar">
+      <div class="toc-card">
+        <p class="toc-label">On this page</p>
+        <nav class="toc-nav" id="tocNav" aria-label="Table of contents">
+          <a href="#overview">Meta snapshot</a>
+          <a href="#rankings-table">Rankings at a glance</a>
+          <a href="#methodology">How rankings work</a>
+          <a href="#ranked-list">Top 10 decks</a>
+          <a href="#related">More guides</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+      </div>
+
+      <div class="toc-card jump-card">
+        <p class="toc-label">Jump to a deck</p>
+        <nav class="toc-nav deck-jump" id="deckJump" aria-label="Deck quick links"></nav>
+      </div>
+    </aside>
+
+    <article class="guide-article">
+      <section id="overview" class="content-card reveal">
+        <h2>Meta snapshot: July 2026</h2>
+        <p>
+          This is the headline ranking — the ten strongest decks in Plants vs. Zombies Heroes right now, pulled from our live user database and scored across every hero and both factions. July opens with plants firmly on top: all three <strong>S-tier</strong> decks are plant lists, led by <a href="#deck-soteria">Soteria</a> on Spudow at a near-flawless 99.3 with perfect 100 synergy and power. Captain Combustible takes both of the other S slots with <a href="#deck-reflourished">Reflourished</a> and <a href="#deck-pot-mop">pot mop</a>, trading blows at the very top of the power curve.
+        </p>
+        <p>
+          The A-tier is where the factions even out. The best zombie deck is <a href="#deck-secret-swimmer-blob">Secret Swimmer Blob</a> on Immorticia, followed by Z-Mech's heavy-hitting <a href="#deck-cgp-dark-ages">CGP dark ages</a> and <a href="#deck-pyromania">pyromania</a>, and Rustbolt's <a href="#deck-treat-or-tricksterazzi">Treat or Tricksterazzi</a>. On the plant side, Green Shadow's <a href="#deck-bpl">BPL</a> and <a href="#deck-cartas-buenas">Cartas Buenas</a> and Wall-Knight's 100-synergy <a href="#deck-chemotherapy">Chemotherapy</a> keep the pressure on. One thing unites the whole list: none of these decks are cheap. Every entry is flagged <strong>Expensive</strong> or <strong>P2W</strong>, so expect a real crafting investment to build any of them.
+        </p>
+      </section>
+
+      <section id="rankings-table" class="content-card reveal">
+        <h2>Rankings at a glance</h2>
+        <p class="section-note">Composite scores out of 100, computed from our live user database. Cost reflects how demanding each deck is to build.</p>
+        <div class="rank-table-wrap">
+          <table class="rank-table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Deck</th>
+                <th scope="col">Hero</th>
+                <th scope="col">Score</th>
+                <th scope="col">Grade</th>
+                <th scope="col">Cost</th>
+                <th scope="col">Synergy</th>
+                <th scope="col">Power</th>
+                <th scope="col">Consistency</th>
+                <th scope="col">Date</th>
+                <th scope="col">Author</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="t-rank">#1</td><td class="t-deck"><a href="#deck-soteria">Soteria</a></td><td class="t-hero">☀ Spudow</td><td class="t-score">99.3</td><td class="t-grade-s">S</td><td class="t-cost">Expensive</td><td class="t-num">100</td><td class="t-num">100</td><td class="t-num">86</td><td class="t-date">Jun 10, 2026</td><td class="t-author">Xera</td></tr>
+              <tr><td class="t-rank">#2</td><td class="t-deck"><a href="#deck-reflourished">Reflourished</a></td><td class="t-hero">☀ Captain Combustible</td><td class="t-score">98.92</td><td class="t-grade-s">S</td><td class="t-cost">P2W</td><td class="t-num">99</td><td class="t-num">100</td><td class="t-num">86</td><td class="t-date">Jun 16, 2026</td><td class="t-author">Xera, Maker</td></tr>
+              <tr><td class="t-rank">#3</td><td class="t-deck"><a href="#deck-pot-mop">pot mop</a></td><td class="t-hero">☀ Captain Combustible</td><td class="t-score">96.35</td><td class="t-grade-s">S</td><td class="t-cost">Expensive</td><td class="t-num">93</td><td class="t-num">99</td><td class="t-num">85</td><td class="t-date">Jun 30, 2026</td><td class="t-author">First Hero</td></tr>
+              <tr><td class="t-rank">#4</td><td class="t-deck"><a href="#deck-secret-swimmer-blob">Secret Swimmer Blob</a></td><td class="t-hero">🧠 Immorticia</td><td class="t-score">94.57</td><td class="t-grade-a">A</td><td class="t-cost">Expensive</td><td class="t-num">91</td><td class="t-num">94</td><td class="t-num">92</td><td class="t-date">Jun 09, 2026</td><td class="t-author">FryEmUp</td></tr>
+              <tr><td class="t-rank">#5</td><td class="t-deck"><a href="#deck-bpl">BPL</a></td><td class="t-hero">☀ Green Shadow</td><td class="t-score">94.2</td><td class="t-grade-a">A</td><td class="t-cost">P2W</td><td class="t-num">97</td><td class="t-num">87</td><td class="t-num">78</td><td class="t-date">Jun 22, 2026</td><td class="t-author">Michael</td></tr>
+              <tr><td class="t-rank">#6</td><td class="t-deck"><a href="#deck-cgp-dark-ages">CGP dark ages</a></td><td class="t-hero">🧠 Z-Mech</td><td class="t-score">93.83</td><td class="t-grade-a">A</td><td class="t-cost">Expensive</td><td class="t-num">98</td><td class="t-num">85</td><td class="t-num">74</td><td class="t-date">Jun 10, 2026</td><td class="t-author">Creeperblade</td></tr>
+              <tr><td class="t-rank">#7</td><td class="t-deck"><a href="#deck-pyromania">pyromania</a></td><td class="t-hero">🧠 Z-Mech</td><td class="t-score">93.15</td><td class="t-grade-a">A</td><td class="t-cost">P2W</td><td class="t-num">92</td><td class="t-num">90</td><td class="t-num">78</td><td class="t-date">Jun 24, 2026</td><td class="t-author">Div, Durga</td></tr>
+              <tr><td class="t-rank">#8</td><td class="t-deck"><a href="#deck-cartas-buenas">Cartas Buenas</a></td><td class="t-hero">☀ Green Shadow</td><td class="t-score">92.8</td><td class="t-grade-a">A</td><td class="t-cost">P2W</td><td class="t-num">99</td><td class="t-num">79</td><td class="t-num">79</td><td class="t-date">Jun 09, 2026</td><td class="t-author">Pillowy</td></tr>
+              <tr><td class="t-rank">#9</td><td class="t-deck"><a href="#deck-chemotherapy">Chemotherapy</a></td><td class="t-hero">☀ Wall-Knight</td><td class="t-score">92.35</td><td class="t-grade-a">A</td><td class="t-cost">P2W</td><td class="t-num">100</td><td class="t-num">76</td><td class="t-num">79</td><td class="t-date">Jun 30, 2026</td><td class="t-author">Salt, The_Cute_Chick (TCC)</td></tr>
+              <tr><td class="t-rank">#10</td><td class="t-deck"><a href="#deck-treat-or-tricksterazzi">Treat or Tricksterazzi</a></td><td class="t-hero">🧠 Rustbolt</td><td class="t-score">92.13</td><td class="t-grade-a">A</td><td class="t-cost">Expensive</td><td class="t-num">83</td><td class="t-num">96</td><td class="t-num">92</td><td class="t-date">Jun 03, 2026</td><td class="t-author">FryEmUp</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="methodology" class="content-card reveal">
+        <h2>How these decks are ranked</h2>
+        <p class="section-note">Every deck is scored across four pillars, then graded and ordered by composite value. Build cost is shown for context but is not a scored pillar.</p>
+        <div class="method-grid">
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">⚔</span>
+            <h3>Performance</h3>
+            <p>Calculated from core popularity metrics against the current highest-tier meta envelopes.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">♻</span>
+            <h3>Consistency</h3>
+            <p>Analyzes draw patterns, heavily favoring optimized 3x and 4x card sets over inconsistent singletons.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">🔗</span>
+            <h3>Synergy</h3>
+            <p>Determined by a continuous co-occurrence matrix evaluated across all interconnected cards.</p>
+          </div>
+          <div class="method-box">
+            <span class="method-icon" aria-hidden="true">📈</span>
+            <h3>Curve health</h3>
+            <p>Measures macro-curve values against target historical archetypes to penalize awkward spacing.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="ranked-list" class="content-card reveal">
+        <div class="section-header">
+          <div>
+            <h2>The 10 best decks, ranked</h2>
+            <p class="section-note">Filter by faction or search any deck, hero, or card to find what you're after.</p>
+          </div>
+        </div>
+
+        <div class="deck-toolbar" role="region" aria-label="Search and filter decks">
+          <div class="search-wrap" style="max-width: 100%; flex: 1;">
+            <input id="deckSearch" type="search" placeholder="Search decks, heroes, or cards… e.g. Spudow or Fig" aria-label="Search decks, heroes, or cards" />
+          </div>
+          <div class="faction-filter" id="factionFilter" role="group" aria-label="Filter by faction">
+            <button type="button" class="ff-btn is-active" data-faction="all">All 10</button>
+            <button type="button" class="ff-btn" data-faction="plants">☀ Plants</button>
+            <button type="button" class="ff-btn" data-faction="zombies">🧠 Zombies</button>
+          </div>
+        </div>
+        <p class="filter-empty" id="filterEmpty" hidden>No decks match that search. Try clearing it or searching a different card.</p>
+
+        <ol class="deck-list" id="deckList">
+  <!-- #1 -->
+  <li class="deck-card faction-plants reveal" id="deck-soteria" data-faction="plants" data-name="Soteria" data-hero="Spudow">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Spudow.webp" alt="Spudow" class="deck-hero-avatar" width="160" height="200" fetchpriority="high" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#1</span>
+          <span class="faction-tag faction-tag-plants">☀ Spudow</span>
+          <span class="deck-label deck-label-best">Best in game</span>
+        </div>
+        <h3>Soteria</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 99.3 · Grade: S</span>
+          <span class="stat-badge cost-expensive">💰 Expensive</span>
+          <span class="stat-badge">Synergy: 100</span>
+          <span class="stat-badge">Power: 100</span>
+          <span class="stat-badge">Consistency: 86</span>
+          <span class="stat-badge">📅 Jun 10, 2026</span>
+          <span class="stat-badge">By: Xera</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Forget-Me-Nuts", "4x Galacta-Cactus", "4x Berry Blast", "3x Tricarrotops", "3x Imitater", "3x Pear Cub", "3x Shamrocket", "3x Sizzle", "2x Blockbuster", "4x Starch Lord", "4x Fig", "3x Soul Patch"]'></div>
+        </div>
+        <p class="deck-summary">The best deck in the game this month and a perfect 100 in both synergy and power. This is Spudow's premier midrange — Starch Lord, Galacta-Cactus, and Tricarrotops flood the board while Shamrocket and Blockbuster clear blockers and Soul Patch plus Fig smooth the curve. Expensive to build, but the definitive top-tier list.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/soteria">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #2 -->
+  <li class="deck-card faction-plants reveal" id="deck-reflourished" data-faction="plants" data-name="Reflourished" data-hero="Captain Combustible">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Captain_Combustible.webp" alt="Captain Combustible" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#2</span>
+          <span class="faction-tag faction-tag-plants">☀ Captain Combustible</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>Reflourished</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 98.92 · Grade: S</span>
+          <span class="stat-badge cost-p2w">💎 P2W</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 100</span>
+          <span class="stat-badge">Consistency: 86</span>
+          <span class="stat-badge">📅 Jun 16, 2026</span>
+          <span class="stat-badge">By: Xera, Maker</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["3x Bonk Choy", "4x Clique Peas", "2x Reincarnation", "4x Berry Blast", "3x Fireweed", "4x Split Pea", "3x Imitater", "3x Sizzle", "4x Fig", "4x Gatling Pea", "3x Apotatosaurus", "3x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">Captain Combustible's premier build, stacking Reincarnation, Imitater, and Fig value onto one threat before Espresso Fiesta's bonus attacks end it. Split Pea and Gatling Pea pressure multiple lanes with Apotatosaurus as a backup haymaker. A pay-to-win powerhouse with a perfect 100 power.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/reflourished">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #3 -->
+  <li class="deck-card faction-plants reveal" id="deck-pot-mop" data-faction="plants" data-name="pot mop" data-hero="Captain Combustible">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Captain_Combustible.webp" alt="Captain Combustible" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#3</span>
+          <span class="faction-tag faction-tag-plants">☀ Captain Combustible</span>
+          <span class="deck-label">S-tier</span>
+        </div>
+        <h3>pot mop</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-s">Score: 96.35 · Grade: S</span>
+          <span class="stat-badge cost-expensive">💰 Expensive</span>
+          <span class="stat-badge">Synergy: 93</span>
+          <span class="stat-badge">Power: 99</span>
+          <span class="stat-badge">Consistency: 85</span>
+          <span class="stat-badge">📅 Jun 30, 2026</span>
+          <span class="stat-badge">By: First Hero</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bonk Choy", "4x Clique Peas", "4x Berry Blast", "3x Lily of the Valley", "4x Split Pea", "3x Wild Berry", "2x Flourish", "4x Veloci-Radish Packmate", "4x Fig", "2x Gatling Pea", "3x Potted Powerhouse", "3x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">Captain Combustible's second entry — a Mega-Grow pea list wrapped around Potted Powerhouse and Espresso Fiesta. Split Pea, Gatling Pea, and Veloci-Radish Packmate apply relentless pressure while Berry Blast, Wild Berry, and Fig add reach. A near-perfect 99 power on an aggressive, board-centric plan.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/pot-mop">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #4 -->
+  <li class="deck-card faction-zombies reveal" id="deck-secret-swimmer-blob" data-faction="zombies" data-name="Secret Swimmer Blob" data-hero="Immorticia">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Immorticia.webp" alt="Immorticia" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#4</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Immorticia</span>
+          <span class="deck-label">Best zombie</span>
+        </div>
+        <h3>Secret Swimmer Blob</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 94.57 · Grade: A</span>
+          <span class="stat-badge cost-expensive">💰 Expensive</span>
+          <span class="stat-badge">Synergy: 91</span>
+          <span class="stat-badge">Power: 94</span>
+          <span class="stat-badge">Consistency: 92</span>
+          <span class="stat-badge">📅 Jun 09, 2026</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Cheese Cutter", "4x Dog Walker", "2x Fraidy Cat", "4x Secret Agent", "4x Teleport", "3x Lurch For Lunch", "4x Synchronized Swimmer", "4x Teleportation Zombie", "4x Area 22", "3x Brain Vendor", "4x Zom-Blob"]'></div>
+        </div>
+        <p class="deck-summary">The best zombie deck on the list — Immorticia's amphibious tempo build. Synchronized Swimmer and Secret Agent apply evasive pressure, Teleport tricks steal tempo, and Area 22 plus Zom-Blob keep the board and hand stocked. A relentless, hard-to-race deck with a 92 consistency.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/secret-swimmer-blob">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #5 -->
+  <li class="deck-card faction-plants reveal" id="deck-bpl" data-faction="plants" data-name="BPL" data-hero="Green Shadow">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Green_Shadow.webp" alt="Green Shadow" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#5</span>
+          <span class="faction-tag faction-tag-plants">☀ Green Shadow</span>
+          <span class="deck-label">High synergy</span>
+        </div>
+        <h3>BPL</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 94.2 · Grade: A</span>
+          <span class="stat-badge cost-p2w">💎 P2W</span>
+          <span class="stat-badge">Synergy: 97</span>
+          <span class="stat-badge">Power: 87</span>
+          <span class="stat-badge">Consistency: 78</span>
+          <span class="stat-badge">📅 Jun 22, 2026</span>
+          <span class="stat-badge">By: Michael</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bonk Choy", "4x Clique Peas", "4x Lima Pleurodon", "2x Primal Peashooter", "2x Umbrella Leaf", "3x Cabbage Pult", "4x Pea Patch", "2x Typical Beanstalk", "3x Jelly Bean", "3x Savage Spinach", "4x Gatling Pea", "3x Brainana", "2x Espresso Fiesta"]'></div>
+        </div>
+        <p class="deck-summary">"Bean Pea Leafy" — Green Shadow's Mega-Grow and Smarty midrange. Pea Patch, Gatling Pea, and Savage Spinach stock the lanes while Typical Beanstalk, Jelly Bean, and Brainana refill the hand. A high-synergy (97) grindy plant deck, with Espresso Fiesta for the reach.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+          <a class="deck-link" href="/decks/bpl">Read full breakdown →</a>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #6 -->
+  <li class="deck-card faction-zombies reveal" id="deck-cgp-dark-ages" data-faction="zombies" data-name="CGP dark ages" data-hero="Z-Mech">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Z_Mech.webp" alt="Z-Mech" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#6</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Z-Mech</span>
+          <span class="deck-label">Gargantuar control</span>
+        </div>
+        <h3>CGP dark ages</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 93.83 · Grade: A</span>
+          <span class="stat-badge cost-expensive">💰 Expensive</span>
+          <span class="stat-badge">Synergy: 98</span>
+          <span class="stat-badge">Power: 85</span>
+          <span class="stat-badge">Consistency: 74</span>
+          <span class="stat-badge">📅 Jun 10, 2026</span>
+          <span class="stat-badge">By: Creeperblade</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["3x Black Hole", "3x Bungee Plumber", "4x Mystery Egg", "2x Quickdraw Con Man", "2x Rolling Stone", "4x Unlife of the Party", "4x Quazard", "3x Sumo Wrestler", "3x Going Viral", "3x Gargantuar-Throwing Imp", "2x Zombie King", "3x Hippity Hop Gargantuar", "2x Intergalactic Warlord", "2x Zombot Battlecruiser 5000"]'></div>
+        </div>
+        <p class="deck-summary">Z-Mech's Crazy gargantuar-and-galactic control deck, ramping into oversized threats — Hippity Hop Gargantuar, Intergalactic Warlord, and Zombot Battlecruiser 5000. Mystery Egg and Unlife of the Party swarm early while Black Hole and Rolling Stone clear the way. A 98-synergy top-end monster.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #7 -->
+  <li class="deck-card faction-zombies reveal" id="deck-pyromania" data-faction="zombies" data-name="pyromania" data-hero="Z-Mech">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Z_Mech.webp" alt="Z-Mech" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#7</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Z-Mech</span>
+          <span class="deck-label">Beatdown control</span>
+        </div>
+        <h3>pyromania</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 93.15 · Grade: A</span>
+          <span class="stat-badge cost-p2w">💎 P2W</span>
+          <span class="stat-badge">Synergy: 92</span>
+          <span class="stat-badge">Power: 90</span>
+          <span class="stat-badge">Consistency: 78</span>
+          <span class="stat-badge">📅 Jun 24, 2026</span>
+          <span class="stat-badge">By: Div, Durga</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["3x Arm Wrestler", "4x Black Hole", "4x Bungee Plumber", "2x Rolling Stone", "4x Quazard", "4x Sumo Wrestler", "2x Abracadaver", "3x Going Viral", "3x Turquiose Skull Zombie", "4x Binary Stars", "2x Hippity Hop Gargantuar", "3x Intergalactic Warlord", "2x Zombot Battlecruiser 5000"]'></div>
+        </div>
+        <p class="deck-summary">Z-Mech's hard-hitting build, pairing Arm Wrestler and Sumo Wrestler beatdown with Binary Stars value and a Zombot Battlecruiser 5000 finish. Black Hole and Rolling Stone handle blockers — a 90-power aggressive control hybrid that punches above its cost.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #8 -->
+  <li class="deck-card faction-plants reveal" id="deck-cartas-buenas" data-faction="plants" data-name="Cartas Buenas" data-hero="Green Shadow">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Green_Shadow.webp" alt="Green Shadow" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#8</span>
+          <span class="faction-tag faction-tag-plants">☀ Green Shadow</span>
+          <span class="deck-label">High synergy</span>
+        </div>
+        <h3>Cartas Buenas</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 92.8 · Grade: A</span>
+          <span class="stat-badge cost-p2w">💎 P2W</span>
+          <span class="stat-badge">Synergy: 99</span>
+          <span class="stat-badge">Power: 79</span>
+          <span class="stat-badge">Consistency: 79</span>
+          <span class="stat-badge">📅 Jun 09, 2026</span>
+          <span class="stat-badge">By: Pillowy</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Bonk Choy", "4x Clique Peas", "4x Lima Pleurodon", "4x Split Pea", "3x Lily of the Valley", "3x Laser Cattail", "3x Rotobaga", "3x Fertilizer", "2x Sportacus", "3x Jelly Bean", "2x Plant Food", "3x Gatling Pea", "2x Brainana"]'></div>
+        </div>
+        <p class="deck-summary">Green Shadow's high-synergy (99) midrange, leaning on Lima Pleurodon, Split Pea, and Gatling Pea with Rotobaga and Laser Cattail for range. Fertilizer and Plant Food push the buffs through while Jelly Bean and Brainana refill — tightly-knit and reliable.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #9 -->
+  <li class="deck-card faction-plants reveal" id="deck-chemotherapy" data-faction="plants" data-name="Chemotherapy" data-hero="Wall-Knight">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Wall_Knight.webp" alt="Wall-Knight" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#9</span>
+          <span class="faction-tag faction-tag-plants">☀ Wall-Knight</span>
+          <span class="deck-label">Perfect synergy</span>
+        </div>
+        <h3>Chemotherapy</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 92.35 · Grade: A</span>
+          <span class="stat-badge cost-p2w">💎 P2W</span>
+          <span class="stat-badge">Synergy: 100</span>
+          <span class="stat-badge">Power: 76</span>
+          <span class="stat-badge">Consistency: 79</span>
+          <span class="stat-badge">📅 Jun 30, 2026</span>
+          <span class="stat-badge">By: Salt, The_Cute_Chick (TCC)</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Li&#39;l Buddy", "3x Galacta-Cactus", "4x Sun Shroom", "4x Pepper M.D.", "4x Cross-Pollination", "3x Ketchup Mechanic", "2x Shamrocket", "2x Whack-a-Zombie", "2x Blockbuster", "3x Aloesaurus", "3x Cob Cannon", "3x Gravitree", "3x Wall-Nut Bowling"]'></div>
+        </div>
+        <p class="deck-summary">Wall-Knight's perfect-100-synergy Guardian value deck, built around Wall-Nut Bowling, Gravitree, and Cob Cannon. Sun Shroom and Pepper M.D. ramp while Cross-Pollination and Aloesaurus add value and heals, and Galacta-Cactus plus Shamrocket handle threats.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <!-- #10 -->
+  <li class="deck-card faction-zombies reveal" id="deck-treat-or-tricksterazzi" data-faction="zombies" data-name="Treat or Tricksterazzi" data-hero="Rustbolt">
+    <div class="deck-main-layout">
+      <div class="deck-hero-wrapper">
+        <img src="/hero_images/Rustbolt.webp" alt="Rustbolt" class="deck-hero-avatar" width="160" height="200" loading="lazy" />
+      </div>
+      <div class="deck-details-content">
+        <div class="deck-topline">
+          <span class="rank-badge">#10</span>
+          <span class="faction-tag faction-tag-zombies">🧠 Rustbolt</span>
+          <span class="deck-label">Trickster tempo</span>
+        </div>
+        <h3>Treat or Tricksterazzi</h3>
+        <div class="deck-stat-badges">
+          <span class="stat-badge score-badge grade-a">Score: 92.13 · Grade: A</span>
+          <span class="stat-badge cost-expensive">💰 Expensive</span>
+          <span class="stat-badge">Synergy: 83</span>
+          <span class="stat-badge">Power: 96</span>
+          <span class="stat-badge">Consistency: 92</span>
+          <span class="stat-badge">📅 Jun 03, 2026</span>
+          <span class="stat-badge">By: FryEmUp</span>
+          <span class="stat-badge card-count" data-count></span>
+        </div>
+        <div class="deck-image-container">
+          <div class="singleDeckVisual visual-deck-grid" data-cards='["4x Healthy Treat", "4x Paparazzi Zombie", "4x Rolling Stone", "4x Teleport", "4x Teacher", "3x Beam Me Up", "4x Going Viral", "3x Rocket Science", "4x Trick-or-Treater", "2x Mad Chemist", "4x Trickster"]'></div>
+        </div>
+        <p class="deck-summary">Rustbolt's Trickster tempo deck, with the highest power (96) outside the S-tier. Paparazzi Zombie, Trick-or-Treater, and Trickster generate constant value while Teleport and Teacher keep the pressure on. Rocket Science and Beam Me Up add reach — a fast, high-ceiling close to the list.</p>
+        <div class="deck-actions">
+          <button class="copy-btn" type="button" data-copy>📋 Copy deck list</button>
+        </div>
+      </div>
+    </div>
+  </li>
+</ol>
+      </section>
+
+      <section id="related" class="content-card reveal">
+        <h2>More PvZH deck guides</h2>
+        <p class="section-note">Looking for something more specific? Dive into the per-hero hub or a focused deck guide.</p>
+        <div class="related-grid">
+          <a class="related-card" href="/best-decks-for-every-hero"><strong>Best Deck for Every Hero</strong><span>The top deck for all 22 heroes</span></a>
+          <a class="related-card" href="/best-solar-flare-decks"><strong>Top 10 Solar Flare Decks</strong><span>The strongest hero in the game</span></a>
+          <a class="related-card" href="/best-rose-decks"><strong>Top 10 Rose Decks</strong><span>Smarty/Solar control &amp; heal</span></a>
+          <a class="related-card" href="/best-nightcap-decks"><strong>Top 10 Nightcap Decks</strong><span>Kabloom/Smarty aggro</span></a>
+          <a class="related-card" href="/best-impfinity-decks"><strong>Top 10 Impfinity Decks</strong><span>Sneaky/Crazy swarm &amp; conjure</span></a>
+          <a class="related-card" href="/best-budget-decks"><strong>Top 10 Budget Decks</strong><span>Strong decks, cheap to craft</span></a>
+          <a class="related-card" href="/best-espresso-fiesta-decks"><strong>Top 10 Espresso Fiesta Decks</strong><span>The premier Mega-Grow finisher</span></a>
+          <a class="related-card" href="/best-bad-moon-rising-decks"><strong>Top 10 Bad Moon Rising Decks</strong><span>Brainy transform decks</span></a>
+        </div>
+      </section>
+
+      <section id="faq" class="content-card reveal">
+        <h2>Frequently asked questions</h2>
+        <div class="faq-grid">
+          <details class="faq-item">
+            <summary>What is the best deck in PvZH in July 2026?</summary>
+            <p><a href="#deck-soteria">Soteria</a> on Spudow is the best deck this month, with a 99.3 composite score, an S grade, and perfect 100 ratings for both synergy and power. It's a plant midrange deck built around Starch Lord, Galacta-Cactus, and Tricarrotops.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What are the S-tier decks this month?</summary>
+            <p>Three decks reach S-tier in July 2026: <a href="#deck-soteria">Soteria</a> on Spudow (99.3), and <a href="#deck-reflourished">Reflourished</a> (98.92) and <a href="#deck-pot-mop">pot mop</a> (96.35), both on Captain Combustible. All three are plant decks; every other entry sits in A-tier.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What do the Cost labels (Expensive / P2W) mean?</summary>
+            <p>Cost reflects how demanding a deck is to build. <strong>Expensive</strong> decks require significant crafting investment, while <strong>P2W</strong> (pay-to-win) decks lean heavily on premium legendary cards that are quickest to obtain by spending. Every deck in this top 10 falls into one of those two brackets — none are cheap to assemble.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How are the best decks ranked?</summary>
+            <p>Each deck is scored across four pillars — performance, consistency, synergy, and curve health — then graded and ordered by composite value from our live user database. Build cost is shown for context but is not one of the scored pillars.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How many cards are in a PvZH deck?</summary>
+            <p>A Plants vs. Zombies Heroes deck contains exactly 40 cards, with a maximum of 4 copies of any single card. Every deck in this tier list follows that format.</p>
+          </details>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <button class="back-to-top" id="backToTop" type="button" aria-label="Back to top">🏆</button>
+
+  <script src="/app.js" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      /* ---------- Render deck card grids from data-cards ---------- */
+      const deckContainers = document.querySelectorAll('.singleDeckVisual');
+
+      deckContainers.forEach(container => {
+        const rawData = container.getAttribute('data-cards');
+        if (!rawData) return;
+
+        let cardsArray = [];
+        try { cardsArray = JSON.parse(rawData); }
+        catch (e) { console.error('Failed to parse deck cards:', e); return; }
+
+        container.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        let totalCards = 0;
+
+        cardsArray.forEach(cardRaw => {
+          let quantityStr = '1x';
+          let qty = 1;
+          let parsedCardName = cardRaw.trim();
+
+          const match = cardRaw.match(/^(\d+)x?\s+(.+)$/i);
+          if (match) {
+            qty = parseInt(match[1], 10) || 1;
+            quantityStr = qty + 'x';
+            parsedCardName = match[2].trim();
+          }
+          totalCards += qty;
+
+          const nameWithUnderscores = parsedCardName.replace(/\s+/g, '_');
+          const pngUrl = `/card_images/${nameWithUnderscores}.png`;
+          const webpUrl = `/card_images/${nameWithUnderscores}.webp`;
+
+          const cardEl = document.createElement('div');
+          cardEl.className = 'visual-card-item';
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'card-image-wrapper';
+          wrapper.tabIndex = 0;
+
+          const img = document.createElement('img');
+          img.src = pngUrl;
+          img.onerror = function () { this.onerror = null; this.src = webpUrl; };
+          img.alt = parsedCardName + ' — PvZH card';
+          img.title = quantityStr + ' ' + parsedCardName;
+          img.loading = 'lazy';
+          img.decoding = 'async';
+
+          const qtyEl = document.createElement('span');
+          qtyEl.className = 'card-quantity';
+          qtyEl.textContent = quantityStr;
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(qtyEl);
+          cardEl.appendChild(wrapper);
+          fragment.appendChild(cardEl);
+        });
+
+        container.appendChild(fragment);
+
+        const deckCard = container.closest('.deck-card');
+        if (deckCard) {
+          const countBadge = deckCard.querySelector('[data-count]');
+          if (countBadge) countBadge.textContent = totalCards + ' cards';
+          deckCard.dataset.decklist = cardsArray.join('\n');
+          deckCard.dataset.cardnames = cardsArray.join(' ').toLowerCase();
+        }
+      });
+
+      /* ---------- Copy deck list ---------- */
+      document.querySelectorAll('[data-copy]').forEach(btn => {
+        btn.setAttribute('aria-live', 'polite');
+        btn.addEventListener('click', async () => {
+          const deckCard = btn.closest('.deck-card');
+          const name = deckCard.dataset.name || 'Deck';
+          const hero = deckCard.dataset.hero || '';
+          const header = hero ? `${name} — ${hero}, PvZH (pvzhvault.com)` : `${name} — PvZH (pvzhvault.com)`;
+          const list = `${header}\n${deckCard.dataset.decklist || ''}`;
+          try {
+            await navigator.clipboard.writeText(list);
+            const original = btn.textContent;
+            btn.textContent = '✔ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+          } catch (e) {
+            btn.textContent = 'Copy failed';
+            setTimeout(() => { btn.textContent = '📋 Copy deck list'; }, 1600);
+          }
+        });
+      });
+
+      /* ---------- Build "Jump to a deck" sidebar links (faction-colored) ---------- */
+      const deckJump = document.getElementById('deckJump');
+      if (deckJump) {
+        document.querySelectorAll('.deck-card').forEach((card, i) => {
+          const a = document.createElement('a');
+          a.href = '#' + card.id;
+          a.innerHTML = `<span class="jump-rank">#${i + 1}</span> ${card.dataset.name}`;
+          a.classList.add(card.dataset.faction === 'zombies' ? 'jump-zombies' : 'jump-plants');
+          deckJump.appendChild(a);
+        });
+      }
+
+      /* ---------- Search + faction filter ---------- */
+      const searchInput = document.getElementById('deckSearch');
+      const emptyMsg = document.getElementById('filterEmpty');
+      let activeFaction = 'all';
+
+      function applyFilters() {
+        const q = (searchInput.value || '').trim().toLowerCase();
+        let visible = 0;
+        document.querySelectorAll('.deck-card').forEach(card => {
+          const text = (card.dataset.name + ' ' + (card.dataset.hero || '') + ' ' + (card.dataset.cardnames || '')).toLowerCase();
+          const facOk = activeFaction === 'all' || card.dataset.faction === activeFaction;
+          const show = facOk && (!q || text.includes(q));
+          card.classList.toggle('is-hidden', !show);
+          if (show) visible++;
+        });
+        emptyMsg.hidden = visible !== 0;
+      }
+      searchInput.addEventListener('input', applyFilters);
+
+      const ffButtons = document.querySelectorAll('#factionFilter .ff-btn');
+      ffButtons.forEach(b => b.addEventListener('click', () => {
+        ffButtons.forEach(x => x.classList.remove('is-active'));
+        b.classList.add('is-active');
+        activeFaction = b.dataset.faction || 'all';
+        applyFilters();
+      }));
+
+      /* ---------- Scrollspy for TOC ---------- */
+      const tocLinks = document.querySelectorAll('#tocNav a');
+      const sections = [...tocLinks].map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+      const spy = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            tocLinks.forEach(a => a.classList.toggle('is-current', a.getAttribute('href') === '#' + entry.target.id));
+          }
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      sections.forEach(s => spy.observe(s));
+
+      /* ---------- Reveal on scroll (respects reduced motion) ---------- */
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReduced && 'IntersectionObserver' in window) {
+        const revealer = new IntersectionObserver(entries => {
+          entries.forEach(e => {
+            if (e.isIntersecting) { e.target.classList.add('is-visible'); revealer.unobserve(e.target); }
+          });
+        }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
+        document.querySelectorAll('.reveal').forEach(el => revealer.observe(el));
+      } else {
+        document.querySelectorAll('.reveal').forEach(el => el.classList.add('is-visible'));
+      }
+
+      /* ---------- Reading progress bar + back to top ---------- */
+      const bar = document.getElementById('progressBar');
+      const backToTop = document.getElementById('backToTop');
+      const onScroll = () => {
+        const h = document.documentElement;
+        const pct = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+        bar.style.width = pct + '%';
+        backToTop.classList.toggle('is-shown', h.scrollTop > 600);
+      };
+      backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' }));
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    });
+  </script>
+</body>
+</html>
