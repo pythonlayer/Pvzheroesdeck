@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return ctx;
     }
 
-    function getDeckVerdictFromCards(deckCards, selfDeckKey, ctx) {
+    function getDeckVerdictFromCardsLegacy(deckCards, selfDeckKey, ctx) {
         if (typeof initSynergyMatrix === "function") {
             initSynergyMatrix();
         }
@@ -816,6 +816,762 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
         const { grade, gradeColor } = getVerdictGrade(overallPercent, allTopTier, totalCards);
         return { grade, gradeColor, score: overallPercent, costLabel, synergyScore, consistencyScore, powerScore, avgCost, curveHealthText, curve, avgSparks, curveNumeric };
     }
+
+    /* ================================================================
+       AI DECK EVALUATION SYSTEM (v2)
+       ----------------------------------------------------------------
+       Replaces the single 0-100 number from getDeckVerdictFromCards()
+       with a fully-explained verdict: 8 weighted subscores, a Monte
+       Carlo playability simulation, tribal package detection, card
+       embeddings for smart substitutions, and a plain-language
+       explanation of strengths/weaknesses.
+
+       getDeckVerdictFromCardsLegacy() (above) is kept completely
+       intact and is reused as the source of truth for synergy /
+       consistency / curve-vs-meta, since that logic is already tuned
+       against the real deck database. This new layer adds the pieces
+       the old function never computed (removal quality, finisher
+       density, package coherence, simulated playability, role
+       balance) and blends everything into one rich verdict object.
+
+       Public entry points:
+         - getDeckVerdictFromCards(cards, key, ctx)  // drop-in replacement,
+           100% backward compatible: every old field (.score, .grade,
+           .synergyScore, etc.) is still present. New fields: .verdict
+           (0-100 int) and ._full (the rich object below).
+         - window.DeckEvaluator.evaluateDeck(cards, hero)
+         - window.DeckEvaluator.generateDeck(archetype, opts)
+         - window.DeckEvaluator.getSystemInfo()
+       ================================================================ */
+
+    // ---------------------------------------------------------------
+    // 0. CACHE MANAGER (cache-manager.js equivalent)
+    // ---------------------------------------------------------------
+    class DE_LRUCache {
+        constructor(maxSize) {
+            this.maxSize = maxSize;
+            this.map = new Map();
+            this.hits = 0;
+            this.misses = 0;
+        }
+        get(key) {
+            if (!this.map.has(key)) { this.misses++; return undefined; }
+            const val = this.map.get(key);
+            this.map.delete(key);
+            this.map.set(key, val); // refresh recency
+            this.hits++;
+            return val;
+        }
+        set(key, val) {
+            if (this.map.has(key)) this.map.delete(key);
+            this.map.set(key, val);
+            if (this.map.size > this.maxSize) {
+                this.map.delete(this.map.keys().next().value);
+            }
+        }
+        stats() {
+            const total = this.hits + this.misses;
+            return { size: this.map.size, maxSize: this.maxSize, hits: this.hits, misses: this.misses, hitRate: total ? this.hits / total : 0 };
+        }
+        clear() { this.map.clear(); this.hits = 0; this.misses = 0; }
+    }
+
+    const de_caches = {
+        cardTags: new Map(),                // normalized-card cache, unbounded (one-time cost per card)
+        packages: new DE_LRUCache(10000),   // deck signature -> detected packages
+        archetypes: new DE_LRUCache(5000),  // deck signature -> best-fit archetype
+        evaluations: new DE_LRUCache(5000)  // deck signature -> full verdict
+    };
+
+    function de_deckSignature(seeds) {
+        return seeds.map(s => `${s.count}x${s.key}`).sort().join('|');
+    }
+
+    // ---------------------------------------------------------------
+    // 1. CARD NORMALIZER (card-normalizer.js equivalent)
+    // Local copies of the tribe/mechanic detection so this module has
+    // no dependency on the Deck Finder's private closures.
+    // ---------------------------------------------------------------
+    const DE_GENERIC_TYPES = new Set(['plant', 'zombie', 'trick', 'environment', 'superpower', 'token', 'event', 'fighter', 'hero']);
+
+    const DE_MECHANICS = {
+        draw: /\bdraw\b/i,
+        conjure: /\bconjure\b/i,
+        ramp: /\bextra sun\b|\bgain(?:s)? \+?\d+ sun\b|\bcosts? less\b/i,
+        removal: /\bdestroy\b|\bbounce\b|\btransform\b|\bdo(?:es)? \d+ damage\b/i,
+        freeze: /\bfreeze\b/i,
+        heal: /\bheal\b/i,
+        buff: /\bget(?:s)? \+\d+|\ball .* get \+\d+|\bdouble .* strength\b/i,
+        swarm: /\bmake (?:a|an|another|\d+)\b|\bcreate (?:a|an|another|\d+)\b/i,
+        reach: /\b(?:plant|zombie) hero\b.*\bdamage\b|\bdamage\b.*\b(?:plant|zombie) hero\b/i,
+        protection: /\buntrickable\b|\barmored\b|\bteam-up\b|\bcan't be hurt\b/i,
+        tempo: /\bbounce\b|\bfreeze\b|\bmove (?:a|an|the|another)\b/i,
+        finisher: /\bstrikethrough\b|\bdouble strike\b|\bfrenzy\b|\ball .* get \+\d+/i
+    };
+
+    let de_knownTribesCache = null;
+    function de_getKnownTribes() {
+        if (de_knownTribesCache) return de_knownTribesCache;
+        const tribes = new Set();
+        Object.values(cardDatabase || {}).forEach(card => {
+            String(card?.Type || '').split(/\s+/).forEach(word => {
+                const clean = word.trim();
+                if (clean && !DE_GENERIC_TYPES.has(clean.toLowerCase())) tribes.add(clean);
+            });
+        });
+        de_knownTribesCache = [...tribes];
+        return de_knownTribesCache;
+    }
+
+    function de_getCardTribes(card) {
+        const known = new Set(de_getKnownTribes().map(t => t.toLowerCase()));
+        return String(card?.Type || '').split(/\s+/).map(w => w.trim()).filter(w => known.has(w.toLowerCase()));
+    }
+
+    function de_getCardMechanics(card) {
+        const text = `${card?.Description || ''} ${card?.Type || ''}`;
+        return Object.entries(DE_MECHANICS).filter(([, re]) => re.test(text)).map(([m]) => m);
+    }
+
+    function de_normalizeCard(nameOrKey) {
+        if (de_caches.cardTags.has(nameOrKey)) return de_caches.cardTags.get(nameOrKey);
+
+        const underscored = String(nameOrKey).replace(/ /g, '_');
+        const spaced = String(nameOrKey).replace(/_/g, ' ');
+        const data = (cardDatabase && (cardDatabase[underscored] || cardDatabase[spaced] || cardDatabase[nameOrKey])) || {};
+
+        const parsedCost = parseInt(data.Cost, 10);
+        const cost = Number.isFinite(parsedCost) ? parsedCost : 1;
+        const tribes = de_getCardTribes(data);
+        const mechanics = de_getCardMechanics(data);
+        const desc = String(data.Description || '');
+        const descLower = desc.toLowerCase();
+
+        let removalType = null;
+        if (mechanics.includes('removal')) {
+            if (/\bdestroy\b/.test(descLower)) removalType = 'hard';
+            else if (/\bfreeze\b/.test(descLower)) removalType = 'freeze';
+            else removalType = 'soft';
+        } else if (mechanics.includes('freeze')) {
+            removalType = 'freeze';
+        }
+
+        const roles = new Set();
+        if (cost <= 2) roles.add('early_game');
+        if (cost >= 5) roles.add('threat');
+        if (mechanics.includes('removal')) roles.add('removal');
+        if (mechanics.includes('draw') || mechanics.includes('conjure')) roles.add('card_advantage');
+        if (mechanics.includes('swarm')) roles.add('tokens');
+        if (mechanics.includes('buff')) roles.add('buff');
+        if (mechanics.includes('heal')) roles.add('healing');
+        if (mechanics.includes('finisher')) roles.add('finisher');
+        if (/evolv|upgrade/i.test(desc)) roles.add('evolution_enabler');
+
+        let curveBucket = 'early';
+        if (cost >= 5) curveBucket = 'late';
+        else if (cost >= 3) curveBucket = 'mid';
+
+        const normalized = {
+            name: data.Name || spaced,
+            key: underscored,
+            cost,
+            rarity: data.Rarity || 'Common',
+            class: data.Class || null,
+            tribes,
+            mechanics,
+            removalType,
+            roles: [...roles],
+            curveBucket,
+            health: Number.isFinite(Number(data.Health)) ? Number(data.Health) : null,
+            strength: Number.isFinite(Number(data.Strength)) ? Number(data.Strength) : null,
+            description: desc,
+            knownCard: !!(cardDatabase && (cardDatabase[underscored] || cardDatabase[spaced]))
+        };
+        de_caches.cardTags.set(nameOrKey, normalized);
+        return normalized;
+    }
+
+    // ---------------------------------------------------------------
+    // 2. META LEARNER (meta-learner.js equivalent)
+    // ---------------------------------------------------------------
+    let de_metaModel = null;
+    let de_metaModelSource = null;
+
+    function de_getMetaLearner() {
+        if (de_metaModel && de_metaModelSource === fullDatabase) return de_metaModel;
+
+        const ctx = (typeof getVerdictContext === 'function') ? getVerdictContext() : { cardPopularity: {}, maxMetaCopies: 0 };
+        const maxMeta = ctx.maxMetaCopies || 1;
+
+        const model = {
+            cardStrength: {},  // card name -> 0-100 (meta popularity, time-decayed)
+            usageRate: {},     // card name -> fraction of decks it appears in
+            archetypes: {
+                Aggro:    { curveTarget: [0.34, 0.30, 0.20, 0.10, 0.04, 0.02], removalTarget: 3, cards: new Map() },
+                Midrange: { curveTarget: [0.18, 0.26, 0.28, 0.16, 0.08, 0.04], removalTarget: 5, cards: new Map() },
+                Control:  { curveTarget: [0.10, 0.16, 0.22, 0.22, 0.18, 0.12], removalTarget: 8, cards: new Map() },
+                Swarm:    { curveTarget: [0.36, 0.28, 0.20, 0.10, 0.04, 0.02], removalTarget: 3, cards: new Map() },
+                Ramp:     { curveTarget: [0.16, 0.18, 0.18, 0.16, 0.16, 0.16], removalTarget: 4, cards: new Map() }
+            }
+        };
+
+        for (const name in ctx.cardPopularity) {
+            model.cardStrength[name] = Math.round((ctx.cardPopularity[name] / maxMeta) * 100);
+        }
+
+        const deckList = Object.values(fullDatabase || {}).filter(d => d && Array.isArray(d.cards) && d.cards.length);
+        const totalDecks = deckList.length || 1;
+        const usageCounts = {};
+
+        deckList.forEach(deck => {
+            const seenNames = new Set();
+            let totalCards = 0;
+            const curve = [0, 0, 0, 0, 0, 0]; // <=1, 2, 3, 4, 5, 6+
+            let removalCount = 0;
+
+            deck.cards.forEach(cardString => {
+                const parsed = (typeof parseCardEntry === 'function') ? parseCardEntry(cardString) : null;
+                if (!parsed) return;
+                seenNames.add(parsed.name);
+                totalCards += parsed.count;
+                const norm = de_normalizeCard(parsed.name);
+                let idx;
+                if (norm.cost <= 1) idx = 0;
+                else if (norm.cost === 2) idx = 1;
+                else if (norm.cost === 3) idx = 2;
+                else if (norm.cost === 4) idx = 3;
+                else if (norm.cost === 5) idx = 4;
+                else idx = 5;
+                curve[idx] += parsed.count;
+                if (norm.roles.includes('removal')) removalCount += parsed.count;
+            });
+
+            seenNames.forEach(n => { usageCounts[n] = (usageCounts[n] || 0) + 1; });
+            if (totalCards < 10) return; // ignore incomplete piles for archetype learning
+
+            const shape = curve.map(c => c / totalCards);
+            let bestArchetype = null, bestDist = Infinity;
+            for (const archName in model.archetypes) {
+                const prof = model.archetypes[archName];
+                let dist = 0;
+                for (let i = 0; i < 6; i++) dist += Math.abs(shape[i] - prof.curveTarget[i]);
+                dist += Math.abs(removalCount - prof.removalTarget) * 0.05;
+                if (dist < bestDist) { bestDist = dist; bestArchetype = archName; }
+            }
+            if (bestArchetype) {
+                const prof = model.archetypes[bestArchetype];
+                deck.cards.forEach(cardString => {
+                    const parsed = (typeof parseCardEntry === 'function') ? parseCardEntry(cardString) : null;
+                    if (!parsed) return;
+                    prof.cards.set(parsed.name, (prof.cards.get(parsed.name) || 0) + parsed.count);
+                });
+            }
+        });
+
+        for (const name in usageCounts) model.usageRate[name] = usageCounts[name] / totalDecks;
+
+        for (const archName in model.archetypes) {
+            const prof = model.archetypes[archName];
+            prof.topCards = [...prof.cards.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40).map(([name]) => name);
+        }
+
+        de_metaModel = model;
+        de_metaModelSource = fullDatabase;
+        return model;
+    }
+
+    function de_bestArchetypeFor(seeds, totalCards) {
+        if (!totalCards) return null;
+        const meta = de_getMetaLearner();
+        const curve = [0, 0, 0, 0, 0, 0];
+        let removalCount = 0;
+        seeds.forEach(s => {
+            const c = s.norm.cost;
+            const idx = c <= 1 ? 0 : c === 2 ? 1 : c === 3 ? 2 : c === 4 ? 3 : c === 5 ? 4 : 5;
+            curve[idx] += s.count;
+            if (s.norm.roles.includes('removal')) removalCount += s.count;
+        });
+        const shape = curve.map(c => c / totalCards);
+        let best = null, bestDist = Infinity;
+        for (const archName in meta.archetypes) {
+            const prof = meta.archetypes[archName];
+            let dist = 0;
+            for (let i = 0; i < 6; i++) dist += Math.abs(shape[i] - prof.curveTarget[i]);
+            dist += Math.abs(removalCount - prof.removalTarget) * 0.05;
+            if (dist < bestDist) { bestDist = dist; best = archName; }
+        }
+        return { archetype: best, distance: bestDist, overlap: Math.max(0, 1 - bestDist) };
+    }
+
+    // ---------------------------------------------------------------
+    // 3. SYNERGY GRAPH (synergy-graph-advanced.js equivalent)
+    // Builds on the existing synergyMatrix/cardFrequencies co-occurrence
+    // data (from initSynergyMatrix) rather than recomputing it.
+    // ---------------------------------------------------------------
+    function de_pairSynergy(keyA, keyB) {
+        if (typeof initSynergyMatrix === 'function') initSynergyMatrix();
+        const co = (synergyMatrix && synergyMatrix[keyA] && synergyMatrix[keyA][keyB]) || 0;
+        if (co <= 0) return 0;
+        const freqA = (cardFrequencies && cardFrequencies[keyA]) || 1;
+        const freqB = (cardFrequencies && cardFrequencies[keyB]) || 1;
+        return co / Math.sqrt(freqA * freqB);
+    }
+
+    function de_detectPackages(seeds) {
+        const signature = de_deckSignature(seeds);
+        const cached = de_caches.packages.get(signature);
+        if (cached) return cached;
+
+        // Union-Find community detection over the deck's own cards.
+        const parent = {};
+        seeds.forEach(s => { parent[s.key] = s.key; });
+        function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
+        function union(a, b) { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; }
+
+        for (let i = 0; i < seeds.length; i++) {
+            for (let j = i + 1; j < seeds.length; j++) {
+                const a = seeds[i], b = seeds[j];
+                const sharedTribe = a.norm.tribes.some(t => b.norm.tribes.includes(t));
+                const cs = de_pairSynergy(a.key, b.key);
+                if (cs >= 0.30 || (sharedTribe && cs >= 0.15)) union(a.key, b.key);
+            }
+        }
+
+        const groups = {};
+        seeds.forEach(s => {
+            const root = find(s.key);
+            (groups[root] = groups[root] || []).push(s);
+        });
+
+        const packages = Object.values(groups).filter(g => g.length >= 3 || g.reduce((sum, c) => sum + c.count, 0) >= 8);
+        de_caches.packages.set(signature, packages);
+        return packages;
+    }
+
+    // ---------------------------------------------------------------
+    // 4. CARD EMBEDDINGS (card-embeddings.js equivalent)
+    // ---------------------------------------------------------------
+    function de_getEmbeddingDims() {
+        const mechanicList = Object.keys(DE_MECHANICS);
+        const counts = {};
+        Object.values(cardDatabase || {}).forEach(c => {
+            de_getCardTribes(c).forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+        });
+        const tribeList = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([t]) => t);
+        return { mechanicList, tribeList };
+    }
+    let de_embedDimsCache = null;
+    function de_dims() { return de_embedDimsCache || (de_embedDimsCache = de_getEmbeddingDims()); }
+
+    function de_embedCard(nameOrKey) {
+        const norm = de_normalizeCard(nameOrKey);
+        const { mechanicList, tribeList } = de_dims();
+        const meta = de_getMetaLearner();
+        const vec = [];
+        vec.push(norm.cost / 6);
+        vec.push((norm.strength || 0) / 10);
+        vec.push((norm.health || 0) / 10);
+        tribeList.forEach(t => vec.push(norm.tribes.includes(t) ? 1 : 0));
+        mechanicList.forEach(m => vec.push(norm.mechanics.includes(m) ? 1 : 0));
+        vec.push((meta.cardStrength[norm.name] || 0) / 100);
+        vec.push(meta.usageRate[norm.name] || 0);
+        return vec;
+    }
+
+    function de_cosineSim(a, b) {
+        let dot = 0, magA = 0, magB = 0;
+        for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; magA += a[i] * a[i]; magB += b[i] * b[i]; }
+        if (magA === 0 || magB === 0) return 0;
+        return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+    }
+
+    function de_findSimilarCards(nameOrKey, excludeKeys, topN) {
+        const excluded = new Set((excludeKeys || []).map(k => String(k).replace(/ /g, '_')));
+        const targetNorm = de_normalizeCard(nameOrKey);
+        const targetVec = de_embedCard(nameOrKey);
+        const scored = [];
+        Object.keys(cardDatabase || {}).forEach(key => {
+            if (excluded.has(key)) return;
+            const norm = de_normalizeCard(key);
+            if (targetNorm.class && norm.class && norm.class !== targetNorm.class) return; // stay in the same class
+            const sim = de_cosineSim(targetVec, de_embedCard(key));
+            scored.push({ name: norm.name, key, similarity: sim });
+        });
+        scored.sort((a, b) => b.similarity - a.similarity);
+        return scored.slice(0, topN || 5);
+    }
+
+    // ---------------------------------------------------------------
+    // 5. MONTE CARLO SIMULATOR (monte-carlo-simulator.js equivalent)
+    // Approximates real playability by simulating draws/curve rather
+    // than full combat (there's no opponent AI to play against), which
+    // is exactly what's needed to catch "bricky" hands and dead curves.
+    // ---------------------------------------------------------------
+    function de_runMonteCarlo(seeds, iterations) {
+        iterations = iterations || 300;
+        const pool = [];
+        seeds.forEach(s => { for (let i = 0; i < s.count; i++) pool.push(s); });
+
+        if (pool.length < 5) {
+            return { brickRate: 1, openingPlayableRate: 0, avgFinisherTurn: null, avgBoardByTurn: [], resourceEfficiency: 0, winRateEstimate: 0.1, iterations };
+        }
+
+        const HAND_SIZE = 4;
+        const MAX_TURN = 10;
+        let brickCount = 0;
+        let openingPlayableCount = 0;
+        let finisherTurnSum = 0, finisherFound = 0;
+        let resourceEffSum = 0;
+        const boardByTurnSum = new Array(MAX_TURN + 1).fill(0);
+
+        for (let iter = 0; iter < iterations; iter++) {
+            const deck = pool.slice();
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+
+            let hand = deck.splice(0, Math.min(HAND_SIZE, deck.length));
+            if (hand.some(c => c.norm.cost <= 1)) openingPlayableCount++;
+
+            let boardTotal = 0;
+            let finisherTurn = null;
+            let effSum = 0, effTurns = 0;
+            let anyPlayAtAll = false;
+
+            for (let turn = 1; turn <= MAX_TURN; turn++) {
+                if (deck.length) hand.push(deck.shift());
+                const budget = Math.min(turn, MAX_TURN);
+                let remaining = budget;
+                hand.sort((a, b) => b.norm.cost - a.norm.cost);
+                const kept = [];
+                hand.forEach(card => {
+                    if (card.norm.cost <= remaining) {
+                        remaining -= card.norm.cost;
+                        boardTotal += (card.norm.strength || card.norm.cost);
+                        anyPlayAtAll = true;
+                        if (card.norm.cost >= 5 && finisherTurn === null) finisherTurn = turn;
+                    } else {
+                        kept.push(card);
+                    }
+                });
+                hand = kept;
+                effSum += (budget - remaining) / budget;
+                effTurns++;
+                boardByTurnSum[turn] += boardTotal;
+            }
+
+            if (!anyPlayAtAll) brickCount++;
+            if (finisherTurn !== null) { finisherTurnSum += finisherTurn; finisherFound++; }
+            resourceEffSum += effSum / effTurns;
+        }
+
+        const brickRate = brickCount / iterations;
+        const openingPlayableRate = openingPlayableCount / iterations;
+        const avgFinisherTurn = finisherFound ? finisherTurnSum / finisherFound : null;
+        const resourceEfficiency = resourceEffSum / iterations;
+        const avgBoardByTurn = boardByTurnSum.map(t => t / iterations);
+
+        let winRateEstimate = 0.5
+            - (brickRate * 0.35)
+            + ((openingPlayableRate - 0.7) * 0.2)
+            + ((resourceEfficiency - 0.6) * 0.25)
+            - (avgFinisherTurn ? Math.max(0, avgFinisherTurn - 6) * 0.03 : 0.1);
+        winRateEstimate = Math.max(0.05, Math.min(0.9, winRateEstimate));
+
+        return { brickRate, openingPlayableRate, avgFinisherTurn, avgBoardByTurn, resourceEfficiency, winRateEstimate, iterations };
+    }
+
+    // ---------------------------------------------------------------
+    // 6. DECK EVALUATOR (deck-evaluator.js equivalent)
+    // Ties every module above into one weighted, explained verdict.
+    // ---------------------------------------------------------------
+    function de_buildSeeds(deckCards) {
+        const seedMap = new Map();
+        (deckCards || []).forEach(cardString => {
+            const parsed = (typeof parseCardEntry === 'function') ? parseCardEntry(cardString) : null;
+            if (!parsed) return;
+            const existing = seedMap.get(parsed.name) || { name: parsed.name, key: parsed.key, count: 0 };
+            existing.count += parsed.count;
+            seedMap.set(parsed.name, existing);
+        });
+        return [...seedMap.values()].map(s => ({ ...s, norm: de_normalizeCard(s.name) }));
+    }
+
+    function de_scoreCurve(seeds, totalCards) {
+        if (!totalCards) return 50;
+        const buckets = { early: 0, mid: 0, late: 0 };
+        seeds.forEach(s => { buckets[s.norm.curveBucket] += s.count; });
+        const earlyPct = buckets.early / totalCards, midPct = buckets.mid / totalCards, latePct = buckets.late / totalCards;
+        let score = 100;
+        if (earlyPct < 0.30) score -= (0.30 - earlyPct) * 150;
+        else if (earlyPct > 0.65) score -= (earlyPct - 0.65) * 150;
+        if (latePct > 0.30) score -= (latePct - 0.30) * 150;
+        if (midPct < 0.15) score -= (0.15 - midPct) * 100;
+        return Math.max(0, Math.min(100, Math.round(score)));
+    }
+
+    function de_scoreRemoval(seeds, totalCards) {
+        if (!totalCards) return 50;
+        let hard = 0, freeze = 0, total = 0;
+        seeds.forEach(s => {
+            if (s.norm.removalType === 'hard') hard += s.count;
+            if (s.norm.removalType === 'freeze') freeze += s.count;
+            if (s.norm.roles.includes('removal')) total += s.count;
+        });
+        const ratio = total / totalCards;
+        let score = Math.min(100, ratio * 400); // ~25% removal density caps out the score
+        if (hard > 0) score += 8;
+        if (freeze > 0) score += 5;
+        return Math.max(0, Math.min(100, Math.round(score)));
+    }
+
+    function de_scoreFinishers(seeds, totalCards) {
+        if (!totalCards) return 50;
+        let finisherCopies = 0;
+        seeds.forEach(s => { if (s.norm.cost >= 5 || s.norm.roles.includes('finisher')) finisherCopies += s.count; });
+        const ratio = finisherCopies / totalCards;
+        if (ratio === 0) return 20;
+        if (ratio < 0.06) return 55;
+        if (ratio <= 0.18) return 100;
+        if (ratio <= 0.28) return 75;
+        return 45;
+    }
+
+    function de_scorePackages(packages, totalCards) {
+        if (!totalCards || !packages.length) return 30;
+        const coveredCopies = packages.reduce((sum, g) => sum + g.reduce((s, c) => s + c.count, 0), 0);
+        const coverage = coveredCopies / totalCards;
+        return Math.round(Math.min(100, coverage * 110 + packages.length * 4));
+    }
+
+    function de_scoreRoleBalance(seeds, totalCards) {
+        if (!totalCards) return 50;
+        const roleCounts = {};
+        seeds.forEach(s => s.norm.roles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + s.count; }));
+        const roleTypesPresent = Object.keys(roleCounts).length;
+        let score = roleTypesPresent * 12;
+        if (roleCounts.early_game) score += 15;
+        if (roleCounts.threat) score += 15;
+        if (roleCounts.removal) score += 10;
+        return Math.max(0, Math.min(100, Math.round(score)));
+    }
+
+    const DE_LABELS = {
+        curve: 'mana curve', removal: 'removal suite', finishers: 'finisher density',
+        synergy: 'synergy', consistency: 'consistency', packages: 'tribal packages',
+        playability: 'playability', roleBalance: 'role balance'
+    };
+
+    function de_buildExplanation(subscores, extras) {
+        const strengths = [], weaknesses = [];
+        for (const key in subscores) {
+            const val = subscores[key];
+            const label = DE_LABELS[key] || key;
+            if (val >= 80) strengths.push(`Strong ${label} (${val}/100)`);
+            else if (val <= 40) weaknesses.push(`Weak ${label} (${val}/100)`);
+        }
+        if (extras.monteCarlo && extras.monteCarlo.brickRate > 0.15) {
+            weaknesses.push(`Bricks in roughly ${Math.round(extras.monteCarlo.brickRate * 100)}% of simulated openings`);
+        }
+        if (extras.consistencyIssue) weaknesses.push('Too many one-of singletons hurts consistency');
+        if (extras.archetypeMatch && extras.archetypeMatch.overlap > 0.75) {
+            strengths.push(`Closely matches the ${extras.archetypeMatch.archetype} archetype`);
+        }
+        if (!strengths.length) strengths.push('No standout strengths yet — the deck is still developing');
+        if (!weaknesses.length) weaknesses.push('No major weaknesses detected');
+        return { strengths, weaknesses };
+    }
+
+    const DE_WEIGHTS = { curve: 0.12, removal: 0.15, finishers: 0.12, synergy: 0.18, consistency: 0.10, packages: 0.10, playability: 0.15, roleBalance: 0.08 };
+
+    function de_evaluate(deckCards, selfDeckKey, ctx, legacy) {
+        const seeds = de_buildSeeds(deckCards);
+        const totalCards = seeds.reduce((s, c) => s + c.count, 0);
+        const signature = de_deckSignature(seeds);
+
+        const cached = de_caches.evaluations.get(signature);
+        if (cached) return cached;
+
+        const packages = de_detectPackages(seeds);
+        const monteCarlo = de_runMonteCarlo(seeds);
+        const archetypeMatch = de_bestArchetypeFor(seeds, totalCards);
+
+        const subscores = {
+            curve: de_scoreCurve(seeds, totalCards),
+            removal: de_scoreRemoval(seeds, totalCards),
+            finishers: de_scoreFinishers(seeds, totalCards),
+            synergy: legacy ? Math.round(legacy.synergyScore) : 50,
+            consistency: legacy ? Math.round(legacy.consistencyScore) : 50,
+            packages: de_scorePackages(packages, totalCards),
+            playability: Math.round(monteCarlo.winRateEstimate * 100),
+            roleBalance: de_scoreRoleBalance(seeds, totalCards)
+        };
+
+        let verdict = 0;
+        for (const key in DE_WEIGHTS) verdict += (subscores[key] || 0) * DE_WEIGHTS[key];
+        verdict = Math.max(0, Math.min(100, verdict));
+
+        const unknownCards = seeds.filter(s => !s.norm.knownCard).length;
+        let confidence = 55;
+        if (totalCards >= 30) confidence += 20; else if (totalCards >= 15) confidence += 10;
+        if (unknownCards === 0) confidence += 15;
+        if (packages.length > 0) confidence += 5;
+        confidence = Math.max(40, Math.min(95, confidence));
+
+        const singles = seeds.filter(s => s.count === 1).length;
+        const consistencyIssue = seeds.length > 0 && (singles / seeds.length) > 0.4;
+
+        const explanation = de_buildExplanation(subscores, { monteCarlo, consistencyIssue, archetypeMatch });
+
+        const result = {
+            verdict: Math.round(verdict),
+            scores: subscores,
+            explanation,
+            confidence,
+            monte_carlo: monteCarlo,
+            packages: packages.map(g => g.map(c => c.name)),
+            archetypeMatch,
+            totalCards
+        };
+
+        de_caches.evaluations.set(signature, result);
+        return result;
+    }
+
+    // ---------------------------------------------------------------
+    // 7. DECK GENERATOR (deck-generator.js equivalent, simplified)
+    // ---------------------------------------------------------------
+    function de_generateDeck(archetypeName, opts) {
+        opts = opts || {};
+        const deckSize = opts.deckSize || 40;
+        const maxCopies = opts.maxCopies || 4;
+        const meta = de_getMetaLearner();
+        const prof = meta.archetypes[archetypeName] || meta.archetypes.Midrange;
+
+        const pool = (prof.topCards.length ? prof.topCards : Object.keys(cardDatabase || {}))
+            .map(name => de_normalizeCard(name))
+            .filter(n => n.knownCard);
+
+        const byBucket = { early: [], mid: [], late: [] };
+        pool.forEach(n => byBucket[n.curveBucket].push(n));
+        ['early', 'mid', 'late'].forEach(b => byBucket[b].sort((a, c) => (meta.cardStrength[c.name] || 0) - (meta.cardStrength[a.name] || 0)));
+
+        const seedMap = new Map();
+        let total = 0;
+        function addCopies(norm, copies) {
+            if (!norm || total >= deckSize) return;
+            const existing = seedMap.get(norm.name) || { name: norm.name, key: norm.key, count: 0, norm };
+            const room = Math.min(copies, maxCopies - existing.count, deckSize - total);
+            if (room <= 0) return;
+            existing.count += room; total += room;
+            seedMap.set(norm.name, existing);
+        }
+
+        const bucketOrder = ['early', 'early', 'mid', 'mid', 'late'];
+        let i = 0, safety = 0;
+        while (total < deckSize && safety < deckSize * 6) {
+            const bucket = bucketOrder[i % bucketOrder.length];
+            const list = byBucket[bucket];
+            if (list && list.length) {
+                const pick = list[Math.floor(i / bucketOrder.length) % list.length];
+                addCopies(pick, maxCopies);
+            }
+            i++; safety++;
+        }
+
+        let seeds = [...seedMap.values()];
+
+        // Local search: swap the meta-weakest card for a similar-but-stronger one, 30 passes.
+        function toCardStrings(seedList) { return seedList.map(s => `${s.count}x ${s.name}`); }
+        function scoreOf(seedList) {
+            const cards = toCardStrings(seedList);
+            const legacy = getDeckVerdictFromCardsLegacy(cards, 'synth-gen');
+            return de_evaluate(cards, 'synth-gen', null, legacy).verdict;
+        }
+
+        let currentScore = seeds.length ? scoreOf(seeds) : 0;
+        for (let iter = 0; iter < 30 && seeds.length; iter++) {
+            let weakest = null, weakestStrength = Infinity;
+            seeds.forEach(s => {
+                const strength = meta.cardStrength[s.name] || 0;
+                if (strength < weakestStrength) { weakestStrength = strength; weakest = s; }
+            });
+            if (!weakest) break;
+
+            const alternatives = de_findSimilarCards(weakest.name, seeds.map(s => s.key), 5);
+            let bestAlt = null, bestAltScore = currentScore;
+            alternatives.forEach(alt => {
+                const trialSeeds = seeds.filter(s => s !== weakest)
+                    .concat([{ name: alt.name, key: alt.key, count: weakest.count, norm: de_normalizeCard(alt.name) }]);
+                const trialScore = scoreOf(trialSeeds);
+                if (trialScore > bestAltScore) { bestAltScore = trialScore; bestAlt = alt; }
+            });
+
+            if (bestAlt) {
+                seeds = seeds.filter(s => s !== weakest)
+                    .concat([{ name: bestAlt.name, key: bestAlt.key, count: weakest.count, norm: de_normalizeCard(bestAlt.name) }]);
+                currentScore = bestAltScore;
+            } else {
+                break; // no improving swap found, stop early
+            }
+        }
+
+        const deckCards = toCardStrings(seeds);
+        const legacy = getDeckVerdictFromCardsLegacy(deckCards, 'synth-gen');
+        const evaluation = de_evaluate(deckCards, 'synth-gen', null, legacy);
+        return { archetype: archetypeName, cards: deckCards, verdict: evaluation.verdict, evaluation };
+    }
+
+    // ---------------------------------------------------------------
+    // 8. PUBLIC API (evaluator/index.js equivalent) + backward-compatible wrapper
+    // ---------------------------------------------------------------
+    function getDeckVerdictFromCards(deckCards, selfDeckKey, ctx) {
+        const legacy = getDeckVerdictFromCardsLegacy(deckCards, selfDeckKey, ctx);
+        let full = null;
+        try {
+            full = de_evaluate(deckCards, selfDeckKey, ctx, legacy);
+        } catch (e) {
+            console.warn('DeckEvaluator: rich evaluation failed, falling back to the legacy score only.', e);
+        }
+        legacy.verdict = full ? full.verdict : Math.round(legacy.score);
+        legacy._full = full;
+        return legacy;
+    }
+
+    window.DeckEvaluator = {
+        initialize(cardData, deckData) {
+            if (cardData) { cardDatabase = cardData; window.cardDatabase = cardData; }
+            if (deckData) { fullDatabase = deckData; window.fullDatabase = deckData; }
+            de_metaModel = null;
+            de_knownTribesCache = null;
+            de_embedDimsCache = null;
+            de_caches.evaluations.clear();
+            de_caches.packages.clear();
+            de_caches.archetypes.clear();
+            if (typeof initSynergyMatrix === 'function') { synergyMatrix = null; initSynergyMatrix(); }
+            de_getMetaLearner();
+        },
+        getDeckVerdictFromCards,
+        evaluateDeck(cards, hero) {
+            const legacy = getDeckVerdictFromCardsLegacy(cards, hero);
+            return de_evaluate(cards, hero, null, legacy);
+        },
+        generateDeck(archetype, opts) { return de_generateDeck(archetype, opts); },
+        findSimilarCards(cardName, excludeKeys, topN) { return de_findSimilarCards(cardName, excludeKeys, topN); },
+        getSystemInfo() {
+            return {
+                cardsNormalized: de_caches.cardTags.size,
+                metaLearned: !!de_metaModel,
+                totalDecksInMeta: Object.keys(fullDatabase || {}).length,
+                caches: {
+                    packages: de_caches.packages.stats(),
+                    archetypes: de_caches.archetypes.stats(),
+                    evaluations: de_caches.evaluations.stats()
+                }
+            };
+        }
+    };
 
 
    /* ============================================================
