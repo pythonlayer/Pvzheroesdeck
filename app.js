@@ -6946,6 +6946,17 @@ gradeButtons.forEach(button => {
         } catch (e) { /* storage full/unavailable, ignore */ }
     }
     loadOwnedSparks();
+    // Whether the user has ever actually told us a spark balance. Without
+    // this, a fresh 0 (nobody's typed anything into "My Sparks" yet) looks
+    // identical to a real 0, and we'd nag people to scrap cards just because
+    // we assumed they're broke.
+    function hasEnteredSparks() {
+        try {
+            return localStorage.getItem(OWNED_SPARKS_KEY) !== null;
+        } catch (e) {
+            return ownedSparks > 0;
+        }
+    }
 
     // --- Hero ownership (separate from card ownership, same persistence pattern) ---
     let ownedHeroes = {}; // heroName -> true
@@ -7132,6 +7143,44 @@ gradeButtons.forEach(button => {
                     buildDeckFromCollection();
                 } finally {
                     buildFromCollectionBtn.disabled = false;
+                }
+            }, 50);
+        });
+    }
+
+    // --- Quick "build from collection" folder button, sitting right next to
+    // the finish-deck wand and the image-import button so people don't have
+    // to open the collection panel just to build a deck from what they own ---
+    const buildFromCollectionQuickBtn = document.getElementById('buildFromCollectionQuickBtn');
+    if (buildFromCollectionQuickBtn) {
+        buildFromCollectionQuickBtn.addEventListener('click', () => {
+            seedDefaultCollection();
+            if (Object.keys(ownedCollection).length === 0) {
+                alert('Mark at least one card as owned first (open My Collection).');
+                return;
+            }
+
+            // If a hero is already selected up top, build for that hero.
+            // Otherwise pick a random hero - prefer one the user actually
+            // owns, since building for a hero they don't have is pointless.
+            if (!deckHeroLock) {
+                const ownedHeroNames = [...PLANT_HEROES, ...ZOMBIE_HEROES].filter(h => ownedHeroes[h]);
+                const pool = ownedHeroNames.length ? ownedHeroNames : [...PLANT_HEROES, ...ZOMBIE_HEROES];
+                const randomHero = pool[Math.floor(Math.random() * pool.length)];
+
+                const deckHeroSelectEl = document.getElementById('deckHeroSelect');
+                if (deckHeroSelectEl) {
+                    deckHeroSelectEl.value = randomHero;
+                    deckHeroSelectEl.dispatchEvent(new Event('change'));
+                }
+            }
+
+            buildFromCollectionQuickBtn.disabled = true;
+            setTimeout(() => {
+                try {
+                    buildDeckFromCollection();
+                } finally {
+                    buildFromCollectionQuickBtn.disabled = false;
                 }
             }, 50);
         });
@@ -7412,7 +7461,9 @@ gradeButtons.forEach(button => {
     }
 
     function buildDeckFromCollection() {
-        currentFaction = collectionFactionSelect ? collectionFactionSelect.value : 'Plant';
+        currentFaction = deckHeroLock
+            ? deckHeroLock.faction
+            : (collectionFactionSelect ? collectionFactionSelect.value : 'Plant');
         currentSeeds = [];
         lastAddedCard = null;
 
@@ -11913,16 +11964,21 @@ starterTargetCopies = Math.max(
                     if (missing > 0) {
                         const perCopyCraftCost = sparkCostFor(addName);
                         const craftCost = perCopyCraftCost * missing;
-                        const shortfall = Math.max(0, craftCost - ownedSparks);
+                        // If the user has never told us how many sparks they
+                        // have, don't assume zero and push them to scrap
+                        // cards for no reason - just show the craft cost.
+                        const knowsBalance = hasEnteredSparks();
+                        const shortfall = knowsBalance ? Math.max(0, craftCost - ownedSparks) : 0;
 
                         craftInfo = {
                             craftCost,
                             missing,
-                            affordable: shortfall === 0,
+                            affordable: !knowsBalance || shortfall === 0,
+                            knowsBalance,
                             scrapPlan: null
                         };
 
-                        if (craftCost > 0 && shortfall > 0) {
+                        if (knowsBalance && craftCost > 0 && shortfall > 0) {
                             const protectedNames = new Set(currentSeeds.map(s => s.name));
                             protectedNames.add(addName);
                             craftInfo.scrapPlan = findScrapSuggestions(shortfall, protectedNames);
@@ -11965,7 +12021,17 @@ starterTargetCopies = Math.max(
                 </div>`;
 
                     if (craftInfo) {
-                        if (craftInfo.affordable) {
+                        if (!craftInfo.knowsBalance) {
+                            swapHtml += `
+                <div class="craft-suggestion craft-affordable">
+                    <div class="craft-suggestion-label">Craft cost</div>
+                    <div class="craft-suggestion-body">
+                        ${escapeHtml(topName)} costs <strong>${craftInfo.craftCost.toLocaleString()}</strong>
+                        <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"> to craft.
+                        Add your Sparks balance in My Collection and I'll tell you if you can afford it.
+                    </div>
+                </div>`;
+                        } else if (craftInfo.affordable) {
                             swapHtml += `
                 <div class="craft-suggestion craft-affordable">
                     <div class="craft-suggestion-label">You can craft this now</div>
