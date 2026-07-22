@@ -9338,6 +9338,10 @@ This prevents the inner duplicate from creating a second box.
 /* --- My Collection page (full view) --- */
 .collection-page{ max-width:1200px; margin:0 auto; padding:20px; width:100%; box-sizing:border-box; }
 .collection-page-subheading{ margin:24px 0 10px; font-size:16px; opacity:.85; }
+.collection-page-actions{
+    display:flex; gap:8px; justify-content:flex-end; align-items:center;
+    margin:0 0 12px;
+}
 
 .collection-page-stats{
     display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
