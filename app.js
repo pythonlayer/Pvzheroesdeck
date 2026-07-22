@@ -7313,7 +7313,6 @@ gradeButtons.forEach(button => {
 
     function buildDeckFromCollection() {
         currentFaction = collectionFactionSelect ? collectionFactionSelect.value : 'Plant';
-        activeClasses = new Set();
         currentSeeds = [];
         lastAddedCard = null;
 
@@ -7330,25 +7329,84 @@ gradeButtons.forEach(button => {
             { synergy: 0.36, power: 0.34, curve: 0.25, consistency: 0.05 }
         ];
 
+        // If "Build for hero" has a hero locked in, only build for that
+        // hero's two classes. Otherwise, search every class pair (plus
+        // single-class decks) available to owned cards in this faction and
+        // keep whichever combo actually produces the strongest deck, instead
+        // of just locking onto whatever classes the first couple of greedy
+        // picks happened to belong to.
+        let classCombos;
+        if (deckHeroLock && deckHeroLock.faction === currentFaction) {
+            classCombos = [deckHeroLock.classes];
+        } else {
+            const factionClasses = currentFaction === 'Plant'
+                ? ["Guardian", "Kabloom", "Mega-Grow", "Smarty", "Solar"]
+                : ["Beastly", "Brainy", "Crazy", "Hearty", "Sneaky"];
+
+            classCombos = [];
+            for (let i = 0; i < factionClasses.length; i++) {
+                for (let j = i + 1; j < factionClasses.length; j++) {
+                    classCombos.push([factionClasses[i], factionClasses[j]]);
+                }
+            }
+        }
+
         let bestDeck = null;
         let bestScore = -Infinity;
 
-        for (const profile of profiles) {
-            const completedDeck = buildFastCompletion(
-                [],
-                profile,
-                idealCurve,
-                verdictCtx,
-                false,
-                false,
-                true // ownedOnly
-            );
+        for (const combo of classCombos) {
+            activeClasses = new Set(combo);
 
-            const score = getExactFinishScore(completedDeck, verdictCtx);
+            for (const profile of profiles) {
+                const completedDeck = buildFastCompletion(
+                    [],
+                    profile,
+                    idealCurve,
+                    verdictCtx,
+                    false,
+                    false,
+                    true // ownedOnly
+                );
 
-            if (score > bestScore) {
-                bestScore = score;
-                bestDeck = completedDeck;
+                // Skip combos that can't actually fill a real deck from the
+                // owned collection so a thin, half-empty deck never wins out
+                // over a full one.
+                if (getFinishDeckCount(completedDeck) < 40 && classCombos.length > 1) {
+                    continue;
+                }
+
+                const score = getExactFinishScore(completedDeck, verdictCtx);
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestDeck = completedDeck;
+                    activeClasses = new Set(combo);
+                }
+            }
+        }
+
+        // Nothing hit a full 40 in any combo (very sparse collection) - fall
+        // back to whichever combo got closest instead of leaving the deck empty.
+        if (!bestDeck) {
+            for (const combo of classCombos) {
+                activeClasses = new Set(combo);
+                for (const profile of profiles) {
+                    const completedDeck = buildFastCompletion(
+                        [],
+                        profile,
+                        idealCurve,
+                        verdictCtx,
+                        false,
+                        false,
+                        true
+                    );
+                    const score = getExactFinishScore(completedDeck, verdictCtx);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestDeck = completedDeck;
+                        activeClasses = new Set(combo);
+                    }
+                }
             }
         }
 
@@ -12445,6 +12503,45 @@ function buildFastCompletion(
             }
         }
 
+        /*
+         * Nothing eligible inside the locked classes (this happens a lot with
+         * ownedOnly, when the collection just doesn't have enough playables
+         * in those 2 classes). Rather than quitting early and handing back a
+         * short deck, fall back to any owned/eligible card regardless of
+         * class so we still reach 40.
+         */
+        if (!bestName && !onlyExisting) {
+            for (const candidateName of allCandidateNames) {
+                if (
+                    !canFinishAddCard(
+                        candidateName,
+                        deck,
+                        workingClasses,
+                        isBudget,
+                        isSuperBudget,
+                        ownedOnly,
+                        true // allowNewClass
+                    )
+                ) {
+                    continue;
+                }
+
+                const candidateScore = getFastFinishCandidateScore(
+                    candidateName,
+                    deck,
+                    seedNames,
+                    profile,
+                    idealCurve,
+                    verdictCtx
+                );
+
+                if (candidateScore > bestCandidateScore) {
+                    bestCandidateScore = candidateScore;
+                    bestName = candidateName;
+                }
+            }
+        }
+
         if (!bestName) break;
 
         addFinishCard(deck, bestName);
@@ -12954,7 +13051,8 @@ function canFinishAddCard(
     workingClasses,
     isBudget,
     isSuperBudget,
-    ownedOnly
+    ownedOnly,
+    allowNewClass
 ) {
     const candidateData = cardDatabase?.[candidateName];
     if (!candidateData) return false;
@@ -12970,6 +13068,7 @@ function canFinishAddCard(
     if (candidateFaction !== currentFaction) return false;
 
     if (
+        !allowNewClass &&
         !workingClasses.has(candidateClass) &&
         workingClasses.size >= 2
     ) {
