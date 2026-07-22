@@ -8276,6 +8276,129 @@ gradeButtons.forEach(button => {
         }
     }
 
+    // --- Collection Export / Import (backup/restore ownedCollection as JSON) ---
+    function exportOwnedCollectionFile() {
+        const payload = {
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            ownedSparks: ownedSparks || 0,
+            collection: ownedCollection
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `pvz-heroes-collection-${stamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    function importOwnedCollectionFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            let parsed;
+            try {
+                parsed = JSON.parse(reader.result);
+            } catch (e) {
+                alert('That file is not valid collection JSON.');
+                return;
+            }
+            // Accept either the { version, collection: {...} } export format,
+            // or a bare { cardName: count } object.
+            const incoming = (parsed && typeof parsed === 'object' && parsed.collection && typeof parsed.collection === 'object')
+                ? parsed.collection
+                : (parsed && typeof parsed === 'object' ? parsed : null);
+            if (!incoming || typeof incoming !== 'object') {
+                alert('That file is not valid collection JSON.');
+                return;
+            }
+
+            const replace = confirm(
+                'Import this collection?\n\nOK = replace your current collection entirely.\nCancel = merge (imported counts overwrite matching cards, everything else you own stays).'
+            );
+
+            const cleaned = {};
+            Object.keys(incoming).forEach(name => {
+                const n = parseInt(incoming[name], 10);
+                if (Number.isFinite(n) && n > 0 && n <= 4) cleaned[name] = n;
+            });
+
+            if (replace) {
+                ownedCollection = cleaned;
+            } else {
+                Object.assign(ownedCollection, cleaned);
+            }
+
+            if (parsed && typeof parsed.ownedSparks === 'number' && parsed.ownedSparks >= 0) {
+                ownedSparks = parsed.ownedSparks;
+                if (typeof saveOwnedSparks === 'function') saveOwnedSparks();
+                if (ownedSparksInput) ownedSparksInput.value = ownedSparks > 0 ? String(ownedSparks) : '';
+            }
+
+            collectionDefaultsSeeded = true; // imported data already reflects the user's real collection
+            saveOwnedCollection();
+            renderCollectionList(collectionSearch ? collectionSearch.value : '');
+            if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+            alert(`Imported ${Object.keys(cleaned).length} cards.`);
+        };
+        reader.onerror = () => alert('Could not read that file.');
+        reader.readAsText(file);
+    }
+
+    window.exportOwnedCollectionFile = exportOwnedCollectionFile;
+    window.importOwnedCollectionFile = importOwnedCollectionFile;
+
+    // Wire up dedicated HTML buttons if present in the page markup:
+    // <button id="collectionExportBtn">Export</button>
+    // <button id="collectionImportBtn">Import</button>
+    // <input type="file" id="collectionImportInput" accept="application/json" style="display:none;">
+    const collectionExportBtn = document.getElementById('collectionExportBtn');
+    const collectionImportBtn = document.getElementById('collectionImportBtn');
+    const collectionImportInput = document.getElementById('collectionImportInput');
+    if (collectionExportBtn) collectionExportBtn.addEventListener('click', exportOwnedCollectionFile);
+    if (collectionImportBtn && collectionImportInput) {
+        collectionImportBtn.addEventListener('click', () => collectionImportInput.click());
+        collectionImportInput.addEventListener('change', () => {
+            const file = collectionImportInput.files && collectionImportInput.files[0];
+            importOwnedCollectionFile(file);
+            collectionImportInput.value = '';
+        });
+    }
+
+    // Fallback: if the HTML hasn't been updated with the buttons above yet,
+    // inject a small toolbar into the collection panel automatically so
+    // export/import work with zero HTML changes.
+    if (collectionPanel && !collectionExportBtn && !collectionImportBtn) {
+        const toolbar = document.createElement('div');
+        toolbar.className = 'collection-io-toolbar';
+        toolbar.style.cssText = 'display:flex;gap:8px;margin:8px 0;';
+        toolbar.innerHTML = `
+            <button type="button" id="collectionExportBtnAuto" class="collection-count-btn">Export</button>
+            <button type="button" id="collectionImportBtnAuto" class="collection-count-btn">Import</button>
+            <input type="file" id="collectionImportInputAuto" accept="application/json" style="display:none;">
+        `;
+        const anchor = (collectionSearch && collectionSearch.parentElement) || (collectionList && collectionList.parentElement) || collectionPanel.firstElementChild;
+        if (anchor && anchor.parentElement) {
+            anchor.parentElement.insertBefore(toolbar, anchor);
+        } else {
+            collectionPanel.appendChild(toolbar);
+        }
+        const autoExport = document.getElementById('collectionExportBtnAuto');
+        const autoImportBtn = document.getElementById('collectionImportBtnAuto');
+        const autoImportInput = document.getElementById('collectionImportInputAuto');
+        autoExport.addEventListener('click', exportOwnedCollectionFile);
+        autoImportBtn.addEventListener('click', () => autoImportInput.click());
+        autoImportInput.addEventListener('change', () => {
+            const file = autoImportInput.files && autoImportInput.files[0];
+            importOwnedCollectionFile(file);
+            autoImportInput.value = '';
+        });
+    }
+
     if (collectionToggleBtn && collectionPanel) {
         collectionToggleBtn.addEventListener('click', () => {
             collectionPanel.classList.toggle('hidden');
