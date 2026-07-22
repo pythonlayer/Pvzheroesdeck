@@ -6784,6 +6784,62 @@ header,
     opacity: 1 !important;
 }
 
+.crafter-hero-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.crafter-hero-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.crafter-hero-row select {
+    background: var(--bg-color);
+    color: #eee;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font: inherit;
+}
+
+.deck-spark-cost {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding-left: 6px;
+    font-size: 0.85rem;
+    color: #4dd0e1;
+    flex-wrap: wrap;
+}
+
+.deck-spark-cost-label {
+    opacity: 0.85;
+}
+
+.deck-spark-cost-value {
+    font-weight: 800;
+}
+
+.deck-spark-cost-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.deck-spark-cost-toggle input {
+    cursor: pointer;
+}
+
 .clear-btn-icon {
     width: 18px;
     height: 18px;
@@ -9101,7 +9157,7 @@ This prevents the inner duplicate from creating a second box.
     opacity: 0.8;
 }
 
-/* --- Collection: owned/missing card tags + collection value summary --- */
+/* --- Collection: owned/missing card tags --- */
 .pvz-card-missing-cost{
     position:absolute; top:2px; right:2px;
     background:rgba(15,20,18,.85); color:#4dd0e1;
@@ -9111,23 +9167,6 @@ This prevents the inner duplicate from creating a second box.
 .pvz-card-owned img{ filter:none; }
 .pvz-card-missing img{ opacity:.55; filter:grayscale(35%); }
 
-.collection-value-summary{
-    background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08);
-    border-radius:10px; padding:10px 12px; margin:10px 0; font-size:13px;
-}
-.collection-value-empty{ opacity:.7; font-style:italic; }
-.collection-value-total{ margin-bottom:6px; font-size:14px; }
-.collection-value-total strong{ color:#4dd0e1; }
-.collection-value-label{ opacity:.7; font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
-.collection-value-row{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:3px 0; border-top:1px solid rgba(255,255,255,.06);
-    gap:8px;
-}
-.collection-value-row:first-of-type{ border-top:none; }
-.collection-value-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.collection-value-qty{ opacity:.7; flex-shrink:0; }
-.collection-value-sparks{ color:#4dd0e1; font-weight:700; flex-shrink:0; text-align:right; min-width:64px; }
 .spark-icon{ width:14px; height:14px; object-fit:contain; vertical-align:-2px; margin-left:2px; }
 
 /* --- My Collection page (full view) --- */

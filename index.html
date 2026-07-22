@@ -518,6 +518,13 @@
     </div>
 
     <p>Build and improve your decks.</p>
+
+    <div class="crafter-hero-row">
+        <label for="deckHeroSelect" class="crafter-hero-label">Build for hero:</label>
+        <select id="deckHeroSelect">
+            <option value="">Any / mixed classes</option>
+        </select>
+    </div>
 </div>
 
 <div class="crafter-input-container" style="position: relative;">
@@ -574,6 +581,16 @@
     </svg>
 </button>
     </div>
+
+    <div class="deck-spark-cost" id="deckSparkCostRow" style="display:none;">
+        <span class="deck-spark-cost-label" id="deckSparkCostLabel">Sparks to complete</span>
+        <span class="deck-spark-cost-value" id="deckSparkCostValue">0</span>
+        <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon">
+        <label class="deck-spark-cost-toggle">
+            <input type="checkbox" id="deckSparkIncludeOwned" checked>
+            Use my collection
+        </label>
+    </div>
 </div>
 
 <div id="collectionPanel" class="collection-panel hidden">
@@ -591,8 +608,6 @@
         <p class="collection-panel-hint">
             Mark how many copies of each card you own (1–4). This is saved automatically in your browser, so you only enter it once.
         </p>
-
-        <div id="collectionValueSummary" class="collection-value-summary"></div>
 
         <input
             id="collectionSearch"

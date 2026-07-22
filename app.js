@@ -6817,6 +6817,7 @@ gradeButtons.forEach(button => {
     let heroAnnounced = false;
     let currentFaction = null;
     let activeClasses = new Set();
+    let deckHeroLock = null; // { name, faction, classes } when "Build for hero" has a hero picked
     let currentClipboardText = "";
     let lastAddedCard = null; // Memory for AI context
     let ownedCollection = {}; // cardName -> owned copies (1-4), for "Build From My Collection"
@@ -6959,52 +6960,12 @@ gradeButtons.forEach(button => {
         }
     }
 
-    function renderCollectionValue() {
-        const box = document.getElementById('collectionValueSummary');
-        if (!box) return;
-
-        let totalValue = 0;
-        let ownedCount = 0;
-        const valuable = [];
-
-        Object.keys(ownedCollection).forEach(rawName => {
-            const owned = ownedCollection[rawName] || 0;
-            if (owned <= 0) return;
-            const each = sparkCostFor(rawName);
-            if (each <= 0) return; // skip commons/basics, they add noise not insight
-            totalValue += each * owned;
-            ownedCount += owned;
-            valuable.push({ rawName, owned, each, total: each * owned });
-        });
-
-        valuable.sort((a, b) => b.total - a.total);
-        const top = valuable.slice(0, 10);
-
-        if (top.length === 0) {
-            box.innerHTML = `<div class="collection-value-empty">Mark some cards as owned to see your collection's value here.</div>`;
-            return;
-        }
-
-        const rows = top.map(v => `
-            <div class="collection-value-row">
-                <span class="collection-value-name">${v.rawName.replace(/_/g, ' ')}</span>
-                <span class="collection-value-qty">x${v.owned}</span>
-                <span class="collection-value-sparks">${v.total.toLocaleString()}<img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></span>
-            </div>`).join('');
-
-        box.innerHTML = `
-            <div class="collection-value-total">Collection value: <strong>${totalValue.toLocaleString()} sparks</strong></div>
-            <div class="collection-value-label">Most valuable cards you own</div>
-            ${rows}`;
-    }
-
     if (collectionToggleBtn && collectionPanel) {
         collectionToggleBtn.addEventListener('click', () => {
             collectionPanel.classList.toggle('hidden');
             if (!collectionPanel.classList.contains('hidden')) {
                 seedDefaultCollection();
                 renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                renderCollectionValue();
             }
         });
     }
@@ -7052,7 +7013,7 @@ gradeButtons.forEach(button => {
             }
             saveOwnedCollection();
             renderCollectionList(collectionSearch ? collectionSearch.value : '');
-            renderCollectionValue();
+            if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         });
     }
 
@@ -7322,9 +7283,9 @@ gradeButtons.forEach(button => {
             const searchVal = document.getElementById('collectionPageSearch')?.value || '';
             renderCollectionPageGrid(searchVal);
             renderCollectionPageStats();
-            // keep the slide-out panel + its value summary in sync if it's open
+            // keep the slide-out panel in sync if it's open
             if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-            if (typeof renderCollectionValue === 'function') renderCollectionValue();
+            if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         });
     }
 
@@ -7513,6 +7474,13 @@ gradeButtons.forEach(button => {
         const isDeckComplete = totalCards === 40;
         syncDeckIdentityFromSeeds();
 
+        // A hero picked from "Build for hero" stays locked in even before any
+        // cards are added, so Finish-For-Me knows which two classes to use.
+        if (deckHeroLock && activeClasses.size === 0) {
+            currentFaction = deckHeroLock.faction;
+            activeClasses = new Set(deckHeroLock.classes);
+        }
+
         resultsContainer.innerHTML = '';
         resultsContainer.className = 'visual-deck-grid';
 
@@ -7528,13 +7496,16 @@ gradeButtons.forEach(button => {
         if (currentSeeds.length === 0) {
             manualDeckName = "";
             resultsContainer.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #888;">No cards added yet. Search above to begin!</div>';
-            generateDeckBtn.disabled = true;
+            generateDeckBtn.disabled = !deckHeroLock;
             if (title) title.classList.add('hidden');
             if (actionContainer) actionContainer.style.display = 'none';
-            currentFaction = null;
-            activeClasses.clear();
+            if (!deckHeroLock) {
+                currentFaction = null;
+                activeClasses.clear();
+            }
             lastAddedCard = null;
             triggerAICoPilot();
+            if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
             return;
         }
 
@@ -7721,6 +7692,7 @@ resultsContainer.appendChild(cardDiv);
         attachQuantityListeners();
         triggerAICoPilot();
         updateDeckStats();
+        if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
     }
     const PLANT_CARD_CLASSES = new Set([
     "Guardian",
@@ -8179,6 +8151,9 @@ if (document.readyState === "loading") {
             currentSeeds = [];
             currentFaction = null;
             activeClasses.clear();
+            deckHeroLock = null;
+            const deckHeroSelectEl = document.getElementById('deckHeroSelect');
+            if (deckHeroSelectEl) deckHeroSelectEl.value = '';
             lastAddedCard = null;
             heroAnnounced = false;
             seedInput.value = '';
@@ -8186,6 +8161,82 @@ if (document.readyState === "loading") {
             if (typeof updateDeckStats === 'function') updateDeckStats();
         });
     }
+
+    // --- Build for a specific hero: locks the deck to that hero's 2 classes ---
+    const deckHeroSelect = document.getElementById('deckHeroSelect');
+    if (deckHeroSelect && !deckHeroSelect.dataset.populated) {
+        deckHeroSelect.dataset.populated = '1';
+
+        const plantGroup = document.createElement('optgroup');
+        plantGroup.label = 'Plants';
+        PLANT_HEROES.forEach(h => plantGroup.appendChild(new Option(h, h)));
+
+        const zombieGroup = document.createElement('optgroup');
+        zombieGroup.label = 'Zombies';
+        ZOMBIE_HEROES.forEach(h => zombieGroup.appendChild(new Option(h, h)));
+
+        deckHeroSelect.appendChild(plantGroup);
+        deckHeroSelect.appendChild(zombieGroup);
+
+        deckHeroSelect.addEventListener('change', () => {
+            const heroName = deckHeroSelect.value;
+
+            if (!heroName) {
+                deckHeroLock = null;
+            } else {
+                const isPlant = PLANT_HEROES.includes(heroName);
+                const classes = isPlant ? PLANT_HERO_CLASSES[heroName] : ZOMBIE_HERO_CLASSES[heroName];
+                deckHeroLock = {
+                    name: heroName,
+                    faction: isPlant ? 'Plant' : 'Zombie',
+                    classes: classes || []
+                };
+            }
+
+            // Starting a fresh hero means starting a fresh deck — the old
+            // cards may belong to different classes entirely.
+            currentSeeds = [];
+            lastAddedCard = null;
+            heroAnnounced = false;
+            seedInput.value = '';
+            renderSeeds();
+            if (typeof updateDeckStats === 'function') updateDeckStats();
+        });
+    }
+
+    // --- Sparks needed to build the current deck, with/without owned copies ---
+    function updateDeckSparkCost() {
+        const row = document.getElementById('deckSparkCostRow');
+        const valueEl = document.getElementById('deckSparkCostValue');
+        const labelEl = document.getElementById('deckSparkCostLabel');
+        if (!row || !valueEl) return;
+
+        if (!currentSeeds.length) {
+            row.style.display = 'none';
+            return;
+        }
+        row.style.display = '';
+
+        const includeToggle = document.getElementById('deckSparkIncludeOwned');
+        const useCollection = includeToggle ? includeToggle.checked : true;
+
+        let total = 0;
+        currentSeeds.forEach(seed => {
+            const each = typeof sparkCostFor === 'function' ? sparkCostFor(seed.name) : 0;
+            const owned = useCollection ? (ownedCollection[seed.name] || 0) : 0;
+            const missing = Math.max(0, seed.count - owned);
+            total += each * missing;
+        });
+
+        valueEl.textContent = total.toLocaleString();
+        if (labelEl) labelEl.textContent = useCollection ? 'Sparks to complete' : 'Sparks to build';
+    }
+
+    const deckSparkIncludeOwned = document.getElementById('deckSparkIncludeOwned');
+    if (deckSparkIncludeOwned) {
+        deckSparkIncludeOwned.addEventListener('change', updateDeckSparkCost);
+    }
+
     // --- SPECIFIC COMBO CALLOUTS ---
     const comboDictionary = [
         {
