@@ -11119,6 +11119,21 @@ const SmartDeckPlan = (() => {
             /\buntrickable\b|\barmored\b|\bteam-up\b|\bcan't be hurt\b/i
     };
 
+    /*
+     * Text-level tell for a conditionally-worded card ("if you have...",
+     * "as long as...", etc.). A card can share a tag/tribe with the rest
+     * of the deck and still be dead unless its condition is met, which a
+     * simple tag-overlap count won't catch on its own.
+     */
+    const SITUATIONAL_PATTERN =
+        /\bif you have\b|\bonly if\b|\bas long as\b|\brequires?\b|\bif this is\b|\bif there (?:is|are)\b/i;
+
+    function getSituationalCards(cards) {
+        return cards.filter(card =>
+            SITUATIONAL_PATTERN.test(card.description || '')
+        );
+    }
+
     function safe(value) {
         return String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -11336,9 +11351,13 @@ const SmartDeckPlan = (() => {
         faction,
         curveGaps,
         finisherCards,
-        removalCards
+        removalCards,
+        stallCards,
+        situationalCoreCards
     }) {
         const notes = [];
+        const safeStallCards = stallCards || [];
+        const safeSituationalCoreCards = situationalCoreCards || [];
 
         if (totalCards < 20) {
             return notes;
@@ -11425,6 +11444,65 @@ const SmartDeckPlan = (() => {
                     archetype === 'control' ? 'Control' : 'Midrange'
                 } decks generally win by surviving to a payoff, so some way to deal ` +
                 `with the opponent's best play is usually worth the slot.`
+            );
+        }
+
+        /*
+         * 4. Stall capacity: if the deck's closing power is slow
+         *    (finisherCards skew expensive, per the check above) and
+         *    there is no removal, freeze/bounce, or reach to slow the
+         *    opponent down, the deck has no way to safely wait for
+         *    "the right turn" to close. That's a different problem
+         *    than not having a finisher at all, so it needs its own note.
+         */
+        const hasSlowFinisher =
+            finisherCards.length > 0 &&
+            finisherCards.every(card => Number(card.cost) >= 6);
+
+        if (
+            (archetype === 'aggro' || archetype === 'tempo') &&
+            safeStallCards.length === 0 &&
+            finisherCards.length > 0 &&
+            !hasSlowFinisher
+        ) {
+            notes.push(
+                `${formatNames(finisherCards)} ${
+                    finisherCards.length === 1 ? 'is' : 'are'
+                } the closing power, but there's no removal, freeze/bounce or reach ` +
+                `to slow the opponent down while you wait for a good turn to play ` +
+                `${finisherCards.length === 1 ? 'it' : 'them'}. In an ${archetype} deck ` +
+                `with no way to stall, that usually means closing as soon as the curve ` +
+                `allows rather than sitting on it.`
+            );
+        }
+
+        /*
+         * 5. Narrow/situational cards counted as "core": a card can share
+         *    a tag or tribe with the rest of the deck and still be a dead
+         *    draw if its condition isn't met on the turns a fast curve
+         *    wants to play it. Tag overlap alone won't catch that.
+         */
+        const situationalCopies =
+            safeSituationalCoreCards.reduce(
+                (sum, card) => sum + (card.count || 0),
+                0
+            );
+
+        if (
+            (archetype === 'aggro' || archetype === 'tempo') &&
+            situationalCopies >= 4
+        ) {
+            notes.push(
+                `${formatNames(safeSituationalCoreCards)} ${
+                    safeSituationalCoreCards.length === 1 ? 'is' : 'are'
+                } counted toward the deck's synergy, but ${
+                    safeSituationalCoreCards.length === 1 ? 'its' : 'their'
+                } text is conditional. Worth checking that condition is actually met ` +
+                `on the turn an ${archetype} curve wants to play ${
+                    safeSituationalCoreCards.length === 1 ? 'it' : 'them'
+                }, not just that ${
+                    safeSituationalCoreCards.length === 1 ? 'it shares' : 'they share'
+                } a tag with the rest of the list.`
             );
         }
 
@@ -11720,12 +11798,42 @@ const SmartDeckPlan = (() => {
             archetype === 'synergy' &&
             dominantTribe
         ) {
-            const payoffNames =
-                formatNames(
-                    payoffCards.length
-                        ? payoffCards
-                        : coreCards
+            const payoffPool =
+                payoffCards.length
+                    ? payoffCards
+                    : coreCards;
+
+            /*
+             * formatNames only ever names the first two cards in the
+             * pool, so sequencing advice has to match THOSE cards, not
+             * the pool's theme in the abstract. A cheap payoff (e.g. a
+             * 1-2 cost card) is a curve-filler you play early and grow
+             * into, not a card you hold back for a built board.
+             */
+            const namedPayoffs =
+                payoffPool.slice(0, 2);
+
+            const namedPayoffsAreCheap =
+                namedPayoffs.length > 0 &&
+                namedPayoffs.every(card =>
+                    Number.isFinite(card.cost) &&
+                    card.cost <= 2
                 );
+
+            const payoffNames =
+                formatNames(payoffPool);
+
+            if (namedPayoffsAreCheap) {
+                return (
+                    `Play ${payoffNames || 'your payoff cards'} on curve as one of ` +
+                    `your first plays rather than holding it back. At that cost it ` +
+                    `works as a curve-filler that gets better as your ` +
+                    `${safe(dominantTribe.name)} count grows, not a card that needs ` +
+                    `an established board to be worth playing. Keep adding ` +
+                    `${safe(dominantTribe.name)} cards behind it to raise its value ` +
+                    `over the course of the game.`
+                );
+            }
 
             return (
                 `Develop your ${safe(dominantTribe.name)} cards first, ` +
@@ -12038,6 +12146,35 @@ const SmartDeckPlan = (() => {
         const removalCards =
             cardsWithRole(cards, 'removal');
 
+        const tempoCardsForStall =
+            cardsWithRole(cards, 'tempo');
+
+        const reachCardsForStall =
+            cardsWithRole(cards, 'reach');
+
+        /*
+         * Anything that can slow the opponent down or race through a
+         * stalled board — dedup by name since a card can match more
+         * than one role pattern.
+         */
+        const stallCards =
+            [...new Map(
+                [
+                    ...removalCards,
+                    ...tempoCardsForStall,
+                    ...reachCardsForStall
+                ].map(card => [card.name, card])
+            ).values()];
+
+        const corePool =
+            [...new Map(
+                [...coreCards, ...payoffCards]
+                    .map(card => [card.name, card])
+            ).values()];
+
+        const situationalCoreCards =
+            getSituationalCards(corePool);
+
         const weaknesses =
             buildWeaknesses({
                 archetype,
@@ -12047,7 +12184,9 @@ const SmartDeckPlan = (() => {
                 faction: getFaction(cards),
                 curveGaps: getCurveGaps(cards),
                 finisherCards,
-                removalCards
+                removalCards,
+                stallCards,
+                situationalCoreCards
             });
 
         const headline =
