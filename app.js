@@ -7410,7 +7410,11 @@ gradeButtons.forEach(button => {
         renderSeeds();
     }
 
-    const getTotalCards = () => currentSeeds.reduce((sum, seed) => sum + seed.count, 0);
+    const getTotalCards = () => currentSeeds.reduce((sum, seed) => {
+        const type = String(cardDatabase?.[seed.name]?.Type || '').toLowerCase();
+        if (type.includes('superpower')) return sum;
+        return sum + seed.count;
+    }, 0);
 
 
     // --- 1. Smart Autocomplete ---
@@ -7436,6 +7440,8 @@ gradeButtons.forEach(button => {
             const cleanName = rawName.replace(/_/g, ' ');
             if (cleanName.toLowerCase().includes(query)) {
                 const cardInfo = cardDatabase[rawName];
+                const cardType = String(cardInfo.Type || '').toLowerCase();
+                if (cardType.includes('superpower')) return;
                 const cardClass = cardInfo.Class;
                 const cardFaction = plantClasses.has(cardClass) ? "Plant" : "Zombie";
 
@@ -12902,6 +12908,9 @@ function canFinishAddCard(
     const candidateData = cardDatabase?.[candidateName];
     if (!candidateData) return false;
 
+    const candidateType = String(candidateData.Type || '').toLowerCase();
+    if (candidateType.includes('superpower')) return false;
+
     const candidateClass = candidateData.Class;
     const candidateFaction = plantClasses.has(candidateClass)
         ? "Plant"
@@ -13011,10 +13020,11 @@ function removeFinishCard(deck, cardName) {
 }
 
 function getFinishDeckCount(deck) {
-    return deck.reduce(
-        (sum, card) => sum + card.count,
-        0
-    );
+    return deck.reduce((sum, card) => {
+        const type = String(cardDatabase?.[card.name]?.Type || '').toLowerCase();
+        if (type.includes('superpower')) return sum;
+        return sum + card.count;
+    }, 0);
 }
 
 function getFinishDeckClasses(deck) {
