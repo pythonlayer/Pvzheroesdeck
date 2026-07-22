@@ -6857,6 +6857,96 @@ gradeButtons.forEach(button => {
         return RARITY_SPARKS[rarity] || 0;
     }
 
+    // Recycle (scrap) value - what you get back for destroying a copy. Always
+    // less than the craft cost above.
+    const RECYCLE_SPARKS = {
+        'common': 0,
+        'basic': 0,
+        'uncommon': 15,
+        'rare': 50,
+        'super rare': 250,
+        'super-rare': 250,
+        'event': 250,
+        'legendary': 1000
+    };
+    function recycleValueFor(rawName) {
+        const info = (typeof cardDatabase !== 'undefined') ? cardDatabase[rawName] : null;
+        const rarity = (info?.Rarity || '').toLowerCase();
+        return RECYCLE_SPARKS[rarity] || 0;
+    }
+
+    /*
+     * Given a spark shortfall and a set of card names to leave alone (things
+     * already in the deck we're building), pick owned cards to scrap to
+     * cover it. Prefers cards that barely show up in strong decks (using the
+     * same cardFrequencies data the synergy engine already computes), so we
+     * scrap clutter rather than anything actually good. May suggest scrapping
+     * from more than one card if that's what it takes.
+     */
+    function findScrapSuggestions(sparksNeeded, protectedNames) {
+        const candidates = [];
+
+        Object.keys(ownedCollection).forEach(name => {
+            if (protectedNames && protectedNames.has(name)) return;
+
+            const owned = ownedCollection[name] || 0;
+            if (owned <= 0) return;
+
+            const info = cardDatabase?.[name];
+            if (!info) return;
+            // Basic cards come free with every hero and can't be scrapped.
+            if (info.Set === 'Basic') return;
+
+            const perCopyValue = recycleValueFor(name);
+            if (perCopyValue <= 0) return;
+
+            const usage = (typeof cardFrequencies === 'object' && cardFrequencies)
+                ? (cardFrequencies[name] || 0)
+                : 0;
+
+            candidates.push({ name, owned, usage, perCopyValue });
+        });
+
+        // Least-used cards in strong decks first (best scrap fodder); among
+        // equally-unused cards, prefer higher recycle value so fewer cards
+        // need to be broken down.
+        candidates.sort((a, b) => (a.usage - b.usage) || (b.perCopyValue - a.perCopyValue));
+
+        const picks = [];
+        let gathered = 0;
+
+        for (const c of candidates) {
+            if (gathered >= sparksNeeded) break;
+
+            const stillNeeded = sparksNeeded - gathered;
+            const copiesToScrap = Math.min(c.owned, Math.ceil(stillNeeded / c.perCopyValue));
+            if (copiesToScrap <= 0) continue;
+
+            const sparksFromThis = copiesToScrap * c.perCopyValue;
+            picks.push({ name: c.name, copies: copiesToScrap, sparks: sparksFromThis });
+            gathered += sparksFromThis;
+        }
+
+        return { picks, gathered, stillShort: Math.max(0, sparksNeeded - gathered) };
+    }
+
+    // --- Owned Sparks (user-entered balance, same persistence pattern as the collection) ---
+    let ownedSparks = 0;
+    const OWNED_SPARKS_KEY = 'pvz_owned_sparks_v1';
+    function loadOwnedSparks() {
+        try {
+            const raw = localStorage.getItem(OWNED_SPARKS_KEY);
+            const n = parseInt(raw, 10);
+            if (!isNaN(n) && n >= 0) ownedSparks = n;
+        } catch (e) { /* ignore corrupt storage */ }
+    }
+    function saveOwnedSparks() {
+        try {
+            localStorage.setItem(OWNED_SPARKS_KEY, String(ownedSparks));
+        } catch (e) { /* storage full/unavailable, ignore */ }
+    }
+    loadOwnedSparks();
+
     // --- Hero ownership (separate from card ownership, same persistence pattern) ---
     let ownedHeroes = {}; // heroName -> true
     const OWNED_HEROES_KEY = 'pvz_owned_heroes_v1';
@@ -6902,6 +6992,16 @@ gradeButtons.forEach(button => {
     const collectionFactionSelect = document.getElementById('collectionFactionSelect');
     const buildFromCollectionBtn = document.getElementById('buildFromCollectionBtn');
     const collectionOwnedCount = document.getElementById('collectionOwnedCount');
+    const ownedSparksInput = document.getElementById('ownedSparksInput');
+
+    if (ownedSparksInput) {
+        ownedSparksInput.value = ownedSparks > 0 ? String(ownedSparks) : '';
+        ownedSparksInput.addEventListener('input', () => {
+            const n = parseInt(ownedSparksInput.value, 10);
+            ownedSparks = (!isNaN(n) && n >= 0) ? n : 0;
+            saveOwnedSparks();
+        });
+    }
 
     let collectionDefaultsSeeded = false;
 
@@ -7336,8 +7436,10 @@ gradeButtons.forEach(button => {
         // of just locking onto whatever classes the first couple of greedy
         // picks happened to belong to.
         let classCombos;
+        let heroName = null;
         if (deckHeroLock && deckHeroLock.faction === currentFaction) {
             classCombos = [deckHeroLock.classes];
+            heroName = deckHeroLock.name;
         } else {
             const factionClasses = currentFaction === 'Plant'
                 ? ["Guardian", "Kabloom", "Mega-Grow", "Smarty", "Solar"]
@@ -7365,7 +7467,8 @@ gradeButtons.forEach(button => {
                     verdictCtx,
                     false,
                     false,
-                    true // ownedOnly
+                    true, // ownedOnly
+                    heroName
                 );
 
                 // Skip combos that can't actually fill a real deck from the
@@ -7398,7 +7501,8 @@ gradeButtons.forEach(button => {
                         verdictCtx,
                         false,
                         false,
-                        true
+                        true,
+                        heroName
                     );
                     const score = getExactFinishScore(completedDeck, verdictCtx);
                     if (score > bestScore) {
@@ -11789,6 +11893,7 @@ starterTargetCopies = Math.max(
                             bestSwapIdea = {
     removeCard: seed.name,
     addCard: rec.name,
+    neededCopies: rec.suggestedAmount || seed.count,
     oldScore: baselineScore,
     newScore: simScore,
     improvementText: getMainSwapImprovement(baselineVerdict, simVerdict)
@@ -11796,6 +11901,34 @@ starterTargetCopies = Math.max(
                         }
                     });
                 });
+
+                // --- Spark/crafting awareness for the winning swap idea ---
+                let craftInfo = null;
+                if (bestSwapIdea) {
+                    const addName = bestSwapIdea.addCard;
+                    const neededCopies = bestSwapIdea.neededCopies;
+                    const owned = (typeof ownedCollection === 'object' && ownedCollection) ? (ownedCollection[addName] || 0) : 0;
+                    const missing = Math.max(0, neededCopies - owned);
+
+                    if (missing > 0) {
+                        const perCopyCraftCost = sparkCostFor(addName);
+                        const craftCost = perCopyCraftCost * missing;
+                        const shortfall = Math.max(0, craftCost - ownedSparks);
+
+                        craftInfo = {
+                            craftCost,
+                            missing,
+                            affordable: shortfall === 0,
+                            scrapPlan: null
+                        };
+
+                        if (craftCost > 0 && shortfall > 0) {
+                            const protectedNames = new Set(currentSeeds.map(s => s.name));
+                            protectedNames.add(addName);
+                            craftInfo.scrapPlan = findScrapSuggestions(shortfall, protectedNames);
+                        }
+                    }
+                }
 
                 let swapHtml = "";
 
@@ -11830,6 +11963,51 @@ starterTargetCopies = Math.max(
                         Make the swap
                     </button>
                 </div>`;
+
+                    if (craftInfo) {
+                        if (craftInfo.affordable) {
+                            swapHtml += `
+                <div class="craft-suggestion craft-affordable">
+                    <div class="craft-suggestion-label">You can craft this now</div>
+                    <div class="craft-suggestion-body">
+                        ${escapeHtml(topName)} costs <strong>${craftInfo.craftCost.toLocaleString()}</strong>
+                        <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"> to craft
+                        (you have ${ownedSparks.toLocaleString()}).
+                    </div>
+                </div>`;
+                        } else if (craftInfo.scrapPlan) {
+                            const plan = craftInfo.scrapPlan;
+                            const shortfall = craftInfo.craftCost - ownedSparks;
+
+                            if (plan.picks.length > 0) {
+                                const rows = plan.picks.map(p => {
+                                    const displayName = p.name.replace(/_/g, ' ');
+                                    return `<li><strong>${escapeHtml(displayName)}</strong> × ${p.copies} <span class="craft-scrap-value">(+${p.sparks.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon">)</span></li>`;
+                                }).join('');
+
+                                swapHtml += `
+                <div class="craft-suggestion craft-needs-scrap">
+                    <div class="craft-suggestion-label">Craft needed: ${craftInfo.craftCost.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
+                    <div class="craft-suggestion-body">
+                        You have ${ownedSparks.toLocaleString()} sparks — short by ${shortfall.toLocaleString()}.
+                        These barely see play, so scrap them to cover it:
+                    </div>
+                    <ul class="craft-scrap-list">${rows}</ul>
+                    ${plan.stillShort > 0
+                        ? `<div class="craft-suggestion-warning">Still short ${plan.stillShort.toLocaleString()} sparks even after scrapping everything unused in your collection.</div>`
+                        : ''}
+                </div>`;
+                            } else {
+                                swapHtml += `
+                <div class="craft-suggestion craft-needs-scrap">
+                    <div class="craft-suggestion-label">Craft needed: ${craftInfo.craftCost.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
+                    <div class="craft-suggestion-body">
+                        You have ${ownedSparks.toLocaleString()} sparks and nothing obvious in your collection worth scrapping for it yet.
+                    </div>
+                </div>`;
+                            }
+                        }
+                    }
                 } else {
     swapHtml = daveSay(
         SmartDeckPlan.buildHtml()
@@ -12212,6 +12390,14 @@ if (scoreDiff > 0) {
     let synergyMatrix = null;
     let cardFrequencies = null;
     let cardAverageCopies = null;
+    // How often a card shows up specifically in decks for ONE hero, vs. the
+    // overall rate for its class pair. This is our stand-in for "synergy with
+    // the hero's kit/signature superpower" - we don't have superpower effect
+    // text to reason about directly, but real deck-builders already bake
+    // that synergy into which cards they pick for a given hero, so we can
+    // recover it from deck.hero + deck.cards.
+    let heroCardWeight = null;   // { heroName: { cardName: weight } }
+    let heroTotalWeight = null;  // { heroName: totalWeight }
 
    function initSynergyMatrix() {
     if (synergyMatrix) return;
@@ -12219,6 +12405,8 @@ if (scoreDiff > 0) {
     synergyMatrix = {};
     cardFrequencies = {};
     cardAverageCopies = {};
+    heroCardWeight = {};
+    heroTotalWeight = {};
 
     const rawDecks = Object.values(fullDatabase || {});
     const seenSignatures = new Set();
@@ -12299,6 +12487,17 @@ if (scoreDiff > 0) {
             cardAverageCopies[card.name].appearances += deckWeight;
         });
 
+        const heroName = deck.hero;
+        if (heroName) {
+            if (!heroCardWeight[heroName]) heroCardWeight[heroName] = {};
+            heroTotalWeight[heroName] = (heroTotalWeight[heroName] || 0) + deckWeight;
+
+            parsedCards.forEach(card => {
+                heroCardWeight[heroName][card.name] =
+                    (heroCardWeight[heroName][card.name] || 0) + deckWeight;
+            });
+        }
+
         for (let i = 0; i < cleanCards.length; i++) {
             const cardA = cleanCards[i];
 
@@ -12314,6 +12513,28 @@ if (scoreDiff > 0) {
             }
         }
     });
+}
+
+/*
+ * Proxy for "does this card synergize with this hero's kit / signature
+ * superpower?" We don't have superpower effect text to reason about
+ * directly, so instead we look at how disproportionately often expert
+ * players actually run this card specifically on this hero (as opposed to
+ * just anywhere in that class pair). Returns a small bonus, 0 when there's
+ * no hero context or no data yet.
+ */
+function getHeroAffinityBonus(cardName, heroName) {
+    if (!heroName || !heroCardWeight || !heroCardWeight[heroName]) return 0;
+
+    const heroWeight = heroTotalWeight[heroName] || 0;
+    if (heroWeight <= 0) return 0;
+
+    const pickRate = (heroCardWeight[heroName][cardName] || 0) / heroWeight;
+
+    // pickRate is roughly 0..1 (how often this exact card shows up in this
+    // hero's decks). Scale modestly so it nudges scoring without dominating
+    // the existing synergy/power/curve terms.
+    return Math.min(pickRate * 40, 12);
 }
 
     // --- 5. FINISH FOR ME (Auto-Generate Remaining) ---
@@ -12343,6 +12564,7 @@ if (scoreDiff > 0) {
             : undefined;
 
     const idealCurve = getFinishIdealCurve(originalDeck, verdictCtx);
+    const heroName = deckHeroLock?.name || null;
 
     /*
      * A few fast deterministic approaches are better than one randomized
@@ -12379,7 +12601,9 @@ if (scoreDiff > 0) {
             idealCurve,
             verdictCtx,
             isBudget,
-            isSuperBudget
+            isSuperBudget,
+            false,
+            heroName
         );
 
         const score = getExactFinishScore(completedDeck, verdictCtx);
@@ -12439,7 +12663,8 @@ function buildFastCompletion(
     verdictCtx,
     isBudget,
     isSuperBudget,
-    ownedOnly
+    ownedOnly,
+    heroName
 ) {
     const deck = startingDeck.map(card => ({ ...card }));
     const seedNames = new Set(startingDeck.map(card => card.name));
@@ -12494,7 +12719,8 @@ function buildFastCompletion(
                 seedNames,
                 profile,
                 idealCurve,
-                verdictCtx
+                verdictCtx,
+                heroName
             );
 
             if (candidateScore > bestCandidateScore) {
@@ -12532,7 +12758,8 @@ function buildFastCompletion(
                     seedNames,
                     profile,
                     idealCurve,
-                    verdictCtx
+                    verdictCtx,
+                    heroName
                 );
 
                 if (candidateScore > bestCandidateScore) {
@@ -12558,7 +12785,8 @@ function getFastFinishCandidateScore(
     seedNames,
     profile,
     idealCurve,
-    verdictCtx
+    verdictCtx,
+    heroName
 ) {
     const currentCopies =
         deck.find(card => card.name === candidateName)?.count || 0;
@@ -12586,6 +12814,12 @@ function getFastFinishCandidateScore(
         power * profile.power +
         curve * profile.curve +
         consistency * profile.consistency;
+
+    // Nudge toward cards that specifically pair well with this hero's kit
+    // (see getHeroAffinityBonus for what this is standing in for).
+    if (heroName) {
+        score += getHeroAffinityBonus(candidateName, heroName);
+    }
 
     /*
      * Encourage reaching approximately ten distinct cards.

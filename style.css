@@ -3402,6 +3402,76 @@ button:disabled, input:disabled, #moreBtn:disabled { opacity: 0.5; cursor: not-a
     border-radius: 7px;
 }
 
+.craft-suggestion {
+    margin: 2px 0 10px 34px;
+    width: calc(100% - 34px);
+    box-sizing: border-box;
+    border-radius: 12px;
+    padding: 10px 14px;
+    animation: bubblePop 0.4s cubic-bezier(0.34, 1.5, 0.6, 1) both;
+    font-size: 0.85em;
+}
+
+.craft-suggestion.craft-affordable {
+    background: rgba(0, 180, 216, 0.07);
+    border: 1px solid rgba(0, 180, 216, 0.3);
+}
+
+.craft-suggestion.craft-needs-scrap {
+    background: rgba(255, 179, 0, 0.05);
+    border: 1px solid rgba(255, 179, 0, 0.25);
+}
+
+.craft-suggestion-label {
+    font-size: 0.78em;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--pvz-amber);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.craft-suggestion.craft-affordable .craft-suggestion-label {
+    color: var(--accent);
+}
+
+.craft-suggestion-label .spark-icon,
+.craft-suggestion-body .spark-icon,
+.craft-scrap-value .spark-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+}
+
+.craft-suggestion-body {
+    color: #ddd;
+    line-height: 1.4;
+}
+
+.craft-scrap-list {
+    margin: 8px 0 0;
+    padding-left: 18px;
+}
+
+.craft-scrap-list li {
+    color: #eee;
+    margin-bottom: 3px;
+}
+
+.craft-scrap-value {
+    color: #8fe3a3;
+    font-size: 0.92em;
+}
+
+.craft-suggestion-warning {
+    margin-top: 8px;
+    color: #ff7b72;
+    font-size: 0.92em;
+}
+
 /* ------------------------------------------------------------
    Accessibility: respect reduced motion
    ------------------------------------------------------------ */
@@ -9082,6 +9152,35 @@ This prevents the inner duplicate from creating a second box.
     font-size: 0.82rem;
     color: #aaa;
     margin: 0 0 10px;
+}
+.collection-sparks-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.collection-sparks-row label {
+    font-size: 0.85rem;
+    color: #eee;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.collection-sparks-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: #1c202b;
+    color: #eee;
+}
+.collection-sparks-row .spark-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.collection-sparks-hint {
+    margin-top: -4px;
 }
 #collectionSearch {
     width: 100%;
