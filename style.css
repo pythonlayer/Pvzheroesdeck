@@ -9126,6 +9126,17 @@ This prevents the inner duplicate from creating a second box.
 .deck-plan-section strong {
     color: var(--accent, #00b4d8);
 }
+
+.deck-plan-weakness-list {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+}
+
+.deck-plan-weakness-list li {
+    line-height: 1.45;
+}
 .card-name-accent {
     color: var(--accent, #00b4d8);
     font-weight: 700;

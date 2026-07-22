@@ -10050,6 +10050,7 @@ const SmartRecWhy = (() => {
 
             lowCostCopies: 0,
             highCostCopies: 0,
+            oneCostCopies: 0,
 
             archetype: 'developing'
         };
@@ -10069,6 +10070,12 @@ const SmartRecWhy = (() => {
 
                 if (card.cost <= 2) {
                     context.lowCostCopies += card.count;
+                }
+
+                if (card.cost === 1) {
+                    context.oneCostCopies =
+                        (context.oneCostCopies || 0) +
+                        card.count;
                 }
 
                 if (card.cost >= 6) {
@@ -10113,10 +10120,19 @@ const SmartRecWhy = (() => {
             0
         );
 
+        /*
+         * Guide section 1 ("Curve") ties archetype to one-cost count as
+         * much as average cost: Aggro runs roughly 11-14x one-costs,
+         * Control roughly 4-8x. Treat that as a signal alongside the
+         * existing average-cost/control-tools checks rather than
+         * replacing them.
+         */
         if (
             context.totalCards >= 6 &&
-            averageCost <= 2.8 &&
-            lowCostShare >= 0.45
+            (
+                (averageCost <= 2.8 && lowCostShare >= 0.45) ||
+                context.oneCostCopies >= 11
+            )
         ) {
             context.archetype = 'fast';
         } else if (
@@ -10126,6 +10142,10 @@ const SmartRecWhy = (() => {
                 controlTools >= Math.max(
                     4,
                     context.totalCards * 0.25
+                ) ||
+                (
+                    context.oneCostCopies <= 8 &&
+                    averageCost >= 3.2
                 )
             )
         ) {
@@ -10534,17 +10554,36 @@ if (existingCount > 0) {
             const currentCopies =
                 context.mechanicCopies[mechanic] || 0;
 
-            if (
-                currentCopies === 0 &&
-                ROLE_TEXT[mechanic]
-            ) {
+            if (currentCopies !== 0 || !ROLE_TEXT[mechanic]) {
+                return;
+            }
+
+            /*
+             * Removal is reactive by nature: it answers what the
+             * opponent already played rather than advancing your own
+             * plan, so it suits control/midrange far more naturally
+             * than a fast deck (guide section 4). Say so instead of
+             * using the same generic line for every archetype.
+             */
+            if (mechanic === 'removal' && context.archetype === 'fast') {
                 addReason(
                     reasons,
                     `role-${mechanic}`,
-                    100,
-                    ROLE_TEXT[mechanic]
+                    90,
+                    'It gives the deck a removal option, but since removal is ' +
+                    'reactive, keep it as backup rather than a mainstay in a ' +
+                    'deck that wants to be proactive.'
                 );
+
+                return;
             }
+
+            addReason(
+                reasons,
+                `role-${mechanic}`,
+                100,
+                ROLE_TEXT[mechanic]
+            );
         });
 
         /*
@@ -11196,6 +11235,202 @@ const SmartDeckPlan = (() => {
         );
     }
 
+    /*
+     * Guide-derived one-cost targets by archetype.
+     * (r/PvZH deck building guidelines, section 1 "Curve":
+     * Aggro 11-14x, Midrange 6-10x, Control 4-8x one-cost cards.)
+     */
+    const ONE_COST_BAND_BY_ARCHETYPE = {
+        aggro: { min: 11, max: 14 },
+        midrange: { min: 6, max: 10 },
+        control: { min: 4, max: 8 },
+        tempo: { min: 6, max: 10 },
+        synergy: { min: 6, max: 10 }
+    };
+
+    const plantClasses = new Set(
+        ['Guardian', 'Kabloom', 'Mega-Grow', 'Smarty', 'Solar']
+    );
+
+    function getOneCostCount(cards) {
+        return cards.reduce(
+            (total, card) =>
+                card.cost === 1
+                    ? total + (card.count || 0)
+                    : total,
+            0
+        );
+    }
+
+    /*
+     * Best-effort faction read from the cards actually in the deck,
+     * since tricks-vs-one-drops guidance (guide section 1) differs
+     * for Zombies vs Plants.
+     */
+    function getFaction(cards) {
+        let plantCopies = 0;
+        let zombieCopies = 0;
+
+        cards.forEach(card => {
+            const cardClass = card.data?.Class;
+
+            if (!cardClass) {
+                return;
+            }
+
+            if (plantClasses.has(cardClass)) {
+                plantCopies += card.count || 0;
+            } else {
+                zombieCopies += card.count || 0;
+            }
+        });
+
+        if (plantCopies === 0 && zombieCopies === 0) {
+            return null;
+        }
+
+        return plantCopies >= zombieCopies ? 'Plant' : 'Zombie';
+    }
+
+    function getCurveGaps(cards, upTo = 4) {
+        const counts = {};
+
+        cards.forEach(card => {
+            if (Number.isFinite(card.cost)) {
+                counts[card.cost] =
+                    (counts[card.cost] || 0) +
+                    (card.count || 0);
+            }
+        });
+
+        const gaps = [];
+
+        for (let cost = 1; cost <= upTo; cost++) {
+            if (!counts[cost]) {
+                gaps.push(cost);
+            }
+        }
+
+        return gaps;
+    }
+
+    /*
+     * Trick-type cards (instant-speed answers), which Zombies can lean
+     * on in place of one-drops per guide section 1.
+     */
+    function getTrickCards(cards) {
+        return cards.filter(card =>
+            /\btrick\b/i.test(card.data?.Type || '')
+        );
+    }
+
+    /*
+     * Grounded, guide-based concerns instead of unconditional praise.
+     * Returns at most 3 notes so the review stays scannable.
+     */
+    function buildWeaknesses({
+        archetype,
+        cards,
+        totalCards,
+        oneCostCount,
+        faction,
+        curveGaps,
+        finisherCards,
+        removalCards
+    }) {
+        const notes = [];
+
+        if (totalCards < 20) {
+            return notes;
+        }
+
+        /*
+         * 1. Curve: one-cost count vs. the guide's band for this archetype.
+         */
+        const band = ONE_COST_BAND_BY_ARCHETYPE[archetype];
+
+        if (band && oneCostCount < band.min) {
+            const trickCount = getTrickCards(cards)
+                .reduce((sum, card) => sum + (card.count || 0), 0);
+
+            if (faction === 'Zombie' && trickCount >= 4) {
+                notes.push(
+                    `Only ${oneCostCount} one-cost cards, under the ` +
+                    `${band.min}-${band.max} a ${archetype} deck usually wants. ` +
+                    `${trickCount} tricks help cover early plays instead, which is a ` +
+                    `normal Zombie trade-off, but double check it's actually enough.`
+                );
+            } else if (faction === 'Zombie') {
+                notes.push(
+                    `Only ${oneCostCount} one-cost cards and not many tricks either. ` +
+                    `Zombies can answer the early game with either, but running short ` +
+                    `on both risks losing to an early Lima, Cliques or Sun-Shroom.`
+                );
+            } else {
+                notes.push(
+                    `Only ${oneCostCount} one-cost cards, under the ` +
+                    `${band.min}-${band.max} that usually works for a ${archetype} deck. ` +
+                    `That can make the first couple of turns inconsistent.`
+                );
+            }
+        } else if (band && oneCostCount > band.max + 3) {
+            notes.push(
+                `${oneCostCount} one-cost cards is well above the ` +
+                `${band.min}-${band.max} a ${archetype} deck typically needs. ` +
+                `Not automatically a problem, but worth checking those extra copies ` +
+                `still do something once the game goes long.`
+            );
+        }
+
+        if (curveGaps.length > 0) {
+            notes.push(
+                `No cards at ${curveGaps.map(c => `${c}-cost`).join(' or ')} right now, ` +
+                `which can leave a hole in the curve for the opponent to play into.`
+            );
+        }
+
+        /*
+         * 2. Finishing power: guide section 3 expects 2-4 finishers,
+         *    matched to the deck's pace.
+         */
+        if (finisherCards.length === 0) {
+            notes.push(
+                `No card stands out as a finisher yet. Most decks want 2-4 cards that ` +
+                `can reliably close the game once the board stalls.`
+            );
+        } else if (
+            (archetype === 'aggro' || archetype === 'tempo') &&
+            finisherCards.every(card => Number(card.cost) >= 6)
+        ) {
+            notes.push(
+                `${formatNames(finisherCards)} ` +
+                `${finisherCards.length === 1 ? 'is' : 'are'} the only real finisher${
+                    finisherCards.length === 1 ? '' : 's'
+                }, and ${finisherCards.length === 1 ? 'it costs' : 'they cost'} 6 or more. ` +
+                `That's a slow finisher for a ${archetype} deck; it often arrives after ` +
+                `the game is already decided.`
+            );
+        }
+
+        /*
+         * 3. Removal is reactive by nature (guide section 4) and suits
+         *    control/midrange decks, which usually want some on hand.
+         */
+        if (
+            (archetype === 'control' || archetype === 'midrange') &&
+            removalCards.length === 0
+        ) {
+            notes.push(
+                `No clear removal or answers yet. ${
+                    archetype === 'control' ? 'Control' : 'Midrange'
+                } decks generally win by surviving to a payoff, so some way to deal ` +
+                `with the opponent's best play is usually worth the slot.`
+            );
+        }
+
+        return notes.slice(0, 3);
+    }
+
     function getCompletedCombos(cards) {
         if (
             typeof comboDictionary === 'undefined' ||
@@ -11800,8 +12035,42 @@ const SmartDeckPlan = (() => {
                 completedCombos
             });
 
+        const removalCards =
+            cardsWithRole(cards, 'removal');
+
+        const weaknesses =
+            buildWeaknesses({
+                archetype,
+                cards,
+                totalCards: context.totalCards,
+                oneCostCount: getOneCostCount(cards),
+                faction: getFaction(cards),
+                curveGaps: getCurveGaps(cards),
+                finisherCards,
+                removalCards
+            });
+
+        const headline =
+            weaknesses.length === 0
+                ? `<strong>I would keep this list exactly as it is.</strong>`
+                : `<strong>The core plan is solid, but a few things are worth double-checking.</strong>`;
+
+        const weaknessSection =
+            weaknesses.length > 0
+                ? `
+                <div class="deck-plan-section">
+                    <strong>Worth reconsidering:</strong>
+                    <ul class="deck-plan-weakness-list">
+                        ${weaknesses
+                            .map(note => `<li>${note}</li>`)
+                            .join('')}
+                    </ul>
+                </div>
+                `
+                : '';
+
         return `
-            <strong>I would keep this list exactly as it is.</strong>
+            ${headline}
 
             <div class="deck-plan-summary">
                 <div class="deck-plan-intro">
@@ -11822,6 +12091,7 @@ const SmartDeckPlan = (() => {
                     <strong>Why it works:</strong>
                     ${strength}
                 </div>
+                ${weaknessSection}
             </div>
         `;
     }
