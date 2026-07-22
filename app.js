@@ -4883,7 +4883,7 @@ fragment.appendChild(
             }
             const fullyOwned = missing === 0;
             const costTag = (!fullyOwned && each > 0)
-                ? `<span class="pvz-card-missing-cost">${(each * missing).toLocaleString()}⚡</span>`
+                ? `<span class="pvz-card-missing-cost">${(each * missing).toLocaleString()}<img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></span>`
                 : '';
 
             return `<div class="pvz-card ${fullyOwned ? 'pvz-card-owned' : 'pvz-card-missing'}" style="--i:${i}">
@@ -6989,7 +6989,7 @@ gradeButtons.forEach(button => {
             <div class="collection-value-row">
                 <span class="collection-value-name">${v.rawName.replace(/_/g, ' ')}</span>
                 <span class="collection-value-qty">x${v.owned}</span>
-                <span class="collection-value-sparks">${v.total.toLocaleString()}⚡</span>
+                <span class="collection-value-sparks">${v.total.toLocaleString()}<img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></span>
             </div>`).join('');
 
         box.innerHTML = `
@@ -7121,18 +7121,7 @@ gradeButtons.forEach(button => {
         "Hearty": "#EF4444",
         "Sneaky": "#4B5563"
     };
-    const CLASS_ICONS = {
-        "Guardian": "🛡️",
-        "Kabloom": "💥",
-        "Mega-Grow": "🌱",
-        "Smarty": "🧠",
-        "Solar": "☀️",
-        "Beastly": "🐾",
-        "Brainy": "🧟",
-        "Crazy": "🃏",
-        "Hearty": "❤️",
-        "Sneaky": "🥷"
-    };
+    // Class icon images live in class_icons/<ClassName>.webp (e.g. class_icons/Beastly.webp).
 
     function heroImgBase(name) {
         return name.replace(/[\s-]+/g, '_');
@@ -7180,7 +7169,7 @@ gradeButtons.forEach(button => {
 
         box.innerHTML = `
             <div class="collection-stat-card">
-                <span class="collection-stat-num">${totalValue.toLocaleString()}⚡</span>
+                <span class="collection-stat-num">${totalValue.toLocaleString()}<img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></span>
                 <span class="collection-stat-label">Collection value</span>
             </div>
             <div class="collection-stat-card">
@@ -7273,25 +7262,19 @@ gradeButtons.forEach(button => {
         });
 
         const cardTile = (rawName) => {
-            const cardInfo = cardDatabase[rawName] || {};
             const cleanName = rawName.replace(/_/g, ' ');
             const owned = ownedCollection[rawName] || 0;
-            const cost = cardInfo.Cost;
-            const hasCost = cost !== null && cost !== undefined && cost !== '';
-            const hasStats = cardInfo.Strength !== null && cardInfo.Strength !== undefined &&
-                              cardInfo.Health !== null && cardInfo.Health !== undefined;
 
             return `
-                <button type="button" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}">
-                    ${hasCost ? `<span class="collection-card-cost">${cost}</span>` : ''}
+                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}">
+                    ${owned > 0 ? `<button type="button" class="collection-card-clear" data-name="${rawName}" aria-label="Clear ${cleanName}" title="Set to 0">✕</button>` : ''}
                     <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
                          onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
                     <span class="collection-card-name">${cleanName}</span>
                     <div class="collection-card-footer">
                         <span class="collection-card-owned-badge">${owned > 0 ? 'x' + owned : ''}</span>
-                        ${hasStats ? `<span class="collection-card-stats"><span class="stat-atk">${cardInfo.Strength}</span><span class="stat-hp">${cardInfo.Health}</span></span>` : ''}
                     </div>
-                </button>`;
+                </div>`;
         };
 
         const classOrder = Object.keys(groups).sort((a, b) => a.localeCompare(b));
@@ -7300,11 +7283,10 @@ gradeButtons.forEach(button => {
         classOrder.forEach(cls => {
             const list = [...groups[cls].owned, ...groups[cls].unowned];
             if (!list.length) return;
-            const icon = CLASS_ICONS[cls] || '';
             const color = CLASS_COLORS[cls] || '#4dd0e1';
             html += `
                 <div class="collection-class-header" style="border-color:${color}">
-                    <span class="collection-class-icon">${icon}</span>
+                    <img class="collection-class-icon" src="class_icons/${cls}.webp" alt="${cls}" onerror="this.style.display='none'">
                     <span class="collection-class-name" style="color:${color}">${cls}</span>
                     <span class="collection-class-count">${groups[cls].owned.length}/${list.length}</span>
                 </div>
@@ -7323,13 +7305,18 @@ gradeButtons.forEach(button => {
             const tile = e.target.closest('.collection-card-tile');
             if (!tile) return;
             const name = tile.dataset.name;
-            // Tap cycles 0 -> 1 -> 2 -> 3 -> 4 -> 0 owned copies.
-            const current = ownedCollection[name] || 0;
-            const next = (current + 1) % 5;
-            if (next === 0) {
+            if (e.target.closest('.collection-card-clear')) {
+                // One tap straight to 0 — no need to cycle through 1-2-3-4 first.
                 delete ownedCollection[name];
             } else {
-                ownedCollection[name] = next;
+                // Tap the card itself cycles 0 -> 1 -> 2 -> 3 -> 4 -> 0 owned copies.
+                const current = ownedCollection[name] || 0;
+                const next = (current + 1) % 5;
+                if (next === 0) {
+                    delete ownedCollection[name];
+                } else {
+                    ownedCollection[name] = next;
+                }
             }
             saveOwnedCollection();
             const searchVal = document.getElementById('collectionPageSearch')?.value || '';
