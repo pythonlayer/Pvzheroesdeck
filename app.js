@@ -6814,6 +6814,12 @@ gradeButtons.forEach(button => {
 
     const plantClasses = new Set(["Mega-Grow", "Kabloom", "Smarty", "Guardian", "Solar"]);
     let currentSeeds = [];
+    // True right after "build from collection" finishes, so the automatic
+    // swap-idea popup doesn't immediately turn around and suggest scrapping
+    // for a card outside the collection it was just built from. Any manual
+    // edit to the deck clears it, since at that point normal suggestions
+    // (including ones that need crafting) make sense again.
+    let deckBuiltFromCollection = false;
     let heroAnnounced = false;
     let currentFaction = null;
     let activeClasses = new Set();
@@ -7600,6 +7606,7 @@ gradeButtons.forEach(button => {
         );
 
         currentSeeds = bestDeck;
+        deckBuiltFromCollection = true;
 
         if (collectionPanel) collectionPanel.classList.add('hidden');
         renderSeeds();
@@ -7677,6 +7684,7 @@ gradeButtons.forEach(button => {
     });
 
     function addSeed(rawName, cardClass, cardFaction, requestedAmount = 4) {
+        deckBuiltFromCollection = false;
         const spaceLeft = 40 - getTotalCards();
         if (spaceLeft <= 0) return;
 
@@ -8405,6 +8413,7 @@ if (document.readyState === "loading") {
                 const name = e.target.getAttribute('data-name');
                 const seed = currentSeeds.find(s => s.name === name);
                 if (seed) {
+                    deckBuiltFromCollection = false;
                     seed.count--;
                     if (seed.count <= 0) {
                         currentSeeds = currentSeeds.filter(s => s.name !== name);
@@ -8423,6 +8432,7 @@ if (document.readyState === "loading") {
                 const name = e.target.getAttribute('data-name');
                 const seed = currentSeeds.find(s => s.name === name);
                 if (seed && seed.count < 4 && getTotalCards() < 40) {
+                    deckBuiltFromCollection = false;
                     seed.count++;
                     lastAddedCard = name; // Update context to the card they modified
                     renderSeeds();
@@ -12008,6 +12018,20 @@ starterTargetCopies = Math.max(
                     const recommendations = getTopThreeRecommendations(seed.name);
 
                     recommendations.forEach(rec => {
+                        // If this deck was just built from the user's
+                        // collection, don't turn around and suggest a card
+                        // they don't own - that directly contradicts what
+                        // "build from collection" is supposed to mean. Only
+                        // suggest swaps to cards they already have enough
+                        // copies of.
+                        if (deckBuiltFromCollection) {
+                            const neededCopies = rec.suggestedAmount || seed.count;
+                            const owned = (typeof ownedCollection === 'object' && ownedCollection)
+                                ? (ownedCollection[rec.name] || 0)
+                                : 0;
+                            if (owned < neededCopies) return;
+                        }
+
                         const simulatedStrings = currentSeeds.map(s => {
                             if (s.name === seed.name) return `${s.count}x ${rec.name}`;
                             return `${s.count}x ${s.name}`;
@@ -12541,6 +12565,7 @@ if (scoreDiff > 0) {
         }, 50);
     }
     function applyFullSwap(removeName, addName) {
+        deckBuiltFromCollection = false;
         const removeSeed = currentSeeds.find(s => s.name === removeName);
         const addData = cardDatabase[addName];
         if (!removeSeed || !addData) return;
@@ -12733,6 +12758,7 @@ function getHeroAffinityBonus(cardName, heroName) {
 
         setTimeout(() => {
             currentSeeds = buildOptimizedDeck();
+            deckBuiltFromCollection = false;
             lastAddedCard = null; // Clear context so AI summarizes full deck
             renderSeeds();
         }, 50);
