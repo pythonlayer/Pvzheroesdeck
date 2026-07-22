@@ -9144,45 +9144,83 @@ This prevents the inner duplicate from creating a second box.
 .collection-stat-num{ display:block; font-size:22px; font-weight:800; color:#4dd0e1; }
 .collection-stat-label{ display:block; font-size:11px; opacity:.7; margin-top:4px; }
 
-.collection-hero-grid{ display:flex; flex-direction:column; gap:6px; }
-.collection-hero-faction-label{ font-size:12px; opacity:.6; text-transform:uppercase; letter-spacing:.05em; margin-top:8px; }
-.collection-hero-row{ display:flex; flex-wrap:wrap; gap:10px; }
+/* --- Faction toggle bar (controls both heroes + cards below) --- */
+.collection-faction-toggle{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.collection-faction-toggle .collection-faction-select{ flex:0 0 auto; min-width:130px; }
+.collection-faction-toggle input{ flex:1; min-width:160px; }
+
+/* --- Heroes: circular portraits with a two-color split ring by class --- */
+.collection-hero-count-label{
+    font-size:14px; font-weight:700; opacity:.85; margin-bottom:10px;
+}
+.collection-hero-count-label strong{ color:#4dd0e1; }
+.collection-hero-grid{ margin-bottom:8px; }
+.collection-hero-row{ display:flex; flex-wrap:wrap; gap:14px; }
 .collection-hero-tile{
     position:relative; display:flex; flex-direction:column; align-items:center;
-    width:84px; background:rgba(0,0,0,.15); border:2px solid rgba(255,255,255,.08);
-    border-radius:10px; padding:6px; cursor:pointer; color:#fff; font:inherit;
-    transition:border-color .15s, opacity .15s;
-    opacity:.6;
+    width:78px; background:none; border:none; padding:0; cursor:pointer; color:#fff; font:inherit;
 }
-.collection-hero-tile img{ width:56px; height:56px; object-fit:contain; border-radius:8px; }
-.collection-hero-name{ font-size:10px; text-align:center; margin-top:4px; line-height:1.2; }
-.collection-hero-tile.owned{ opacity:1; border-color:#4dd0e1; box-shadow:0 0 0 1px rgba(77,208,225,.4); }
-.collection-hero-check{
-    position:absolute; top:2px; right:2px; background:#4dd0e1; color:#04262b;
-    font-size:10px; font-weight:800; border-radius:50%; width:16px; height:16px;
+.collection-hero-ring{
+    width:64px; height:64px; border-radius:50%; padding:3px;
     display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.35);
+    transition:filter .15s, opacity .15s;
 }
-
-.collection-page-controls{ display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
-.collection-page-controls input{ flex:1; min-width:180px; }
-
-.collection-page-grid{
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr));
-    gap:10px;
+.collection-hero-ring img{
+    width:100%; height:100%; object-fit:cover; border-radius:50%;
+    background:#111; display:block;
 }
-.collection-page-card{
-    background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08);
+.collection-hero-tile.not-owned .collection-hero-ring{ filter:grayscale(1) brightness(.55); opacity:.85; }
+.collection-hero-tile.owned .collection-hero-ring{ box-shadow:0 0 0 2px rgba(77,208,225,.55), 0 2px 8px rgba(0,0,0,.4); }
+.collection-hero-lock{
+    position:absolute; top:38px; left:50%; transform:translateX(-50%);
+    font-size:16px; filter:drop-shadow(0 1px 2px rgba(0,0,0,.8));
+}
+.collection-hero-name{ font-size:10px; text-align:center; margin-top:6px; line-height:1.2; }
+.collection-hero-classes{ font-size:8px; text-align:center; opacity:.55; line-height:1.2; }
+
+/* --- Cards: grouped by class, owned first, unowned in grayscale --- */
+.collection-page-cards{ margin-top:10px; }
+.collection-class-header{
+    display:flex; align-items:center; gap:8px; margin:22px 0 10px;
+    padding-bottom:6px; border-bottom:2px solid rgba(255,255,255,.15);
+}
+.collection-class-header:first-of-type{ margin-top:8px; }
+.collection-class-icon{ font-size:16px; }
+.collection-class-name{ font-size:15px; font-weight:800; letter-spacing:.02em; }
+.collection-class-count{ margin-left:auto; font-size:11px; opacity:.6; }
+
+.collection-class-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(110px,1fr));
+    gap:10px; margin-bottom:6px;
+}
+.collection-card-tile{
+    position:relative; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08);
     border-radius:10px; padding:8px; text-align:center; display:flex; flex-direction:column; align-items:center;
-    opacity:.65; transition:opacity .15s, border-color .15s;
+    cursor:pointer; color:#fff; font:inherit;
+    transition:border-color .15s, transform .1s;
 }
-.collection-page-card.owned{ opacity:1; border-color:#4dd0e1; }
-.collection-page-card img{ width:100%; max-height:90px; object-fit:contain; }
-.collection-page-card-name{ font-size:11px; margin-top:4px; line-height:1.2; min-height:26px; }
-.collection-page-card-cost{ font-size:10px; color:#4dd0e1; opacity:.85; }
-.collection-page-card-steps{ display:flex; gap:3px; margin-top:6px; flex-wrap:wrap; justify-content:center; }
-.collection-page-count-btn{
-    width:22px; height:22px; border-radius:6px; border:1px solid rgba(255,255,255,.15);
-    background:rgba(255,255,255,.06); color:#fff; font-size:11px; cursor:pointer;
+.collection-card-tile:active{ transform:scale(.96); }
+.collection-card-tile.owned{ border-color:#4dd0e1; }
+.collection-card-tile img{
+    width:100%; max-height:90px; object-fit:contain;
+    transition:filter .15s, opacity .15s;
 }
-.collection-page-count-btn.active{ background:#4dd0e1; color:#04262b; font-weight:800; border-color:#4dd0e1; }
-.collection-page-count-btn.collection-clear-btn{ opacity:.7; }
+.collection-card-tile.not-owned img{ filter:grayscale(1) brightness(.6); opacity:.8; }
+.collection-card-name{ font-size:11px; margin-top:4px; line-height:1.2; min-height:26px; }
+.collection-card-cost{
+    position:absolute; top:6px; right:6px; background:rgba(0,0,0,.6);
+    color:#ffdd66; font-size:11px; font-weight:800; border-radius:50%;
+    width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(255,221,102,.5);
+}
+.collection-card-footer{
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    margin-top:6px; font-size:11px; font-weight:700;
+}
+.collection-card-owned-badge{ color:#4dd0e1; }
+.collection-card-stats{ display:flex; gap:6px; margin-left:auto; }
+.collection-card-stats .stat-atk{ color:#7CFC00; }
+.collection-card-stats .stat-atk::before{ content:"⚔ "; }
+.collection-card-stats .stat-hp{ color:#ff6b6b; }
+.collection-card-stats .stat-hp::before{ content:"♥ "; }

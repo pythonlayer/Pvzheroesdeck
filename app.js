@@ -7080,8 +7080,67 @@ gradeButtons.forEach(button => {
     const PLANT_HEROES = ["Green Shadow", "Solar Flare", "Wall-Knight", "Chompzilla", "Spudow", "Citron", "Beta-Carrotina", "Grass Knuckles", "Nightcap", "Captain Combustible", "Rose"];
     const ZOMBIE_HEROES = ["Super Brainz", "Huge-Gigantacus", "The Smash", "Impfinity", "Rustbolt", "Electric Boogaloo", "Brain Freeze", "Professor Brainstorm", "Immorticia", "Z-Mech", "Neptuna"];
 
+    // Each hero leads two classes; used to color-split their collection portrait.
+    const PLANT_HERO_CLASSES = {
+        "Green Shadow": ["Mega-Grow", "Smarty"],
+        "Solar Flare": ["Kabloom", "Solar"],
+        "Wall-Knight": ["Guardian", "Solar"],
+        "Chompzilla": ["Mega-Grow", "Solar"],
+        "Spudow": ["Kabloom", "Guardian"],
+        "Citron": ["Guardian", "Smarty"],
+        "Beta-Carrotina": ["Guardian", "Smarty"],
+        "Grass Knuckles": ["Mega-Grow", "Guardian"],
+        "Nightcap": ["Kabloom", "Smarty"],
+        "Captain Combustible": ["Kabloom", "Mega-Grow"],
+        "Rose": ["Smarty", "Solar"]
+    };
+    const ZOMBIE_HERO_CLASSES = {
+        "Super Brainz": ["Brainy", "Sneaky"],
+        "Huge-Gigantacus": ["Brainy", "Sneaky"],
+        "The Smash": ["Hearty", "Beastly"],
+        "Impfinity": ["Sneaky", "Crazy"],
+        "Rustbolt": ["Brainy", "Hearty"],
+        "Electric Boogaloo": ["Beastly", "Crazy"],
+        "Brain Freeze": ["Sneaky", "Beastly"],
+        "Professor Brainstorm": ["Brainy", "Crazy"],
+        "Immorticia": ["Brainy", "Beastly"],
+        "Z-Mech": ["Hearty", "Crazy"],
+        "Neptuna": ["Hearty", "Sneaky"]
+    };
+
+    // Class -> accent color, reused for hero portrait split-borders and card class headers.
+    const CLASS_COLORS = {
+        "Guardian": "#3B82F6",
+        "Kabloom": "#F97316",
+        "Mega-Grow": "#22C55E",
+        "Smarty": "#A855F7",
+        "Solar": "#FACC15",
+        "Beastly": "#92400E",
+        "Brainy": "#EC4899",
+        "Crazy": "#06B6D4",
+        "Hearty": "#EF4444",
+        "Sneaky": "#4B5563"
+    };
+    const CLASS_ICONS = {
+        "Guardian": "🛡️",
+        "Kabloom": "💥",
+        "Mega-Grow": "🌱",
+        "Smarty": "🧠",
+        "Solar": "☀️",
+        "Beastly": "🐾",
+        "Brainy": "🧟",
+        "Crazy": "🃏",
+        "Hearty": "❤️",
+        "Sneaky": "🥷"
+    };
+
     function heroImgBase(name) {
         return name.replace(/[\s-]+/g, '_');
+    }
+
+    function getCollectionPageFaction() {
+        const el = document.getElementById('collectionPageFaction');
+        return el ? el.value : 'Plant';
     }
 
     function computeBuildableDecks() {
@@ -7142,23 +7201,33 @@ gradeButtons.forEach(button => {
         const grid = document.getElementById('collectionHeroGrid');
         if (!grid) return;
 
+        const wantedFaction = getCollectionPageFaction();
+        const heroList = wantedFaction === 'Plant' ? PLANT_HEROES : ZOMBIE_HEROES;
+        const classMap = wantedFaction === 'Plant' ? PLANT_HERO_CLASSES : ZOMBIE_HERO_CLASSES;
+        const ownedCount = heroList.filter(h => ownedHeroes[h]).length;
+
         const heroTile = (name) => {
             const owned = !!ownedHeroes[name];
             const base = heroImgBase(name);
+            const classes = classMap[name] || [];
+            const colorA = CLASS_COLORS[classes[0]] || '#888';
+            const colorB = CLASS_COLORS[classes[1]] || '#555';
+            const classLabel = classes.join(' / ');
             return `
-                <button type="button" class="collection-hero-tile${owned ? ' owned' : ''}" data-hero="${name}" title="${name}">
-                    <img src="hero_images/${base}.webp" alt="${name}" loading="lazy" decoding="async"
-                         onerror="this.onerror=null;this.src='hero_images/${base}.png'">
+                <button type="button" class="collection-hero-tile${owned ? ' owned' : ' not-owned'}" data-hero="${name}" title="${name} — ${classLabel}">
+                    <span class="collection-hero-ring" style="background:linear-gradient(90deg, ${colorA} 50%, ${colorB} 50%);">
+                        <img src="hero_images/${base}.webp" alt="${name}" loading="lazy" decoding="async"
+                             onerror="this.onerror=null;this.src='hero_images/${base}.png'">
+                    </span>
+                    ${!owned ? '<span class="collection-hero-lock">🔒</span>' : ''}
                     <span class="collection-hero-name">${name}</span>
-                    ${owned ? '<span class="collection-hero-check">✓</span>' : ''}
+                    <span class="collection-hero-classes">${classLabel}</span>
                 </button>`;
         };
 
         grid.innerHTML = `
-            <div class="collection-hero-faction-label">Plants</div>
-            <div class="collection-hero-row">${PLANT_HEROES.map(heroTile).join('')}</div>
-            <div class="collection-hero-faction-label">Zombies</div>
-            <div class="collection-hero-row">${ZOMBIE_HEROES.map(heroTile).join('')}</div>`;
+            <div class="collection-hero-count-label">Heroes <strong>${ownedCount}/${heroList.length}</strong></div>
+            <div class="collection-hero-row">${heroList.map(heroTile).join('')}</div>`;
     }
 
     if (document.getElementById('collectionHeroGrid')) {
@@ -7180,56 +7249,87 @@ gradeButtons.forEach(button => {
     function renderCollectionPageGrid(filter = '') {
         const grid = document.getElementById('collectionPageGrid');
         if (!grid) return;
-        const factionSelect = document.getElementById('collectionPageFaction');
-        const wantedFaction = factionSelect ? factionSelect.value : 'Plant';
+        const wantedFaction = getCollectionPageFaction();
         const q = filter.toLowerCase().trim();
 
-        let html = '';
-        let shown = 0;
+        // Group cards by their class, owned copies first within each class.
+        const groups = {}; // class -> { owned: [rawName...], unowned: [rawName...] }
+        let totalCount = 0;
+
         Object.keys(cardDatabase || {}).forEach(rawName => {
             const cardInfo = cardDatabase[rawName];
             const cardClass = cardInfo?.Class;
+            if (!cardClass) return;
             const cardFaction = plantClasses.has(cardClass) ? 'Plant' : 'Zombie';
             if (cardFaction !== wantedFaction) return;
 
             const cleanName = rawName.replace(/_/g, ' ');
             if (q && !cleanName.toLowerCase().includes(q)) return;
-            if (shown >= 300) return; // keep render light
 
+            totalCount++;
+            if (!groups[cardClass]) groups[cardClass] = { owned: [], unowned: [] };
             const owned = ownedCollection[rawName] || 0;
-            const cost = sparkCostFor(rawName);
-            const stepBtns = [1, 2, 3, 4].map(n =>
-                `<button type="button" class="collection-page-count-btn${owned === n ? ' active' : ''}" data-name="${rawName}" data-n="${n}">${n}</button>`
-            ).join('');
+            (owned > 0 ? groups[cardClass].owned : groups[cardClass].unowned).push(rawName);
+        });
 
-            html += `
-                <div class="collection-page-card${owned > 0 ? ' owned' : ''}">
-                    <img src="card_images/${rawName}.png" alt="${cleanName}" title="${cleanName}" loading="lazy" decoding="async"
+        const cardTile = (rawName) => {
+            const cardInfo = cardDatabase[rawName] || {};
+            const cleanName = rawName.replace(/_/g, ' ');
+            const owned = ownedCollection[rawName] || 0;
+            const cost = cardInfo.Cost;
+            const hasCost = cost !== null && cost !== undefined && cost !== '';
+            const hasStats = cardInfo.Strength !== null && cardInfo.Strength !== undefined &&
+                              cardInfo.Health !== null && cardInfo.Health !== undefined;
+
+            return `
+                <button type="button" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}">
+                    ${hasCost ? `<span class="collection-card-cost">${cost}</span>` : ''}
+                    <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
                          onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
-                    <span class="collection-page-card-name">${cleanName}</span>
-                    ${cost > 0 ? `<span class="collection-page-card-cost">${cost.toLocaleString()}⚡ each</span>` : ''}
-                    <div class="collection-page-card-steps">
-                        ${stepBtns}
-                        <button type="button" class="collection-page-count-btn collection-clear-btn" data-name="${rawName}" data-n="0">✕</button>
+                    <span class="collection-card-name">${cleanName}</span>
+                    <div class="collection-card-footer">
+                        <span class="collection-card-owned-badge">${owned > 0 ? 'x' + owned : ''}</span>
+                        ${hasStats ? `<span class="collection-card-stats"><span class="stat-atk">${cardInfo.Strength}</span><span class="stat-hp">${cardInfo.Health}</span></span>` : ''}
                     </div>
-                </div>`;
-            shown++;
+                </button>`;
+        };
+
+        const classOrder = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+
+        let html = '';
+        classOrder.forEach(cls => {
+            const list = [...groups[cls].owned, ...groups[cls].unowned];
+            if (!list.length) return;
+            const icon = CLASS_ICONS[cls] || '';
+            const color = CLASS_COLORS[cls] || '#4dd0e1';
+            html += `
+                <div class="collection-class-header" style="border-color:${color}">
+                    <span class="collection-class-icon">${icon}</span>
+                    <span class="collection-class-name" style="color:${color}">${cls}</span>
+                    <span class="collection-class-count">${groups[cls].owned.length}/${list.length}</span>
+                </div>
+                <div class="collection-class-grid">${list.map(cardTile).join('')}</div>`;
         });
 
         grid.innerHTML = html || `<div class="collection-value-empty">No cards match your search.</div>`;
+
+        const countLabel = document.getElementById('collectionPageCardCount');
+        if (countLabel) countLabel.textContent = totalCount.toLocaleString();
     }
 
     const collectionPageGridEl = document.getElementById('collectionPageGrid');
     if (collectionPageGridEl) {
         collectionPageGridEl.addEventListener('click', (e) => {
-            const btn = e.target.closest('.collection-page-count-btn');
-            if (!btn) return;
-            const name = btn.dataset.name;
-            const n = parseInt(btn.dataset.n, 10);
-            if (n === 0) {
+            const tile = e.target.closest('.collection-card-tile');
+            if (!tile) return;
+            const name = tile.dataset.name;
+            // Tap cycles 0 -> 1 -> 2 -> 3 -> 4 -> 0 owned copies.
+            const current = ownedCollection[name] || 0;
+            const next = (current + 1) % 5;
+            if (next === 0) {
                 delete ownedCollection[name];
             } else {
-                ownedCollection[name] = n;
+                ownedCollection[name] = next;
             }
             saveOwnedCollection();
             const searchVal = document.getElementById('collectionPageSearch')?.value || '';
@@ -7251,6 +7351,7 @@ gradeButtons.forEach(button => {
     const collectionPageFactionEl = document.getElementById('collectionPageFaction');
     if (collectionPageFactionEl) {
         collectionPageFactionEl.addEventListener('change', () => {
+            renderCollectionHeroGrid();
             renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
         });
     }
@@ -7262,70 +7363,11 @@ gradeButtons.forEach(button => {
         renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
     }
 
-    const ZOMBIE_CLASSES = ["Crazy", "Sneaky", "Brainy", "Beastly", "Hearty"];
-
-    // heroMap keys aren't in a consistent class order ("Kabloom,Solar" vs "Guardian,Kabloom"),
-    // so normalize by sorting the class names before building the lookup.
-    const HERO_BY_PAIR_KEY = {};
-    Object.entries(heroMap).forEach(([key, heroNames]) => {
-        const normKey = key.split(',').sort().join(',');
-        HERO_BY_PAIR_KEY[normKey] = heroNames;
-    });
-
-    function heroesForPair(pair) {
-        const key = [...pair].sort().join(',');
-        const heroStr = HERO_BY_PAIR_KEY[key] || '';
-        return heroStr.split('/').map(s => s.trim()).filter(Boolean);
-    }
-
-    // heroMap collapses some class pairs into two heroes with a "/" (Citron / Beta-Carrotina,
-    // Super Brainz / Huge-Gigantacus). Those two heroes share the same two classes but have
-    // completely different signature superpowers — they are not interchangeable. When we can
-    // tell which one the person actually owns, credit that specific hero instead of the pair.
-    function resolveHeroName(classArray) {
-        const key = classArray.join(',');
-        const raw = heroMap[key];
-        if (!raw) return null;
-
-        const candidates = raw.split('/').map(s => s.trim()).filter(Boolean);
-        if (candidates.length <= 1) return raw;
-
-        const ownedCandidates = candidates.filter(h => ownedHeroes[h]);
-        if (ownedCandidates.length === 1) return ownedCandidates[0];
-
-        return raw; // still ambiguous (owns both, or owns neither) — show both names
-    }
-
-    function classPairsFor(faction) {
-        const classes = faction === "Plant"
-            ? Array.from(plantClasses)
-            : ZOMBIE_CLASSES;
-        const pairs = [];
-        for (let i = 0; i < classes.length; i++) {
-            for (let j = i + 1; j < classes.length; j++) {
-                pairs.push([classes[i], classes[j]]);
-            }
-        }
-        return pairs;
-    }
-
-    // How many total copies (capped at 4 each) does the collection have
-    // across cards belonging to this class pair, for this faction?
-    function ownedCapacityForPair(pair, faction) {
-        let capacity = 0;
-        Object.keys(cardDatabase || {}).forEach(name => {
-            const info = cardDatabase[name];
-            if (!info) return;
-            const cardFaction = plantClasses.has(info.Class) ? "Plant" : "Zombie";
-            if (cardFaction !== faction) return;
-            if (!pair.includes(info.Class)) return;
-            capacity += Math.min(ownedCollection[name] || 0, 4);
-        });
-        return capacity;
-    }
-
     function buildDeckFromCollection() {
         currentFaction = collectionFactionSelect ? collectionFactionSelect.value : 'Plant';
+        activeClasses = new Set();
+        currentSeeds = [];
+        lastAddedCard = null;
 
         const verdictCtx =
             typeof getVerdictContext === 'function'
@@ -7340,76 +7382,25 @@ gradeButtons.forEach(button => {
             { synergy: 0.36, power: 0.34, curve: 0.25, consistency: 0.05 }
         ];
 
-        // Only bother trying pairs that could plausibly reach a full deck;
-        // if none can, we still want the pair that gets closest.
-        let candidatePairs = classPairsFor(currentFaction);
-
-        const hasMarkedAnyHero = Object.values(ownedHeroes).some(Boolean);
-        if (hasMarkedAnyHero) {
-            const ownedPairs = candidatePairs.filter(pair =>
-                heroesForPair(pair).some(hero => ownedHeroes[hero])
-            );
-            if (ownedPairs.length === 0) {
-                if (collectionPanel) collectionPanel.classList.add('hidden');
-                alert(
-                    `You haven't marked any ${currentFaction} heroes as owned yet. ` +
-                    `Go to More > My Collection and mark a hero, then try again.`
-                );
-                return;
-            }
-            candidatePairs = ownedPairs;
-        }
-        // If the person hasn't touched hero tracking at all, fall back to
-        // considering every pair (don't break the feature for existing users).
-
-        const pairs = candidatePairs
-            .map(pair => ({ pair, capacity: ownedCapacityForPair(pair, currentFaction) }))
-            .sort((a, b) => b.capacity - a.capacity);
-
         let bestDeck = null;
         let bestScore = -Infinity;
-        let bestCount = -1;
 
-        for (const { pair } of pairs) {
-            if (bestCount >= 40) break; // already found a full deck, no need to keep trying
+        for (const profile of profiles) {
+            const completedDeck = buildFastCompletion(
+                [],
+                profile,
+                idealCurve,
+                verdictCtx,
+                false,
+                false,
+                true // ownedOnly
+            );
 
-            activeClasses = new Set(pair);
-            currentSeeds = [];
-            lastAddedCard = null;
+            const score = getExactFinishScore(completedDeck, verdictCtx);
 
-            let pairBestDeck = null;
-            let pairBestScore = -Infinity;
-
-            for (const profile of profiles) {
-                const completedDeck = buildFastCompletion(
-                    [],
-                    profile,
-                    idealCurve,
-                    verdictCtx,
-                    false,
-                    false,
-                    true // ownedOnly
-                );
-
-                const score = getExactFinishScore(completedDeck, verdictCtx);
-
-                if (score > pairBestScore) {
-                    pairBestScore = score;
-                    pairBestDeck = completedDeck;
-                }
-            }
-
-            if (!pairBestDeck) continue;
-
-            const count = getFinishDeckCount(pairBestDeck);
-
-            // Prefer whichever pair gets closer to a full 40-card deck;
-            // break ties by score.
-            if (count > bestCount || (count === bestCount && pairBestScore > bestScore)) {
-                bestCount = count;
-                bestScore = pairBestScore;
-                bestDeck = pairBestDeck;
-                activeClasses = new Set(pair);
+            if (score > bestScore) {
+                bestScore = score;
+                bestDeck = completedDeck;
             }
         }
 
@@ -7430,16 +7421,6 @@ gradeButtons.forEach(button => {
 
         if (collectionPanel) collectionPanel.classList.add('hidden');
         renderSeeds();
-
-        const finalCount = getTotalCards();
-        const builtHeroName = resolveHeroName(Array.from(activeClasses).sort()) || `${Array.from(activeClasses).join(' / ')} Hero`;
-        if (finalCount < 40) {
-            alert(
-                `Built the best ${finalCount}-card ${builtHeroName} deck possible from your collection. ` +
-                `You don't own enough cards in any single 2-class combo to fill all 40 slots yet — ` +
-                `mark more owned cards and try again to fill the rest.`
-            );
-        }
     }
 
     const getTotalCards = () => currentSeeds.reduce((sum, seed) => sum + seed.count, 0);
@@ -7580,7 +7561,7 @@ gradeButtons.forEach(button => {
                     imgFilename: `${singleClass.toLowerCase().replace(/[\s-]+/g, '_')}.webp`
                 }];
             } else {
-                heroName = resolveHeroName(classArray) || `Any ${classArray.join(' / ')} Hero`;
+                heroName = heroMap[classArray.join(',')] || `Any ${classArray.join(' / ')} Hero`;
                 heroesData = heroName.split(/\s*\/\s*/).map(name => ({
                     name: name,
                     imgFilename: `${name.replace(/[\s-]+/g, '_')}.webp`
@@ -11760,7 +11741,7 @@ const deckShareUrl = baseDeckShareUrl
     : null;
 
 const classArray = Array.from(activeClasses).sort();
-const heroName = resolveHeroName(classArray) || `Unknown Hero`;
+const heroName = heroMap[classArray.join(',')] || `Unknown Hero`;
 
 const deckLinkHtml = deckShareUrl
     ? daveSay(`
@@ -11799,7 +11780,7 @@ chatFeed.innerHTML = baseHtml + swapHtml + deckLinkHtml;
             const spaceLeft = 40 - getTotalCards();
 const classArray = Array.from(activeClasses).sort();
 const heroName =
-    resolveHeroName(classArray) ||
+    heroMap[classArray.join(',')] ||
     `a ${classArray.join(' / ')} Hero`;
 
 /*
@@ -13498,7 +13479,7 @@ function getExportHeroData() {
         };
     }
 
-    const heroName = resolveHeroName(classArray) || `Any ${classArray.join(' / ')} Hero`;
+    const heroName = heroMap[classArray.join(',')] || `Any ${classArray.join(' / ')} Hero`;
 
     return {
         heroName,

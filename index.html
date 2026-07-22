@@ -1445,20 +1445,20 @@
 
             <div id="collectionPageStats" class="collection-page-stats"></div>
 
+            <div class="collection-faction-toggle">
+                <select id="collectionPageFaction" class="collection-faction-select">
+                    <option value="Plant">🌿 Plants</option>
+                    <option value="Zombie">💀 Zombies</option>
+                </select>
+                <input id="collectionPageSearch" type="text" placeholder="Search cards..." autocomplete="off">
+            </div>
+
             <div class="collection-page-heroes">
-                <h3 class="collection-page-subheading">Heroes I Own</h3>
                 <div id="collectionHeroGrid" class="collection-hero-grid"></div>
             </div>
 
             <div class="collection-page-cards">
-                <h3 class="collection-page-subheading">Cards I Own</h3>
-                <div class="collection-page-controls">
-                    <input id="collectionPageSearch" type="text" placeholder="Search cards..." autocomplete="off">
-                    <select id="collectionPageFaction" class="collection-faction-select">
-                        <option value="Plant">Plants</option>
-                        <option value="Zombie">Zombies</option>
-                    </select>
-                </div>
+                <h3 class="collection-page-subheading">Cards <span id="collectionPageCardCount">0</span></h3>
                 <div id="collectionPageGrid" class="collection-page-grid"></div>
             </div>
         </section>
