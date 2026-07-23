@@ -1505,6 +1505,19 @@
 
             <div id="collectionPageStats" class="collection-page-stats"></div>
 
+            <div class="collection-page-sparks-row">
+                <label for="collectionPageSparksInput">Base sparks</label>
+                <input
+                    id="collectionPageSparksInput"
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="0"
+                >
+                <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon">
+            </div>
+
             <div class="collection-faction-toggle">
                 <select id="collectionPageFaction" class="collection-faction-select">
                     <option value="Plant">🌿 Plants</option>
@@ -1522,6 +1535,44 @@
                 <div id="collectionPageGrid" class="collection-page-grid"></div>
             </div>
         </section>
+
+        <div id="collectionBuyModal" class="collection-buy-modal hidden" aria-hidden="true">
+            <div class="collection-buy-modal-inner">
+                <button type="button" id="collectionBuyModalClose" class="collection-modal-close" aria-label="Close buy menu">&times;</button>
+                <div class="collection-buy-layout">
+                    <div class="collection-buy-card-side">
+                        <img id="collectionBuyCardImage" class="collection-buy-card-image" alt="Card art">
+                        <div class="collection-buy-card-name" id="collectionBuyCardName"></div>
+                        <div class="collection-buy-card-description" id="collectionBuyCardDescription"></div>
+                        <div class="collection-buy-card-meta" id="collectionBuyCardMeta"></div>
+                    </div>
+                    <div class="collection-buy-right-side">
+                        <div class="collection-buy-header-row">
+                            <div>
+                                <div class="collection-buy-label">Current cost</div>
+                                <div class="collection-buy-cost-line"><span id="collectionBuyCost">0</span> <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
+                            </div>
+                            <div>
+                                <div class="collection-buy-label">Owned</div>
+                                <div class="collection-buy-owned-line" id="collectionBuyOwned">0</div>
+                            </div>
+                        </div>
+
+                        <div class="collection-buy-qty-row">
+                            <button type="button" id="collectionBuyQtyDown" class="collection-buy-qty-step" aria-label="Remove one target copy">−</button>
+                            <label class="collection-buy-qty-label" for="collectionBuyQtyInput">Copies to get</label>
+                            <input id="collectionBuyQtyInput" class="collection-buy-qty-input" type="number" min="0" step="1" value="1" inputmode="numeric">
+                            <button type="button" id="collectionBuyQtyUp" class="collection-buy-qty-step" aria-label="Add one target copy">+</button>
+                        </div>
+                        <div class="collection-buy-qty-guide">Use the stepper to choose how many more copies you want to aim for. This page only suggests the spark route and the cards you could scrap.</div>
+
+                        <div class="collection-buy-summary" id="collectionBuySummary"></div>
+                        <div class="collection-buy-scrap" id="collectionBuyScrap"></div>
+                        <div class="collection-buy-danger" id="collectionBuyDanger"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </main>
 
