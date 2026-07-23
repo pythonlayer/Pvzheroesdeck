@@ -9591,6 +9591,11 @@ This prevents the inner duplicate from creating a second box.
     border-radius: 10px;
     padding: 10px 12px;
 }
+.collection-buy-scrap {
+    max-height: 280px;
+    overflow: auto;
+    scrollbar-width: thin;
+}
 .collection-buy-summary-line,
 .collection-buy-scrap-row {
     font-size: 0.86rem;
@@ -9607,25 +9612,26 @@ This prevents the inner duplicate from creating a second box.
 }
 .collection-buy-scrap-row {
     display: grid;
-    grid-template-columns: 50px 1fr auto;
+    grid-template-columns: 42px 1fr auto;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     padding: 6px 0;
     border-top: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
 }
 .collection-buy-scrap-row:first-of-type {
     border-top: none;
 }
 .collection-buy-scrap-art {
     position: relative;
-    width: 50px;
-    height: 50px;
+    width: 42px;
+    height: 42px;
 }
 .collection-buy-scrap-art img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 6px;
+    border-radius: 4px;
     background: rgba(255,255,255,0.05);
 }
 .collection-buy-scrap-copy-badge {
@@ -9665,6 +9671,16 @@ This prevents the inner duplicate from creating a second box.
 @media (max-width: 760px) {
     .collection-buy-layout { grid-template-columns: 1fr; }
     .collection-buy-qty-row { grid-template-columns: 44px 1fr 72px 44px; }
-    .collection-buy-scrap-row { grid-template-columns: 44px 1fr; }
-    .collection-buy-scrap-value { grid-column: 2; justify-self: start; }
+    .collection-buy-scrap {
+        max-height: 220px;
+    }
+    .collection-buy-scrap-row {
+        grid-template-columns: 40px 1fr;
+        gap: 6px;
+        padding: 5px 0;
+    }
+    .collection-buy-scrap-value {
+        grid-column: 2;
+        justify-self: start;
+    }
 }

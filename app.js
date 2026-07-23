@@ -8062,7 +8062,7 @@ gradeButtons.forEach(button => {
         'super-rare': '#451D9C',
         'super rare': '#451D9C',
         'rare': '#F4B039',
-        'uncommon': '#CFDFE8',
+        'uncommon': '#7FA8FF',
         'common': '#F7F3B0',
         'basic': '#F7F3B0',
         'legendary': 'linear-gradient(135deg, #ff4d6d, #ffb347, #5df2ff, #8eff6f, #ffdc52)'
