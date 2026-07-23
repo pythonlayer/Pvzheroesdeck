@@ -72,6 +72,161 @@ document.addEventListener('DOMContentLoaded', () => {
     if (adjElement) {
         adjElement.textContent = randomAdj;
     }
+
+    const eventCardBanner = document.getElementById('eventCardBanner');
+    const eventCardRotationData = {
+        version: 1,
+        eventDurationDays: 7,
+        reference: {
+            card: 'bad_moon_rising',
+            startsAt: '2026-07-21T18:48:00'
+        },
+        rotation: [
+            'regifting_zombie',
+            'toadstool',
+            'gargologist',
+            'energy_drink_zombie',
+            'fire_roster',
+            'defensive_end',
+            'blooming_heart',
+            'stupid_cupid',
+            'sportacus',
+            'bonus_track_buckethead',
+            'electric_blueberry',
+            'plucky_clover',
+            'shamrocket',
+            'spyris',
+            'lily_of_the_valley',
+            'snake_grass',
+            'zombie_high_diver',
+            'health_nut',
+            'banana_split',
+            'garlic',
+            'secret_agent',
+            'imposter',
+            'sun_shroom',
+            'high_voltage_currant',
+            'going_viral',
+            'sonic_bloom',
+            'synchronized_swimmer',
+            'corn_dog',
+            'trapper_zombie',
+            'sap_fling',
+            'clique_peas',
+            'bad_moon_rising',
+            'Forget-Me-Nuts',
+            'hover_goat_3000',
+            'atomic_bombegranate',
+            'imp_throwing_imp',
+            'thinking_cap',
+            'go_nuts',
+            'captain_flameface',
+            'ketchup_mechanic',
+            'fraidy_cat',
+            'haunted_pumpking',
+            'trick_or_treater',
+            'jack_o_lantern',
+            'frankentuar',
+            'sneezing_zombie',
+            'mayflower',
+            'turkey_rider',
+            'overstuffed_zombie',
+            'pear_cub',
+            'unexpected_gifts',
+            'jolly_holly'
+        ]
+    };
+
+    function formatEventCardName(cardKey) {
+        return (cardKey || '').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    function normalizeCardKey(cardKey) {
+        return (cardKey || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function getAvailableEventCards() {
+        const rotation = eventCardRotationData.rotation || [];
+        if (!rotation.length || !cardDatabase || typeof cardDatabase !== 'object') return [];
+
+        const databaseKeys = Object.keys(cardDatabase);
+        const availableKeys = new Set(databaseKeys.map(normalizeCardKey));
+
+        return rotation
+            .filter(cardKey => availableKeys.has(normalizeCardKey(cardKey)))
+            .map(cardKey => {
+                const match = databaseKeys.find(databaseKey => normalizeCardKey(databaseKey) === normalizeCardKey(cardKey));
+                return match || cardKey;
+            });
+    }
+
+    function getEventCardBannerState() {
+    const rotation = getAvailableEventCards();
+    if (!rotation.length) return null;
+
+    const startTime = new Date(eventCardRotationData.reference.startsAt);
+    const durationDays = Math.max(1, eventCardRotationData.eventDurationDays || 7);
+
+    const elapsedDays =
+        (Date.now() - startTime.getTime()) / (1000 * 60 * 60 * 24);
+
+    const cycleOffset = Math.floor(elapsedDays / durationDays);
+
+    const referenceKey = normalizeCardKey(eventCardRotationData.reference.card);
+    const referenceIndex = rotation.findIndex(
+        card => normalizeCardKey(card) === referenceKey
+    );
+
+    if (referenceIndex === -1) {
+        console.error("Reference card not found:", referenceKey);
+        return null;
+    }
+
+    const currentIndex =
+        (referenceIndex + cycleOffset + rotation.length) % rotation.length;
+
+    return {
+        current: rotation[currentIndex],
+        next: rotation[(currentIndex + 1) % rotation.length]
+    };
+}
+    function renderEventCardBanner() {
+        if (!eventCardBanner) return;
+
+        const hash = (window.location.hash || '#home').replace(/^#/, '').trim();
+        if (hash && hash !== 'home') {
+            eventCardBanner.classList.add('hidden');
+            return;
+        }
+
+        const state = getEventCardBannerState();
+        if (!state) {
+            eventCardBanner.classList.add('hidden');
+            return;
+        }
+
+        const currentCard = state.current;
+        const nextCard = state.next;
+
+        eventCardBanner.innerHTML = `
+            <div class="event-card-banner-card event-card-banner-current">
+                <div class="event-card-banner-label">Current</div>
+                <img src="card_images/${currentCard}.png" alt="${formatEventCardName(currentCard)}" loading="lazy" decoding="async"
+                     onerror="this.onerror=null;this.src='card_images/${currentCard}.webp'">
+                <span class="event-card-banner-name">${formatEventCardName(currentCard)}</span>
+            </div>
+            <div class="event-card-banner-card event-card-banner-next">
+                <div class="event-card-banner-label">Next</div>
+                <img src="card_images/${nextCard}.png" alt="${formatEventCardName(nextCard)}" loading="lazy" decoding="async"
+                     onerror="this.onerror=null;this.src='card_images/${nextCard}.webp'">
+                <span class="event-card-banner-name">${formatEventCardName(nextCard)}</span>
+            </div>
+        `;
+        eventCardBanner.classList.remove('hidden');
+    }
+
+    renderEventCardBanner();
+    setInterval(renderEventCardBanner, 60000);
     // --- DOM Elements ---
     const deckGrid = document.getElementById('deckGrid');
     const loadingEl = document.getElementById('loading');
@@ -105,6 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const synergyView = document.getElementById('synergyView');
     const collectionView = document.getElementById('collectionView');
     const collectionPageBtn = document.getElementById('collectionPageBtn');
+    const packsView = document.getElementById('packsView');
+    const packsPageBtn = document.getElementById('packsPageBtn');
 
     // --- Fetch Database ---
     // --- 1. SET UP A "DATA LOADED" FLAG ---
@@ -139,6 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // KICK OFF THE ROUTER NOW THAT WE HAVE DATA!
             handleRouting();
+            renderEventCardBanner();
             renderSeeds(); // Initial render to show empty state
         })
         .catch(error => {
@@ -172,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tiersBtn.classList.add('hidden');
         synergyView.classList.add('hidden');
         if (collectionView) collectionView.classList.add('hidden');
+        if (packsView) packsView.classList.add('hidden');
 
         if (typeof backBtn !== 'undefined') backBtn.classList.add('hidden');
 
@@ -217,6 +376,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof backBtn !== 'undefined') backBtn.classList.remove('hidden');
             if (typeof renderCollectionPage === 'function') renderCollectionPage();
         }
+        else if (hash === '#packs') {
+            if (packsView) packsView.classList.remove('hidden');
+            if (typeof backBtn !== 'undefined') backBtn.classList.remove('hidden');
+            if (typeof initPackSimulator === 'function') initPackSimulator();
+        }
         else {
             // Default Home UI
             deckView.classList.remove('hidden');
@@ -231,6 +395,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (moreMenu) moreMenu.classList.remove('hidden');
 
         }
+
+        renderEventCardBanner();
 
         // 3. CRITICAL CHANGE: Track the page view AFTER the DOM and titles have updated
         trackPageView(hash);
@@ -8315,10 +8481,14 @@ gradeButtons.forEach(button => {
             const cleanName = rawName.replace(/_/g, ' ');
             const owned = ownedCollection[rawName] || 0;
             const borderColor = getCollectionRarityBorderColor(rawName);
-            const isLegendary = (cardDatabase?.[rawName]?.Rarity || '').toLowerCase() === 'legendary';
+            const rarity = (cardDatabase?.[rawName]?.Rarity || '').toLowerCase().trim();
+            const isLegendary = rarity === 'legendary';
+            const isSuperRare = rarity === 'super-rare' || rarity === 'super rare';
+            const isRare = rarity === 'rare';
+            const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : '';
 
             return `
-                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${isLegendary ? ' legendary' : ''}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
+                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
                     <div class="visual-card-art">
                         <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
                              onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
@@ -16041,6 +16211,572 @@ ctx.restore();
     });
 }
 
+    // ================= PACK SIMULATOR =================
+    const packGemBalanceEl = document.getElementById('packGemBalance');
+    const packGemSpentEl = document.getElementById('packGemSpent');
+    const packResetSimBtn = document.getElementById('packResetSimBtn');
+    const packSimStatsEl = document.getElementById('packSimStats');
+    const packSelectorEl = document.getElementById('packSelector');
+    const packOpen1Btn = document.getElementById('packOpen1Btn');
+    const packOpen11Btn = document.getElementById('packOpen11Btn');
+    const packDoneBtn = document.getElementById('packDoneBtn');
+    const packDoneModal = document.getElementById('packDoneModal');
+    const packDoneModalClose = document.getElementById('packDoneModalClose');
+    const packDoneSummaryContent = document.getElementById('packDoneSummaryContent');
+    const packResultsEl = document.getElementById('packResults');
+    let packOpeningInProgress = false;
+    let packOpeningSequence = 0;
+
+    function setPackOpeningState(isOpening) {
+        packOpeningInProgress = isOpening;
+        [packOpen1Btn, packOpen11Btn].forEach(button => {
+            if (!button) return;
+            button.disabled = isOpening;
+            button.setAttribute('aria-disabled', String(isOpening));
+            button.classList.toggle('is-opening', isOpening);
+        });
+    }
+
+    const PACK_SIM_STORAGE_KEY = 'pvzh_pack_sim_v1';
+    const PACK_SINGLE_COST = 100;
+    const PACK_BUNDLE_COUNT = 11;
+    const PACK_BUNDLE_COST = 1000;
+    const PACK_SIM_DEFAULT_STATE = {
+        gems: 5000,
+        gemsUsed: 0,
+        opened: 0,
+        pulls: { Uncommon: 0, Rare: 0, 'Super-Rare': 0, Legendary: 0, Hero: 0 },
+        cardCounts: {},
+        earned: [],
+        selected: 'Premium'
+    };
+    const PACK_MAX_COPIES = 4;
+
+    // Note: real Hero Packs in PvZH give a hero + powers, not just cards.
+    // This simulator focuses on the 4 card-set packs. Premium packs additionally
+    // roll a small chance of a "Hero Pull" -- a bonus hero pulled from whichever
+    // heroes aren't yet marked owned on the My Collection page (plus Green Shadow
+    // and Super Brainz, which are always eligible).
+    const PACK_DEFS = {
+        Premium: { label: 'Premium Pack', img: 'PreniumPackNew.webp', cardCount: 6, hero: true, mode: 'set' },
+        Galactic: { label: 'Galactic Pack', img: 'GalacticPackNew.webp', cardCount: 6, mode: 'set' },
+        Colossal: { label: 'Colossal Pack', img: 'ColossalPack.webp', cardCount: 6, mode: 'set' },
+        Triassic: { label: 'Triassic Pack', img: 'TriassicTriumphPack.webp', cardCount: 6, mode: 'set' },
+        'Pea Pack': { label: 'Pea Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pea'], subtitle: 'Plant tribe pack' },
+        'Nut Pack': { label: 'Nut Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['nut'], subtitle: 'Plant tribe pack' },
+        'Mushroom Pack': { label: 'Mushroom Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['mushroom'], subtitle: 'Plant tribe pack' },
+        'Flower Pack': { label: 'Flower Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['flower'], subtitle: 'Plant tribe pack' },
+        'Berry Pack': { label: 'Berry Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['berry'], subtitle: 'Plant tribe pack' },
+        'Root Pack': { label: 'Root Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['root'], subtitle: 'Plant tribe pack' },
+        'Bean, Corn & Pumpkin Pack': { label: 'Bean, Corn & Pumpkin Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['bean', 'corn', 'pumpkin'], subtitle: 'Fused plant tribe pack' },
+        'Imp Pack': { label: 'Imp Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['imp'], subtitle: 'Zombie tribe pack' },
+        'Gargantuar Pack': { label: 'Gargantuar Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['gargantuar'], subtitle: 'Zombie tribe pack' },
+        'Science Pack': { label: 'Science Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['science'], subtitle: 'Zombie tribe pack' },
+        'Gourmet Pack': { label: 'Gourmet Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['gourmet'], subtitle: 'Zombie tribe pack', featuredCard: 'Vitamin_Z' },
+        'Pirate Pack': { label: 'Pirate Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pirate'], subtitle: 'Zombie tribe pack' },
+        'Pet Pack': { label: 'Pet Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pet'], subtitle: 'Zombie tribe pack' },
+        'Mustache & Professional': { label: 'Mustache & Professional', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['mustache', 'professional'], subtitle: 'Zombie tribe pack' }
+    };
+
+    let packSimState = JSON.parse(JSON.stringify(PACK_SIM_DEFAULT_STATE));
+
+    function loadPackSimState() {
+        try {
+            const raw = localStorage.getItem(PACK_SIM_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                packSimState = Object.assign(JSON.parse(JSON.stringify(PACK_SIM_DEFAULT_STATE)), parsed);
+                packSimState.pulls = Object.assign({ Uncommon: 0, Rare: 0, 'Super-Rare': 0, Legendary: 0, Hero: 0 }, parsed.pulls || {});
+                packSimState.cardCounts = Object.assign({}, parsed.cardCounts || {});
+                packSimState.earned = Array.isArray(parsed.earned) ? parsed.earned : [];
+                packSimState.gemsUsed = Number.isFinite(parsed.gemsUsed) ? parsed.gemsUsed : packSimState.opened * PACK_SINGLE_COST;
+            }
+        } catch (e) { /* ignore corrupt storage */ }
+    }
+
+    function savePackSimState() {
+        try { localStorage.setItem(PACK_SIM_STORAGE_KEY, JSON.stringify(packSimState)); } catch (e) { /* ignore */ }
+    }
+
+    function getPackPools(setName) {
+        const pools = { Uncommon: [], Rare: [], 'Super-Rare': [], Legendary: [] };
+        for (const key in cardDatabase) {
+            const c = cardDatabase[key];
+            if (!c || c.Set !== setName) continue;
+            const rarity = (c.Rarity || '').trim();
+            const normalized = rarity === 'Uncommon' ? 'Uncommon'
+                : rarity === 'Rare' ? 'Rare'
+                : rarity === 'Super Rare' || rarity === 'Super-Rare' ? 'Super-Rare'
+                : rarity === 'Legendary' ? 'Legendary'
+                : null;
+            if (normalized && pools[normalized]) pools[normalized].push(key);
+        }
+        return pools;
+    }
+
+    function normalizePackCardRarity(card) {
+        const rarity = (card?.Rarity || '').trim();
+        if (rarity === 'Super Rare' || rarity === 'Super-Rare') return 'Super-Rare';
+        return rarity;
+    }
+
+    function cardMatchesTribeKeywords(card, keywords) {
+        if (!card || !keywords || !keywords.length) return false;
+        const haystack = `${card.Name || ''} ${card.Type || ''} ${card.Description || ''}`.toLowerCase();
+        return keywords.some(keyword => {
+            const clean = String(keyword || '').toLowerCase().trim();
+            if (!clean) return false;
+            return haystack.includes(clean);
+        });
+    }
+
+    function getTribePackCards(def) {
+        const keywords = Array.isArray(def?.tribes) ? def.tribes : (def?.tribe ? [def.tribe] : []);
+        if (!keywords.length) return [];
+        return Object.values(cardDatabase).filter(card => cardMatchesTribeKeywords(card, keywords));
+    }
+
+    function pickCardFromPool(pool, rarity, usedNames) {
+        const candidates = pool.filter(card => {
+            if (!card || !card.Name) return false;
+            if (usedNames.has(card.Name)) return false;
+            return normalizePackCardRarity(card) === rarity;
+        });
+        if (candidates.length) {
+            const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+            usedNames.add(chosen.Name);
+            return chosen;
+        }
+        const fallback = pool.filter(card => card && card.Name && !usedNames.has(card.Name));
+        if (!fallback.length) return null;
+        const chosen = fallback[Math.floor(Math.random() * fallback.length)];
+        usedNames.add(chosen.Name);
+        return chosen;
+    }
+
+    function buildTribePackPulls(def, count = 1) {
+        const cards = [];
+        const tribeCards = getTribePackCards(def);
+        if (!tribeCards.length) return cards;
+
+        const uncommonPool = tribeCards.filter(card => normalizePackCardRarity(card) === 'Uncommon');
+        const rarePool = tribeCards.filter(card => normalizePackCardRarity(card) === 'Rare');
+        const superRarePool = tribeCards.filter(card => normalizePackCardRarity(card) === 'Super-Rare');
+        const legendaryPool = tribeCards.filter(card => normalizePackCardRarity(card) === 'Legendary');
+
+        for (let packIndex = 0; packIndex < count; packIndex += 1) {
+            const usedNames = new Set();
+            const packPulls = [];
+
+            for (let i = 0; i < 4; i += 1) {
+                const chosen = pickCardFromPool(uncommonPool.length ? uncommonPool : tribeCards, 'Uncommon', usedNames);
+                if (chosen) packPulls.push(chosen);
+            }
+
+            let rareCard = null;
+            if (def?.featuredCard) {
+                rareCard = tribeCards.find(card => card?.Name === def.featuredCard || card?.Name === def.featuredCard.replace(/_/g, ' '));
+            }
+            if (!rareCard) {
+                rareCard = pickCardFromPool(rarePool.length ? rarePool : tribeCards, 'Rare', usedNames);
+            } else {
+                usedNames.add(rareCard.Name);
+            }
+            if (rareCard) packPulls.push(rareCard);
+
+            const roll = Math.random();
+            let slotRarity = 'Rare';
+            if (roll < 0.10) slotRarity = 'Legendary';
+            else if (roll < 0.40) slotRarity = 'Super-Rare';
+
+            const slotPool = slotRarity === 'Legendary' ? legendaryPool.length ? legendaryPool : tribeCards
+                : slotRarity === 'Super-Rare' ? superRarePool.length ? superRarePool : tribeCards
+                : rarePool.length ? rarePool : tribeCards;
+            const slotCard = pickCardFromPool(slotPool, slotRarity, usedNames);
+            if (slotCard) packPulls.push(slotCard);
+
+            packPulls.forEach(card => {
+                cards.push(card);
+            });
+        }
+        return cards;
+    }
+
+    // Heroes eligible for a Hero Pull: anything not yet checked off on My Collection,
+    // except Green Shadow and Super Brainz, which are unlocked by default and
+    // should never be offered as pack-pulled heroes in this simulator.
+    function getHeroPullPool() {
+        return [...PLANT_HEROES, ...ZOMBIE_HEROES].filter(h => !ownedHeroes[h] && h !== 'Green Shadow' && h !== 'Super Brainz');
+    }
+
+    function rollPackRarity(setName) {
+        const def = PACK_DEFS[setName];
+        const roll = Math.random();
+        if (def && def.hero && roll < 0.03) return 'Hero';
+        if (roll < 0.54) return 'Uncommon';
+        if (roll < 0.78) return 'Rare';
+        if (roll < 0.95) return 'Super-Rare';
+        return 'Legendary';
+    }
+
+    function pickCardForRarity(pools, rarity) {
+        const tierOrder = rarity === 'Legendary' ? ['Legendary', 'Super-Rare', 'Rare', 'Uncommon']
+            : rarity === 'Super-Rare' ? ['Super-Rare', 'Legendary', 'Rare', 'Uncommon']
+            : rarity === 'Rare' ? ['Rare', 'Super-Rare', 'Legendary', 'Uncommon']
+            : ['Uncommon', 'Rare', 'Super-Rare', 'Legendary'];
+
+        for (const t of tierOrder) {
+            const pool = pools[t];
+            if (!pool || !pool.length) continue;
+            const avail = pool.filter(n => (packSimState.cardCounts[n] || 0) < PACK_MAX_COPIES);
+            if (avail.length) return avail[Math.floor(Math.random() * avail.length)];
+        }
+        for (const t of tierOrder) {
+            if (pools[t] && pools[t].length) return pools[t][Math.floor(Math.random() * pools[t].length)];
+        }
+        return null;
+    }
+
+    function packCardDisplayName(rawName) {
+        return (rawName || '').replace(/_/g, ' ');
+    }
+
+    function renderPackSelector() {
+        if (!packSelectorEl) return;
+        packSelectorEl.innerHTML = Object.keys(PACK_DEFS).map(setName => {
+            const def = PACK_DEFS[setName];
+            const active = packSimState.selected === setName ? ' active' : '';
+            return `
+                <button type="button" class="pack-sim-tile${active}" data-pack="${setName}">
+                    <img src="${def.img || ''}" alt="${def.label}" loading="lazy"
+                         onerror="this.style.visibility='hidden';this.parentElement.classList.add('pack-sim-tile--noart')">
+                    <div class="pack-sim-tile-name">${def.label}</div>
+                    <div class="pack-sim-tile-meta">${def.subtitle || (def.mode === 'tribe' ? 'Tribe Pack' : 'Set Pack')}</div>
+                </button>`;
+        }).join('');
+
+        packSelectorEl.querySelectorAll('.pack-sim-tile').forEach(btn => {
+            btn.addEventListener('click', () => {
+                packSimState.selected = btn.getAttribute('data-pack');
+                savePackSimState();
+                renderPackSelector();
+            });
+        });
+    }
+
+    function renderPackSimStats() {
+        if (!packSimStatsEl) return;
+        const p = packSimState.pulls;
+        packSimStatsEl.innerHTML = `
+            <span class="pack-sim-stat">Packs Opened: <strong>${packSimState.opened}</strong></span>
+            <span class="pack-sim-stat rarity-uncommon">Uncommon: <strong>${p.Uncommon || 0}</strong></span>
+            <span class="pack-sim-stat rarity-rare">Rare: <strong>${p.Rare || 0}</strong></span>
+            <span class="pack-sim-stat rarity-super-rare">Super-Rare: <strong>${p['Super-Rare'] || 0}</strong></span>
+            <span class="pack-sim-stat rarity-legendary">Legendary: <strong>${p.Legendary || 0}</strong></span>
+            <span class="pack-sim-stat rarity-hero">Hero: <strong>${p.Hero || 0}</strong></span>
+        `;
+    }
+
+    function updatePackGemBalanceUI() {
+        if (packGemSpentEl) {
+            const spent = packSimState.gemsUsed;
+            packGemSpentEl.textContent = `-${spent.toLocaleString()}`;
+        }
+    }
+
+    function getPackSummarySparkValue(entry) {
+        if (!entry || entry.type === 'hero') return 0;
+        const rarity = (entry.rarity || '').toLowerCase();
+        if (rarity === 'legendary') return 4000;
+        if (rarity === 'super-rare' || rarity === 'super rare') return 1000;
+        if (rarity === 'rare') return 250;
+        if (rarity === 'uncommon') return 50;
+        return 0;
+    }
+
+    function renderPackDoneSummary() {
+        if (!packDoneSummaryContent) return;
+        const entries = Array.isArray(packSimState.earned) ? packSimState.earned : [];
+        const grouped = {};
+
+        entries.forEach(entry => {
+            const key = entry.type === 'hero' ? `hero:${entry.name}` : `${entry.rarity}:${entry.name}`;
+            if (!grouped[key]) {
+                grouped[key] = { ...entry, count: 0 };
+            }
+            grouped[key].count += 1;
+        });
+
+        const items = Object.values(grouped).sort((a, b) => {
+            const order = { Uncommon: 0, Rare: 1, 'Super-Rare': 2, Legendary: 3, Hero: 4 };
+            const aOrder = order[a.type === 'hero' ? 'Hero' : a.rarity] ?? 99;
+            const bOrder = order[b.type === 'hero' ? 'Hero' : b.rarity] ?? 99;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            return (a.name || '').localeCompare(b.name || '');
+        });
+
+        const totalSparkValue = items.reduce((sum, item) => sum + getPackSummarySparkValue(item) * item.count, 0);
+
+        let html = `
+            <div class="pack-sim-summary-total">
+                Total spark value: <strong>${totalSparkValue.toLocaleString()}</strong>
+                <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon">
+            </div>
+        `;
+
+        if (!items.length) {
+            html += '<div class="pack-sim-summary-empty">No pack pulls yet.</div>';
+        } else {
+            html += '<div class="pack-sim-summary-list">' + items.map(item => {
+                const label = item.type === 'hero' ? item.name : packCardDisplayName(item.name);
+                const rarityClass = item.type === 'hero' ? 'rarity-hero' : `rarity-${(item.rarity || '').toLowerCase().replace(/\s+/g, '-')}`;
+                const sparkValue = getPackSummarySparkValue(item) * item.count;
+                return `
+                    <div class="pack-sim-summary-row ${rarityClass}">
+                        <div class="pack-sim-summary-name">${label}</div>
+                        <div class="pack-sim-summary-meta">x${item.count}</div>
+                        <div class="pack-sim-summary-value">${sparkValue.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
+                    </div>
+                `;
+            }).join('') + '</div>';
+        }
+
+        if (packDoneSummaryContent) packDoneSummaryContent.innerHTML = html;
+    }
+
+    function openPackDoneModal() {
+        if (!packDoneModal) return;
+        renderPackDoneSummary();
+        packDoneModal.classList.remove('hidden');
+        packDoneModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closePackDoneModal() {
+        if (!packDoneModal) return;
+        packDoneModal.classList.add('hidden');
+        packDoneModal.setAttribute('aria-hidden', 'true');
+    }
+
+    const PACK_RARITY_ORDER = ['Uncommon', 'Rare', 'Super-Rare', 'Legendary', 'Hero'];
+
+    function groupPulls(pulls) {
+        const buckets = {};
+        PACK_RARITY_ORDER.forEach(r => { buckets[r] = []; });
+        pulls.forEach(p => {
+            const key = p.type === 'hero' ? 'Hero' : p.rarity;
+            if (!buckets[key]) buckets[key] = [];
+            const existing = buckets[key].find(x => x.type === p.type && x.name === p.name);
+            if (existing) {
+                existing.count += 1;
+                if (typeof p.owned === 'number') existing.owned = p.owned;
+            } else {
+                buckets[key].push(Object.assign({}, p, { count: 1 }));
+            }
+        });
+        return PACK_RARITY_ORDER.filter(r => buckets[r] && buckets[r].length)
+            .map(r => ({ rarity: r, items: buckets[r] }));
+    }
+
+    function renderPackResults(pulls, def) {
+        if (!packResultsEl) return;
+        if (!pulls.length) {
+            packResultsEl.innerHTML = `<div class="pack-sim-empty">No cards pulled — that set may be missing from the card database.</div>`;
+            return 0;
+        }
+
+        const groups = groupPulls(pulls);
+        const revealStepMs = 260;
+        const groupTransitionMs = 680;
+        const revealHoldMs = 900;
+
+        packResultsEl.innerHTML = `
+            <div class="pack-sim-results-header pack-sim-results-header--surprise">Opening the ${def.label}...</div>
+            <div class="pack-sim-results-grid" data-group="surprise"></div>
+        `;
+
+        const grid = packResultsEl.querySelector('.pack-sim-results-grid');
+        let revealCursor = 0;
+
+        groups.forEach((group, groupIndex) => {
+            if (groupIndex > 0) {
+                const bannerText = group.rarity === 'Hero' ? 'A hero pull is coming...' : `A ${group.rarity} card is coming...`;
+                window.setTimeout(() => {
+                    if (!grid) return;
+                    grid.insertAdjacentHTML('beforeend', `<div class="pack-sim-reveal-banner">${bannerText}</div>`);
+                }, revealCursor);
+                revealCursor += groupTransitionMs;
+            }
+
+            group.items.forEach((p, itemIndex) => {
+                const groupDelay = group.rarity === 'Uncommon' ? 320 : group.rarity === 'Rare' ? 420 : group.rarity === 'Super-Rare' ? 620 : group.rarity === 'Legendary' ? 760 : 760;
+                const countBadge = p.count > 1 ? `<div class="pack-sim-count-badge">×${p.count}</div>` : '';
+                const html = p.type === 'hero'
+                    ? `
+                        <div class="pack-sim-card rarity-hero" style="animation-duration:${groupDelay}ms; animation-delay:0ms;">
+                            <div class="pack-sim-hero-badge">★ HERO PULL</div>
+                            ${countBadge}
+                            <img src="hero_images/${heroImgBase(p.name)}.webp" alt="${p.name}" loading="lazy" decoding="async"
+                                 onerror="this.onerror=null;this.src='hero_images/${heroImgBase(p.name)}.png'">
+                            <div class="pack-sim-card-name">${p.name}</div>
+                            <div class="pack-sim-card-rarity">Hero</div>
+                        </div>`
+                    : `
+                        <div class="pack-sim-card rarity-${p.rarity.toLowerCase().replace(/\s+/g, '-')}" style="animation-duration:${groupDelay}ms; animation-delay:0ms;">
+                            ${countBadge}
+                            <img src="card_images/${p.name}.png" alt="${packCardDisplayName(p.name)}" loading="lazy" decoding="async"
+                                 onerror="this.onerror=null;this.src='card_images/${p.name}.webp'">
+                            <div class="pack-sim-card-name">${packCardDisplayName(p.name)}</div>
+                            <div class="pack-sim-card-rarity">${p.rarity}</div>
+                        </div>`;
+                window.setTimeout(() => {
+                    if (!grid) return;
+                    grid.insertAdjacentHTML('beforeend', html);
+                    if (packResultsEl) {
+                        packResultsEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        if (packResultsEl.scrollTop !== undefined) {
+                            packResultsEl.scrollTop = packResultsEl.scrollHeight;
+                        }
+                    }
+                }, revealCursor + itemIndex * revealStepMs);
+            });
+            revealCursor += Math.max(0, group.items.length - 1) * revealStepMs + revealStepMs;
+        });
+
+        const totalRevealDuration = revealCursor + revealHoldMs;
+        window.setTimeout(() => {
+            if (!packResultsEl) return;
+            packResultsEl.innerHTML = `
+                <div class="pack-sim-results-header">You pulled ${pulls.length} card${pulls.length === 1 ? '' : 's'} from the ${def.label}:</div>
+                ${groups.map(group => `
+                    <div class="pack-sim-results-group">
+                        <div class="pack-sim-results-group-title rarity-${group.rarity.toLowerCase().replace(/\s+/g, '-')}">
+                            ${group.rarity} <span>(${group.items.reduce((sum, it) => sum + it.count, 0)})</span>
+                        </div>
+                        <div class="pack-sim-results-grid" data-group="${group.rarity}"></div>
+                    </div>
+                `).join('')}
+            `;
+            const finalGrids = packResultsEl.querySelectorAll('.pack-sim-results-grid');
+            groups.forEach(group => {
+                const finalGrid = Array.from(finalGrids).find(el => el.dataset.group === group.rarity);
+                if (!finalGrid) return;
+                group.items.forEach(p => {
+                    const countBadge = p.count > 1 ? `<div class="pack-sim-count-badge">×${p.count}</div>` : '';
+                    const html = p.type === 'hero'
+                        ? `<div class="pack-sim-card rarity-hero"><div class="pack-sim-hero-badge">★ HERO PULL</div>${countBadge}<img src="hero_images/${heroImgBase(p.name)}.webp" alt="${p.name}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='hero_images/${heroImgBase(p.name)}.png'"><div class="pack-sim-card-name">${p.name}</div><div class="pack-sim-card-rarity">Hero</div></div>`
+                        : `<div class="pack-sim-card rarity-${p.rarity.toLowerCase().replace(/\s+/g, '-')}">${countBadge}<img src="card_images/${p.name}.png" alt="${packCardDisplayName(p.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='card_images/${p.name}.webp'"><div class="pack-sim-card-name">${packCardDisplayName(p.name)}</div><div class="pack-sim-card-rarity">${p.rarity}</div></div>`;
+                    finalGrid.insertAdjacentHTML('beforeend', html);
+                });
+            });
+        }, totalRevealDuration);
+        return totalRevealDuration + 100;
+    }
+
+    function openPacks(numPacks, totalCostOverride) {
+        if (packOpeningInProgress) return;
+        const setName = packSimState.selected;
+        const def = PACK_DEFS[setName];
+        if (!def || !packResultsEl) return;
+
+        const totalCost = typeof totalCostOverride === 'number' ? totalCostOverride : PACK_SINGLE_COST * numPacks;
+
+        setPackOpeningState(true);
+        packSimState.gems -= totalCost;
+        packSimState.gemsUsed += totalCost;
+        const allPulls = [];
+        const heroSeen = new Set();
+
+        if (def.mode === 'tribe') {
+            const tribeCards = buildTribePackPulls(def, numPacks);
+            if (!tribeCards.length) {
+                packResultsEl.innerHTML = `<div class="pack-sim-empty">No tribe cards matched ${def.label} yet.</div>`;
+                setPackOpeningState(false);
+                return;
+            }
+            tribeCards.forEach(card => {
+                const rarity = normalizePackCardRarity(card);
+                const cardKey = card.Name;
+                if (!cardKey) return;
+                const ownedBefore = packSimState.cardCounts[cardKey] || 0;
+                packSimState.cardCounts[cardKey] = Math.min(PACK_MAX_COPIES, ownedBefore + 1);
+                allPulls.push({ type: 'card', name: cardKey, rarity, owned: packSimState.cardCounts[cardKey] });
+                packSimState.pulls[rarity] = (packSimState.pulls[rarity] || 0) + 1;
+                packSimState.earned.push({ type: 'card', name: cardKey, rarity });
+            });
+        } else {
+            const pools = getPackPools(setName);
+            const hasAnyCards = pools.Uncommon.length || pools.Rare.length || pools['Super-Rare'].length || pools.Legendary.length;
+            if (!hasAnyCards) {
+                packResultsEl.innerHTML = `<div class="pack-sim-empty">No card data found for the ${def.label} set yet.</div>`;
+                setPackOpeningState(false);
+                return;
+            }
+            for (let i = 0; i < numPacks; i++) {
+                for (let j = 0; j < def.cardCount; j++) {
+                    const rarity = rollPackRarity(setName);
+                    if (rarity === 'Hero') {
+                        const heroPool = getHeroPullPool().filter(h => !heroSeen.has(h));
+                        const heroName = heroPool[Math.floor(Math.random() * heroPool.length)];
+                        if (!heroName) continue;
+                        heroSeen.add(heroName);
+                        allPulls.push({ type: 'hero', name: heroName, rarity: 'Hero' });
+                        packSimState.pulls.Hero = (packSimState.pulls.Hero || 0) + 1;
+                        packSimState.earned.push({ type: 'hero', name: heroName, rarity: 'Hero' });
+                    } else {
+                        const cardKey = pickCardForRarity(pools, rarity);
+                        if (!cardKey) continue;
+                        const ownedBefore = packSimState.cardCounts[cardKey] || 0;
+                        packSimState.cardCounts[cardKey] = Math.min(PACK_MAX_COPIES, ownedBefore + 1);
+                        allPulls.push({ type: 'card', name: cardKey, rarity, owned: packSimState.cardCounts[cardKey] });
+                        packSimState.pulls[rarity] = (packSimState.pulls[rarity] || 0) + 1;
+                        packSimState.earned.push({ type: 'card', name: cardKey, rarity });
+                    }
+                }
+            }
+        }
+        packSimState.opened += numPacks;
+        savePackSimState();
+        updatePackGemBalanceUI();
+        renderPackSimStats();
+        const revealDuration = renderPackResults(allPulls, def);
+        packResultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const openingSequence = ++packOpeningSequence;
+        window.setTimeout(() => {
+            if (openingSequence === packOpeningSequence) setPackOpeningState(false);
+        }, Math.max(revealDuration + 100, 2500));
+    }
+
+    function initPackSimulator() {
+        loadPackSimState();
+        updatePackGemBalanceUI();
+        renderPackSimStats();
+        renderPackSelector();
+    }
+
+    if (packResetSimBtn) {
+        packResetSimBtn.addEventListener('click', () => {
+            if (!confirm('Reset the pack simulator? This clears your simulated gems and pull stats (your real Collection is untouched).')) return;
+            packSimState = JSON.parse(JSON.stringify(PACK_SIM_DEFAULT_STATE));
+            savePackSimState();
+            updatePackGemBalanceUI();
+            renderPackSimStats();
+            renderPackSelector();
+            if (packResultsEl) packResultsEl.innerHTML = '';
+            if (packDoneModal) packDoneModal.classList.add('hidden');
+        });
+    }
+
+    if (packOpen1Btn) packOpen1Btn.addEventListener('click', () => openPacks(1, PACK_SINGLE_COST));
+    if (packOpen11Btn) packOpen11Btn.addEventListener('click', () => openPacks(PACK_BUNDLE_COUNT, PACK_BUNDLE_COST));
+    if (packDoneBtn) packDoneBtn.addEventListener('click', openPackDoneModal);
+    if (packDoneModalClose) packDoneModalClose.addEventListener('click', closePackDoneModal);
+    if (packDoneModal) {
+        packDoneModal.addEventListener('click', (e) => {
+            if (e.target === packDoneModal) closePackDoneModal();
+        });
+    }
+    // ================= END PACK SIMULATOR =================
+
     // --- ROUTING LOGIC ---
 
     window.addEventListener('hashchange', handleRouting);
@@ -16072,6 +16808,12 @@ ctx.restore();
     if (collectionPageBtn) {
         collectionPageBtn.addEventListener('click', () => {
             window.location.hash = 'collection';
+        });
+    }
+
+    if (packsPageBtn) {
+        packsPageBtn.addEventListener('click', () => {
+            window.location.hash = 'packs';
         });
     }
 

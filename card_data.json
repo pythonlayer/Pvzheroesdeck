@@ -399,11 +399,11 @@
         "Name": "Cactus",
         "Class": "Guardian",
         "Cost": 3,
-        "Strength": 1.0,
+        "Strength": 2.0,
         "Health": 5.0,
         "Description": "Bullseye.",
         "Type": "Cactus Plant",
-        "Rarity": "Common",
+        "Rarity": "Uncommon",
         "Set": "Premium",
         "Set #": 1.0
     },

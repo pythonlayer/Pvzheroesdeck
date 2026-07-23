@@ -52,6 +52,7 @@
         <strong>6,400+</strong> players
     </span>
 </p>
+            <div id="eventCardBanner" class="event-card-banner hidden" role="status" aria-live="polite"></div>
             <div class="featured-decks-container">
                 <a class="featured-decks-link" href="https://pvzhvault.com/best-decks-pvzh-july-2026/">
                     Top 10 Best Decks <span>(July 2026)</span>
@@ -216,6 +217,14 @@
                     <rect x="14" y="14" width="7" height="7" rx="1" />
                 </svg>
                 My Collection
+            </button>
+
+            <button id="packsPageBtn" class="more-item">
+                <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
+                    <path d="M12 3v18M4 7.5l8 4.5 8-4.5" />
+                </svg>
+                Open Packs
             </button>
         </div>
     </div>
@@ -1533,6 +1542,44 @@
             <div class="collection-page-cards">
                 <h3 class="collection-page-subheading">Cards <span id="collectionPageCardCount">0</span></h3>
                 <div id="collectionPageGrid" class="collection-page-grid"></div>
+            </div>
+        </section>
+
+        <section id="packsView" class="hidden collection-page">
+            <div class="crafter-header" style="margin-bottom:20px; text-align:center;">
+                <h2><span class="version-effect">Pack Simulator</span></h2>
+                <p style="color: var(--text-secondary); margin-top: 5px;">
+                    Open a few packs and see what you pull. Just for fun — this doesn't touch your real account, gems, or Collection.
+                </p>
+            </div>
+
+            <div class="pack-sim-wallet">
+                <div class="pack-sim-spent pack-sim-spent--total">
+                    <img src="gem.png" alt="Gems" class="gem-icon">
+                    <span class="pack-sim-wallet-label">Spent</span>
+                    <strong id="packGemSpent">0</strong>
+                </div>
+                <button id="packResetSimBtn" class="collection-count-btn" type="button">Reset Simulator</button>
+            </div>
+
+            <div id="packSimStats" class="pack-sim-stats"></div>
+
+            <div id="packSelector" class="pack-sim-selector"></div>
+
+            <div class="pack-sim-open-row">
+                <button id="packOpen1Btn" class="pack-sim-btn" type="button">Open 1 Pack <span class="pack-sim-cost-pill"><img src="gem.png" alt="Gems" class="gem-icon">100</span></button>
+                <button id="packOpen11Btn" class="pack-sim-btn pack-sim-btn--alt" type="button">Open 11 Packs <span class="pack-sim-cost-pill"><img src="gem.png" alt="Gems" class="gem-icon">1,000</span></button>
+                <button id="packDoneBtn" class="pack-sim-btn pack-sim-btn--alt" type="button">Done</button>
+            </div>
+
+            <div id="packResults" class="pack-sim-results"></div>
+
+            <div id="packDoneModal" class="pack-sim-modal hidden" aria-hidden="true">
+                <div class="pack-sim-modal-inner">
+                    <button type="button" id="packDoneModalClose" class="pack-sim-modal-close" aria-label="Close pack summary">×</button>
+                    <div class="pack-sim-modal-title">Pack summary</div>
+                    <div id="packDoneSummaryContent" class="pack-sim-modal-content"></div>
+                </div>
             </div>
         </section>
 
