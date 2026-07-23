@@ -16250,7 +16250,6 @@ ctx.restore();
         earned: [],
         selected: 'Premium'
     };
-    const PACK_MAX_COPIES = 4;
 
     // Note: real Hero Packs in PvZH give a hero + powers, not just cards.
     // This simulator focuses on the 4 card-set packs. Premium packs additionally
@@ -16409,32 +16408,80 @@ ctx.restore();
         return [...PLANT_HEROES, ...ZOMBIE_HEROES].filter(h => !ownedHeroes[h] && h !== 'Green Shadow' && h !== 'Super Brainz');
     }
 
-    function rollPackRarity(setName) {
+    function openSetPack(setName) {
         const def = PACK_DEFS[setName];
-        const roll = Math.random();
-        if (def && def.hero && roll < 0.03) return 'Hero';
-        if (roll < 0.54) return 'Uncommon';
-        if (roll < 0.78) return 'Rare';
-        if (roll < 0.95) return 'Super-Rare';
-        return 'Legendary';
-    }
+        const pools = getPackPools(setName);
+        const pulled = [];
+        const usedNames = new Set();
 
-    function pickCardForRarity(pools, rarity) {
-        const tierOrder = rarity === 'Legendary' ? ['Legendary', 'Super-Rare', 'Rare', 'Uncommon']
-            : rarity === 'Super-Rare' ? ['Super-Rare', 'Legendary', 'Rare', 'Uncommon']
-            : rarity === 'Rare' ? ['Rare', 'Super-Rare', 'Legendary', 'Uncommon']
-            : ['Uncommon', 'Rare', 'Super-Rare', 'Legendary'];
+        const slots = [
+            'Uncommon',
+            'Uncommon',
+            'Uncommon',
+            Math.random() < 0.10 ? 'Legendary' : 'Uncommon',
+            Math.random() < 0.30 ? 'Super-Rare' : 'Uncommon',
+            'Rare'
+        ];
 
-        for (const t of tierOrder) {
-            const pool = pools[t];
-            if (!pool || !pool.length) continue;
-            const avail = pool.filter(n => (packSimState.cardCounts[n] || 0) < PACK_MAX_COPIES);
-            if (avail.length) return avail[Math.floor(Math.random() * avail.length)];
+        if (def && def.hero && Math.random() < 0.03) {
+            const heroes = getHeroPullPool();
+            if (heroes.length) {
+                const hero = heroes[Math.floor(Math.random() * heroes.length)];
+                const uncommonIndex = slots.indexOf('Uncommon');
+                if (uncommonIndex !== -1) {
+                    slots[uncommonIndex] = 'Hero';
+                }
+
+                pulled.push({
+                    hero,
+                    rarity: 'Hero'
+                });
+            }
         }
-        for (const t of tierOrder) {
-            if (pools[t] && pools[t].length) return pools[t][Math.floor(Math.random() * pools[t].length)];
+
+        for (const slot of slots) {
+            if (slot === 'Hero') continue;
+
+            let tierOrder;
+            switch (slot) {
+                case 'Legendary':
+                    tierOrder = ['Legendary', 'Super-Rare', 'Rare', 'Uncommon'];
+                    break;
+                case 'Super-Rare':
+                    tierOrder = ['Super-Rare', 'Rare', 'Uncommon'];
+                    break;
+                case 'Rare':
+                    tierOrder = ['Rare', 'Uncommon'];
+                    break;
+                default:
+                    tierOrder = ['Uncommon'];
+            }
+
+            let chosen = null;
+            for (const tier of tierOrder) {
+                const pool = pools[tier];
+                if (!pool || !pool.length) continue;
+                const available = pool.filter(name => !usedNames.has(name));
+                if (available.length) {
+                    chosen = available[Math.floor(Math.random() * available.length)];
+                    break;
+                }
+            }
+
+            if (!chosen) continue;
+
+            usedNames.add(chosen);
+            const card = cardDatabase[chosen];
+            if (!card) continue;
+
+            pulled.push({
+                name: chosen,
+                card,
+                rarity: normalizePackCardRarity(card)
+            });
         }
-        return null;
+
+        return pulled;
     }
 
     function packCardDisplayName(rawName) {
@@ -16712,26 +16759,28 @@ ctx.restore();
                 return;
             }
             for (let i = 0; i < numPacks; i++) {
-                for (let j = 0; j < def.cardCount; j++) {
-                    const rarity = rollPackRarity(setName);
-                    if (rarity === 'Hero') {
+                const packPulls = openSetPack(setName);
+                packPulls.forEach(pull => {
+                    if (pull.hero) {
                         const heroPool = getHeroPullPool().filter(h => !heroSeen.has(h));
-                        const heroName = heroPool[Math.floor(Math.random() * heroPool.length)];
-                        if (!heroName) continue;
+                        const heroName = heroPool[Math.floor(Math.random() * heroPool.length)] || pull.hero;
+                        if (!heroName) return;
                         heroSeen.add(heroName);
                         allPulls.push({ type: 'hero', name: heroName, rarity: 'Hero' });
                         packSimState.pulls.Hero = (packSimState.pulls.Hero || 0) + 1;
                         packSimState.earned.push({ type: 'hero', name: heroName, rarity: 'Hero' });
-                    } else {
-                        const cardKey = pickCardForRarity(pools, rarity);
-                        if (!cardKey) continue;
-                        const ownedBefore = packSimState.cardCounts[cardKey] || 0;
-                        packSimState.cardCounts[cardKey] = Math.min(PACK_MAX_COPIES, ownedBefore + 1);
-                        allPulls.push({ type: 'card', name: cardKey, rarity, owned: packSimState.cardCounts[cardKey] });
-                        packSimState.pulls[rarity] = (packSimState.pulls[rarity] || 0) + 1;
-                        packSimState.earned.push({ type: 'card', name: cardKey, rarity });
+                        return;
                     }
-                }
+
+                    const cardKey = pull.name;
+                    const rarity = pull.rarity;
+                    if (!cardKey) return;
+                    const ownedBefore = packSimState.cardCounts[cardKey] || 0;
+                    packSimState.cardCounts[cardKey] = ownedBefore + 1;
+                    allPulls.push({ type: 'card', name: cardKey, rarity, owned: packSimState.cardCounts[cardKey] });
+                    packSimState.pulls[rarity] = (packSimState.pulls[rarity] || 0) + 1;
+                    packSimState.earned.push({ type: 'card', name: cardKey, rarity });
+                });
             }
         }
         packSimState.opened += numPacks;
