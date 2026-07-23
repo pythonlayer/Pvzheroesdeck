@@ -8159,6 +8159,12 @@ gradeButtons.forEach(button => {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
         updateCollectionBuyModal(rawName);
+        // Compute the scrap route for whatever quantity is already in the
+        // stepper (defaults to 1) so the suggestion shows immediately
+        // instead of only after the user touches +/-.
+        const qtyInput = document.getElementById('collectionBuyQtyInput');
+        const initialQty = Math.max(0, parseInt(qtyInput?.value, 10) || 0);
+        if (initialQty > 0) purchaseCollectionCard(rawName, initialQty);
     }
 
     function purchaseCollectionCard(rawName, qty) {
