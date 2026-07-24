@@ -16321,11 +16321,11 @@ ctx.restore();
 
     function cardMatchesTribeKeywords(card, keywords) {
         if (!card || !keywords || !keywords.length) return false;
-        const haystack = `${card.Name || ''} ${card.Type || ''} ${card.Description || ''}`.toLowerCase();
+        const cardTribes = getCardTribes(card).map(t => t.toLowerCase());
         return keywords.some(keyword => {
             const clean = String(keyword || '').toLowerCase().trim();
             if (!clean) return false;
-            return haystack.includes(clean);
+            return cardTribes.includes(clean);
         });
     }
 
