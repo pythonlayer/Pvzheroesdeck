@@ -44,9 +44,9 @@ header {
     margin: 0 auto 0.6rem;
     padding: 0.35rem 0.5rem;
     border-radius: 999px;
-    background: linear-gradient(90deg, rgba(255, 80, 100, 0.21), rgba(255, 255, 255, 0.05));
-    border: 1px solid rgba(255, 95, 110, 0.4);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
+    background: linear-gradient(90deg, rgba(255, 77, 109, 0.24), rgba(255, 255, 255, 0.05));
+    border: 2px solid rgba(255, 95, 110, 0.9);
+    box-shadow: 0 0 0 1px rgba(255, 95, 110, 0.22), 0 8px 18px rgba(0, 0, 0, 0.2);
     color: #f8fafc;
     display: flex;
     justify-content: center;
@@ -75,6 +75,7 @@ header {
     height: auto;
     object-fit: contain;
     border-radius: 7px;
+    border: 1px solid rgba(255, 95, 110, 0.4);
     box-shadow: 0 3px 8px rgba(0,0,0,0.18);
 }
 .event-card-banner-next img {
@@ -9451,13 +9452,8 @@ This prevents the inner duplicate from creating a second box.
     position:relative;
     transition:filter .15s, opacity .15s;
 }
-.collection-hero-tile.owned .collection-hero-ring::before{
-    content:''; position:absolute; inset:-2px; border-radius:50%; padding:2px;
-    background:conic-gradient(from 0deg, #ff4d6d 0deg, #ffb347 72deg, #8eff6f 144deg, #5df2ff 216deg, #8b5cf6 288deg, #ff4d6d 360deg);
-    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite:xor; mask-composite:exclude;
-    mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    animation: collectionRainbowBorder 2.2s linear infinite;
+.collection-hero-tile.owned .collection-hero-ring{
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 0 0 1px rgba(0,0,0,.2);
 }
 .collection-hero-ring img{
     width:100%; height:100%; object-fit:cover; border-radius:50%;
@@ -9510,9 +9506,45 @@ This prevents the inner duplicate from creating a second box.
 .collection-card-tile.rare{
     animation: collectionPremiumSpawn 900ms cubic-bezier(.2,.9,.2,1) both;
 }
-.collection-card-tile.legendary{ background:linear-gradient(180deg, rgba(77, 20, 90, 0.5), rgba(0,0,0,.22)); }
-.collection-card-tile.super-rare{ background:linear-gradient(180deg, rgba(69, 29, 156, 0.42), rgba(0,0,0,.22)); }
-.collection-card-tile.rare{ background:linear-gradient(180deg, rgba(244, 176, 57, 0.38), rgba(0,0,0,.22)); }
+.collection-card-tile.legendary{
+    background: linear-gradient(135deg, rgba(255, 77, 109, 0.22), rgba(255, 179, 71, 0.16), rgba(142, 255, 111, 0.14), rgba(93, 242, 255, 0.15), rgba(139, 92, 246, 0.18));
+    border-color: transparent;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 18px rgba(255, 77, 109, 0.16);
+    position: relative;
+}
+.collection-card-tile.legendary::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 10px;
+    padding: 1px;
+    background: linear-gradient(135deg, #ff4d6d 0%, #ffb347 30%, #8eff6f 60%, #5df2ff 80%, #8b5cf6 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: -1;
+}
+.collection-card-tile.super-rare{
+    background: linear-gradient(135deg, rgba(162, 89, 255, 0.24), rgba(255, 255, 255, 0.05));
+    border-color: #a259ff;
+    box-shadow: 0 0 0 1px rgba(162, 89, 255, 0.2), 0 0 14px rgba(162, 89, 255, 0.16);
+}
+.collection-card-tile.rare{
+    background: linear-gradient(135deg, rgba(244, 176, 57, 0.22), rgba(255, 255, 255, 0.05));
+    border-color: #f5c451;
+    box-shadow: 0 0 0 1px rgba(245, 196, 81, 0.2), 0 0 12px rgba(245, 196, 81, 0.14);
+}
+.collection-card-tile.event.owned{
+    background: linear-gradient(135deg, rgba(255, 77, 109, 0.22), rgba(255, 255, 255, 0.05));
+    border-color: #ff4d6d;
+    box-shadow: 0 0 0 1px rgba(255, 77, 109, 0.22), 0 0 14px rgba(255, 77, 109, 0.16);
+}
+.collection-card-tile.event.not-owned{
+    border-color: rgba(255,255,255,0.18);
+    box-shadow: none;
+}
 .collection-card-tile .visual-card-art{ height:138px; }
 @keyframes collectionPremiumSpawn {
     0% {
@@ -10216,9 +10248,17 @@ This prevents the inner duplicate from creating a second box.
 }
 .pack-sim-card.rarity-uncommon { border-color: #95c6ff; }
 .pack-sim-card.rarity-uncommon .pack-sim-card-rarity { color: #95c6ff; }
-.pack-sim-card.rarity-rare { border-color: #f5c451; box-shadow: 0 0 0 1px rgba(245,196,81,0.2), 0 0 14px rgba(245,196,81,0.18); }
+.pack-sim-card.rarity-rare {
+    border-color: #f5c451;
+    background: linear-gradient(135deg, rgba(245,196,81,0.2) 0%, rgba(255,255,255,0.05) 100%);
+    box-shadow: 0 0 0 1px rgba(245,196,81,0.2), 0 0 14px rgba(245,196,81,0.16);
+}
 .pack-sim-card.rarity-rare .pack-sim-card-rarity { color: #ffd54f; }
-.pack-sim-card.rarity-super-rare { border-color: #a259ff; box-shadow: 0 0 14px rgba(162,89,255,0.35); }
+.pack-sim-card.rarity-super-rare {
+    border-color: #a259ff;
+    background: linear-gradient(135deg, rgba(162,89,255,0.24) 0%, rgba(255,255,255,0.05) 100%);
+    box-shadow: 0 0 14px rgba(162,89,255,0.28);
+}
 .pack-sim-card.rarity-super-rare .pack-sim-card-rarity { color: #c17dff; }
 .pack-sim-card.rarity-super-rare::before {
     background: linear-gradient(135deg, #8b5cf6 0%, #4fd1c5 55%, #8b5cf6 100%);
@@ -10226,10 +10266,29 @@ This prevents the inner duplicate from creating a second box.
 .pack-sim-card.rarity-super-rare,
 .pack-sim-card.rarity-legendary,
 .pack-sim-card.rarity-hero {
-    border: 2px solid transparent;
-    background: rgba(255,255,255,0.05);
     position: relative;
     isolation: isolate;
+}
+.pack-sim-card.rarity-legendary {
+    border-color: transparent;
+    background: linear-gradient(135deg, rgba(255,77,109,0.24) 0%, rgba(255,179,71,0.16) 40%, rgba(142,255,111,0.14) 70%, rgba(93,242,255,0.18) 100%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 0 18px rgba(255,77,109,0.2);
+}
+.pack-sim-card.rarity-hero {
+    border-color: #5df2ff;
+    background: linear-gradient(135deg, rgba(93,242,255,0.22) 0%, rgba(139,92,246,0.2) 100%);
+    box-shadow: 0 0 16px rgba(93,242,255,0.18);
+}
+.pack-sim-card.rarity-event.pack-sim-card-owned {
+    border-color: #ff4d6d;
+    background: linear-gradient(135deg, rgba(255,77,109,0.2) 0%, rgba(255,255,255,0.05) 100%);
+    box-shadow: 0 0 0 1px rgba(255,77,109,0.2), 0 0 16px rgba(255,77,109,0.18);
+}
+.pack-sim-card.rarity-event.pack-sim-card-owned .pack-sim-card-rarity { color: #ff4d6d; }
+.pack-sim-card.rarity-event:not(.pack-sim-card-owned) {
+    border-color: rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    box-shadow: none;
 }
 .pack-sim-card.rarity-super-rare::before {
     content: '';
@@ -10253,7 +10312,7 @@ This prevents the inner duplicate from creating a second box.
     inset: -4px;
     border-radius: 14px;
     padding: 3px;
-    background: conic-gradient(from 0deg, #ff4d6d 0deg, #ffb347 72deg, #8eff6f 144deg, #5df2ff 216deg, #8b5cf6 288deg, #ff4d6d 360deg);
+    background: linear-gradient(135deg, #ff4d6d 0%, #ff6b3d 45%, #8b1d3f 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -10321,6 +10380,7 @@ This prevents the inner duplicate from creating a second box.
 .pack-sim-results-group-title.rarity-rare { color: #6fb1ff; }
 .pack-sim-results-group-title.rarity-super-rare { color: #c17dff; }
 .pack-sim-results-group-title.rarity-legendary { color: #ff4d6d; }
+.pack-sim-results-group-title.rarity-event { color: #ff4d6d; }
 .pack-sim-results-group-title.rarity-hero { color: #5df2ff; }
 
 .pack-sim-count-badge {

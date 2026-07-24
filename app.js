@@ -8485,7 +8485,8 @@ gradeButtons.forEach(button => {
             const isLegendary = rarity === 'legendary';
             const isSuperRare = rarity === 'super-rare' || rarity === 'super rare';
             const isRare = rarity === 'rare';
-            const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : '';
+            const isEvent = rarity === 'event';
+            const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
 
             return `
                 <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
@@ -8527,7 +8528,25 @@ gradeButtons.forEach(button => {
 
     const collectionPageGridEl = document.getElementById('collectionPageGrid');
     if (collectionPageGridEl) {
+        collectionPageGridEl.addEventListener('dblclick', (e) => {
+            const tile = e.target.closest('.collection-card-tile');
+            if (!tile) return;
+            const name = tile.dataset.name;
+            if (!name) return;
+            const current = ownedCollection[name] || 0;
+            if (current <= 0) {
+                ownedCollection[name] = 4;
+                saveOwnedCollection();
+                const searchVal = document.getElementById('collectionPageSearch')?.value || '';
+                renderCollectionPageGrid(searchVal);
+                renderCollectionPageStats();
+                if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+                if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+            }
+        });
+
         collectionPageGridEl.addEventListener('click', (e) => {
+            if (e.detail > 1) return;
             const plusBtn = e.target.closest('.collection-card-tile .plus-btn');
             if (plusBtn) {
                 e.stopPropagation();
@@ -10655,6 +10674,7 @@ const DAVE_PANEL_ANIMATION_MS = 420;
 let davePanelHideTimer = null;
 
 function setDavePanelVisible(isVisible) {
+    if (!crazyDavePanel || !toggleDavePanelBtn || !crafterView) return;
     clearTimeout(davePanelHideTimer);
 
     if (isVisible) {
@@ -10702,12 +10722,26 @@ function setDavePanelVisible(isVisible) {
         : "Show Crazy Dave";
 }
 
-toggleDavePanelBtn.addEventListener("click", () => {
-    const isCurrentlyVisible =
-        !crafterView.classList.contains("dave-panel-hidden");
+if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
+    crazyDavePanel.classList.add("dave-panel-fully-hidden");
+    crafterView.classList.add("dave-panel-hidden");
+    toggleDavePanelBtn.classList.add("is-closed");
+    toggleDavePanelBtn.setAttribute("aria-expanded", "false");
+    toggleDavePanelBtn.setAttribute("aria-label", "Show Crazy Dave panel");
+    toggleDavePanelBtn.title = "Show Crazy Dave";
 
-    setDavePanelVisible(!isCurrentlyVisible);
-});
+    toggleDavePanelBtn.addEventListener("click", () => {
+        const isCurrentlyVisible =
+            !crafterView.classList.contains("dave-panel-hidden");
+
+        if (!isCurrentlyVisible) {
+            const proceed = window.confirm("Warning: Dave feedback is horrible. Are you sure you know what you are doing?");
+            if (!proceed) return;
+        }
+
+        setDavePanelVisible(!isCurrentlyVisible);
+    });
+}
     // ------------------------------------------------------------
     // LIVE DECK ANALYTICS — Power Meter edition
     // ------------------------------------------------------------
@@ -15936,6 +15970,12 @@ const vaultIcon = await loadCanvasImage([
     `/pvzhvault_favicon.png`,
     `images/pvzhvault_favicon.png`
 ]);
+const sparkIcon = await loadCanvasImage([
+    `PvZH_Spark_Icon.webp`,
+    `PvZH_Spark_Icon.png`
+]);
+
+const totalSparkCost = currentSeeds.reduce((sum, seed) => sum + (sparkCostFor(seed.name) * seed.count), 0);
 
             // Header panel
             const headerX = padding;
@@ -16133,9 +16173,34 @@ characters.forEach(character => {
 ctx.restore();
             });
 
+   // Bottom-left spark cost summary
+const sparkLabel = `${totalSparkCost.toLocaleString()} Sparks`;
+const iconSize = 15;
+const sparkY = canvasHeight - 15;
+
+ctx.save();
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.font = '700 12px "Segoe UI", sans-serif';
+ctx.shadowColor = 'rgba(0,0,0,0.45)';
+ctx.shadowBlur = 4;
+ctx.shadowOffsetY = 1;
+
+if (sparkIcon) {
+    ctx.drawImage(sparkIcon, padding, sparkY - iconSize / 2, iconSize, iconSize);
+} else {
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(padding + iconSize / 2, sparkY, iconSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+ctx.fillStyle = 'rgba(241,245,249,0.82)';
+ctx.fillText(sparkLabel, padding + iconSize + 7, sparkY);
+ctx.restore();
+
    // Minimal bottom-right watermark (no background)
 const brandText = 'PVZH VAULT';
-const iconSize = 15;
 
 ctx.save();
 ctx.textAlign = 'left';
