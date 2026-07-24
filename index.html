@@ -12,12 +12,12 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PvZ Heroes Deck Builder & Database</title>
+    <title>PvZ Heroes Deck Builder & Database & more</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/chartjs-chart-wordcloud"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="pvzhvault_favicon.png">
-    <meta name="description" content="Search, build, and explore constantly updated PvZ Heroes decks and strategies.">
+    <meta name="description" content="Search, build, and explore constantly updated PvZ Heroes decks and strategies. with less ai slop">
 </head>
 
 <body>
@@ -29,7 +29,7 @@
         <div class="header-content">
            <div class="site-title-row">
     <img src="/pvzhvault_favicon.png" alt="" class="site-title-logo">
-    <h1>PVZH Vault</h1>
+    <h1>PVZH Vault +</h1>
 </div>
            <p class="header-meta-line">
     <span class="meta-decks">
@@ -54,37 +54,37 @@
 </p>
             <div id="eventCardBanner" class="event-card-banner hidden" role="status" aria-live="polite"></div>
             <div class="featured-decks-container">
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-decks-pvzh-july-2026/">
+                <a class="featured-decks-link" href="best-decks-pvzh-july-2026/index.html">
                     Top 10 Best Decks <span>(July 2026)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-immorticia-decks/">
+                <a class="featured-decks-link" href="best-immorticia-decks/index.html">
                     Best Immorticia Decks <span>(Hero Guide)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-zombie-decks-pvzh/">
+                <a class="featured-decks-link" href="best-zombie-decks-pvzh/index.html">
                     Best Zombie Decks! <span>(2026)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-rose-decks/">
+                <a class="featured-decks-link" href="best-rose-decks/index.html">
                     Best Rose Decks <span>(Hero Guide)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-impfinity-decks/">
+                <a class="featured-decks-link" href="best-impfinity-decks/index.html">
                     Best Impfinity Decks <span>(Hero Guide)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-nightcap-decks/">
+                <a class="featured-decks-link" href="best-nightcap-decks/index.html">
                     Best Nightcap Decks <span>(Hero Guide)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-solar-flare-decks/">
+                <a class="featured-decks-link" href="best-solar-flare-decks/index.html">
                     Best Solar Flare Decks <span>(Hero Guide)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-espresso-fiesta-decks/">
+                <a class="featured-decks-link" href="best-espresso-fiesta-decks/index.html">
                     Top 10 Espresso Fiesta Decks <span>(Card Guide)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-bad-moon-rising-decks/">
+                <a class="featured-decks-link" href="best-bad-moon-rising-decks/index.html">
                     Top 10 Bad Moon Rising Decks <span>(Card Guide)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-budget-decks/">
+                <a class="featured-decks-link" href="best-budget-decks/index.html">
                     Top 10 Budget Decks <span>(Budget Guide)</span>
                 </a>
-                <a class="featured-decks-link" href="https://pvzhvault.com/best-decks-for-every-hero/">
+                <a class="featured-decks-link" href="best-decks-for-every-hero/index.html">
                     Best Decks for Every Hero <span>(Mega Guide)</span>
                 </a>
             </div>
@@ -1507,6 +1507,7 @@
             </div>
 
             <div class="collection-page-actions">
+                <button id="collectionMaxToggleBtn" class="collection-count-btn" type="button">Max Out Collection</button>
                 <button id="collectionExportBtn" class="collection-count-btn" type="button">Export</button>
                 <button id="collectionImportBtn" class="collection-count-btn" type="button">Import</button>
                 <input id="collectionImportInput" type="file" accept="application/json" hidden>

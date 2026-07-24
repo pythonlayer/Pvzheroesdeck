@@ -7749,6 +7749,36 @@ gradeButtons.forEach(button => {
     let currentClipboardText = "";
     let lastAddedCard = null; // Memory for AI context
     let ownedCollection = {}; // cardName -> owned copies (1-4), for "Build From My Collection"
+    let collectionMaxToggleMode = 'fill';
+
+    function updateCollectionMaxToggleButton() {
+        const btn = document.getElementById('collectionMaxToggleBtn');
+        if (!btn) return;
+        btn.textContent = collectionMaxToggleMode === 'fill' ? 'Max Out Collection' : 'Reset Collection';
+        btn.classList.toggle('is-active', collectionMaxToggleMode === 'clear');
+    }
+
+    function toggleCollectionMaxState() {
+        const searchValue = document.getElementById('collectionPageSearch')?.value || '';
+
+        if (collectionMaxToggleMode === 'fill') {
+            Object.keys(cardDatabase || {}).forEach(rawName => {
+                if (rawName) ownedCollection[rawName] = 4;
+            });
+            collectionMaxToggleMode = 'clear';
+        } else {
+            Object.keys(ownedCollection).forEach(name => delete ownedCollection[name]);
+            collectionMaxToggleMode = 'fill';
+        }
+
+        saveOwnedCollection();
+        renderCollectionPageStats();
+        renderCollectionHeroGrid();
+        renderCollectionPageGrid(searchValue);
+        if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+        if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+        updateCollectionMaxToggleButton();
+    }
 
     // --- Collection persistence (localStorage) ---
     const OWNED_COLLECTION_KEY = 'pvz_owned_collection_v1';
@@ -8054,6 +8084,12 @@ gradeButtons.forEach(button => {
             renderCollectionList(collectionSearch ? collectionSearch.value : '');
             if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         });
+    }
+
+    const collectionMaxToggleBtn = document.getElementById('collectionMaxToggleBtn');
+    if (collectionMaxToggleBtn) {
+        collectionMaxToggleBtn.addEventListener('click', toggleCollectionMaxState);
+        updateCollectionMaxToggleButton();
     }
 
     if (buildFromCollectionBtn) {
@@ -8499,7 +8535,7 @@ gradeButtons.forEach(button => {
                     <div class="visual-card-controls">
                         <button type="button" class="seed-btn minus-btn" data-name="${rawName}" aria-label="Remove one ${cleanName}" title="Remove one">−</button>
                         <button type="button" class="seed-btn swap-btn" data-name="${rawName}" aria-label="Get ${cleanName}" title="Get">Get</button>
-                        <button type="button" class="seed-btn plus-btn" data-name="${rawName}" aria-label="Add one ${cleanName}" title="Add one" ${owned >= 4 ? 'disabled' : ''}>+</button>
+                        <button type="button" class="seed-btn plus-btn" data-name="${rawName}" aria-label="Add one ${cleanName}" title="Add one">+</button>
                     </div>
                 </div>`;
         };
@@ -8562,6 +8598,16 @@ gradeButtons.forEach(button => {
                     if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
                     return;
                 }
+                if (current >= 4 && !isCommonCollectionFloorCard(name)) {
+                    delete ownedCollection[name];
+                    saveOwnedCollection();
+                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
+                    renderCollectionPageGrid(searchVal);
+                    renderCollectionPageStats();
+                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+                    return;
+                }
                 if (current < 4) {
                     ownedCollection[name] = current + 1;
                     saveOwnedCollection();
@@ -8612,6 +8658,18 @@ gradeButtons.forEach(button => {
 
             const tile = e.target.closest('.collection-card-tile');
             if (!tile) return;
+            const name = tile.dataset.name;
+            const current = ownedCollection[name] || 0;
+            if (tile.classList.contains('show-controls') && current >= 4 && !isCommonCollectionFloorCard(name)) {
+                delete ownedCollection[name];
+                saveOwnedCollection();
+                const searchVal = document.getElementById('collectionPageSearch')?.value || '';
+                renderCollectionPageGrid(searchVal);
+                renderCollectionPageStats();
+                if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+                if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+                return;
+            }
 
             document.querySelectorAll('.collection-card-tile.show-controls').forEach(el => el.classList.remove('show-controls'));
             tile.classList.toggle('show-controls');
@@ -8705,6 +8763,7 @@ gradeButtons.forEach(button => {
         renderCollectionPageStats();
         renderCollectionHeroGrid();
         renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
+        updateCollectionMaxToggleButton();
     }
 
     function buildDeckFromCollection() {
