@@ -16241,6 +16241,7 @@ ctx.restore();
     const PACK_SINGLE_COST = 100;
     const PACK_BUNDLE_COUNT = 11;
     const PACK_BUNDLE_COST = 1000;
+    const PACK_MAX_COPIES = 6;
     const PACK_SIM_DEFAULT_STATE = {
         gems: 5000,
         gemsUsed: 0,
@@ -16776,7 +16777,7 @@ ctx.restore();
                     const rarity = pull.rarity;
                     if (!cardKey) return;
                     const ownedBefore = packSimState.cardCounts[cardKey] || 0;
-                    packSimState.cardCounts[cardKey] = ownedBefore + 1;
+                    packSimState.cardCounts[cardKey] = Math.min(PACK_MAX_COPIES, ownedBefore + 1);
                     allPulls.push({ type: 'card', name: cardKey, rarity, owned: packSimState.cardCounts[cardKey] });
                     packSimState.pulls[rarity] = (packSimState.pulls[rarity] || 0) + 1;
                     packSimState.earned.push({ type: 'card', name: cardKey, rarity });
