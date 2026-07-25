@@ -9664,8 +9664,8 @@ This prevents the inner duplicate from creating a second box.
 .collection-search-input::placeholder{color:rgba(255,255,255,.5);}
 
 /* Disable all animations and transitions in collection view to reduce lag */
-.collection-page,
-.collection-page * {
+#collectionView,
+#collectionView * {
     animation: none !important;
     transition: none !important;
 }
@@ -9869,6 +9869,9 @@ This prevents the inner duplicate from creating a second box.
 }
 .collection-card-tile.show-controls .visual-card-controls{
     opacity:1 !important; visibility:visible !important; pointer-events:auto !important; transform:translate(-50%, 0) !important;
+}
+.collection-card-tile.show-controls{
+    z-index: 30;
 }
 .collection-card-tile .collection-card-name{ font-size:11px; margin-top:4px; line-height:1.2; min-height:20px; }
 .collection-card-tile .visual-card-controls .swap-btn{ font-size:10px; }
