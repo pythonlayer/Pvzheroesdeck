@@ -227,161 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderEventCardBanner();
     setInterval(renderEventCardBanner, 60000);
-
-    const eventCardBanner = document.getElementById('eventCardBanner');
-    const eventCardRotationData = {
-        version: 1,
-        eventDurationDays: 7,
-        reference: {
-            card: 'bad_moon_rising',
-            startsAt: '2026-07-21T18:48:00'
-        },
-        rotation: [
-            'regifting_zombie',
-            'toadstool',
-            'gargologist',
-            'energy_drink_zombie',
-            'fire_roster',
-            'defensive_end',
-            'blooming_heart',
-            'stupid_cupid',
-            'sportacus',
-            'bonus_track_buckethead',
-            'electric_blueberry',
-            'plucky_clover',
-            'shamrocket',
-            'spyris',
-            'lily_of_the_valley',
-            'snake_grass',
-            'zombie_high_diver',
-            'health_nut',
-            'banana_split',
-            'garlic',
-            'secret_agent',
-            'imposter',
-            'sun_shroom',
-            'high_voltage_currant',
-            'going_viral',
-            'sonic_bloom',
-            'synchronized_swimmer',
-            'corn_dog',
-            'trapper_zombie',
-            'sap_fling',
-            'clique_peas',
-            'bad_moon_rising',
-            'Forget-Me-Nuts',
-            'hover_goat_3000',
-            'atomic_bombegranate',
-            'imp_throwing_imp',
-            'thinking_cap',
-            'go_nuts',
-            'captain_flameface',
-            'ketchup_mechanic',
-            'fraidy_cat',
-            'haunted_pumpking',
-            'trick_or_treater',
-            'jack_o_lantern',
-            'frankentuar',
-            'sneezing_zombie',
-            'mayflower',
-            'turkey_rider',
-            'overstuffed_zombie',
-            'pear_cub',
-            'unexpected_gifts',
-            'jolly_holly'
-        ]
-    };
-
-    function formatEventCardName(cardKey) {
-        return (cardKey || '').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-    }
-
-    function normalizeCardKey(cardKey) {
-        return (cardKey || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    }
-
-    function getAvailableEventCards() {
-        const rotation = eventCardRotationData.rotation || [];
-        if (!rotation.length || !cardDatabase || typeof cardDatabase !== 'object') return [];
-
-        const databaseKeys = Object.keys(cardDatabase);
-        const availableKeys = new Set(databaseKeys.map(normalizeCardKey));
-
-        return rotation
-            .filter(cardKey => availableKeys.has(normalizeCardKey(cardKey)))
-            .map(cardKey => {
-                const match = databaseKeys.find(databaseKey => normalizeCardKey(databaseKey) === normalizeCardKey(cardKey));
-                return match || cardKey;
-            });
-    }
-
-    function getEventCardBannerState() {
-    const rotation = getAvailableEventCards();
-    if (!rotation.length) return null;
-
-    const startTime = new Date(eventCardRotationData.reference.startsAt);
-    const durationDays = Math.max(1, eventCardRotationData.eventDurationDays || 7);
-
-    const elapsedDays =
-        (Date.now() - startTime.getTime()) / (1000 * 60 * 60 * 24);
-
-    const cycleOffset = Math.floor(elapsedDays / durationDays);
-
-    const referenceKey = normalizeCardKey(eventCardRotationData.reference.card);
-    const referenceIndex = rotation.findIndex(
-        card => normalizeCardKey(card) === referenceKey
-    );
-
-    if (referenceIndex === -1) {
-        console.error("Reference card not found:", referenceKey);
-        return null;
-    }
-
-    const currentIndex =
-        (referenceIndex + cycleOffset + rotation.length) % rotation.length;
-
-    return {
-        current: rotation[currentIndex],
-        next: rotation[(currentIndex + 1) % rotation.length]
-    };
-}
-    function renderEventCardBanner() {
-        if (!eventCardBanner) return;
-
-        const hash = (window.location.hash || '#home').replace(/^#/, '').trim();
-        if (hash && hash !== 'home') {
-            eventCardBanner.classList.add('hidden');
-            return;
-        }
-
-        const state = getEventCardBannerState();
-        if (!state) {
-            eventCardBanner.classList.add('hidden');
-            return;
-        }
-
-        const currentCard = state.current;
-        const nextCard = state.next;
-
-        eventCardBanner.innerHTML = `
-            <div class="event-card-banner-card event-card-banner-current">
-                <div class="event-card-banner-label">Current</div>
-                <img src="card_images/${currentCard}.png" alt="${formatEventCardName(currentCard)}" loading="lazy" decoding="async"
-                     onerror="this.onerror=null;this.src='card_images/${currentCard}.webp'">
-                <span class="event-card-banner-name">${formatEventCardName(currentCard)}</span>
-            </div>
-            <div class="event-card-banner-card event-card-banner-next">
-                <div class="event-card-banner-label">Next</div>
-                <img src="card_images/${nextCard}.png" alt="${formatEventCardName(nextCard)}" loading="lazy" decoding="async"
-                     onerror="this.onerror=null;this.src='card_images/${nextCard}.webp'">
-                <span class="event-card-banner-name">${formatEventCardName(nextCard)}</span>
-            </div>
-        `;
-        eventCardBanner.classList.remove('hidden');
-    }
-
-    renderEventCardBanner();
-    setInterval(renderEventCardBanner, 60000);
     // --- DOM Elements ---
     const deckGrid = document.getElementById('deckGrid');
     const loadingEl = document.getElementById('loading');
@@ -415,8 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const synergyView = document.getElementById('synergyView');
     const collectionView = document.getElementById('collectionView');
     const collectionPageBtn = document.getElementById('collectionPageBtn');
-    const packsView = document.getElementById('packsView');
-    const packsPageBtn = document.getElementById('packsPageBtn');
     const packsView = document.getElementById('packsView');
     const packsPageBtn = document.getElementById('packsPageBtn');
 
@@ -454,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // KICK OFF THE ROUTER NOW THAT WE HAVE DATA!
             handleRouting();
             renderEventCardBanner();
-            renderEventCardBanner();
             renderSeeds(); // Initial render to show empty state
         })
         .catch(error => {
@@ -488,7 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tiersBtn.classList.add('hidden');
         synergyView.classList.add('hidden');
         if (collectionView) collectionView.classList.add('hidden');
-        if (packsView) packsView.classList.add('hidden');
         if (packsView) packsView.classList.add('hidden');
 
         if (typeof backBtn !== 'undefined') backBtn.classList.add('hidden');
@@ -540,11 +381,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof backBtn !== 'undefined') backBtn.classList.remove('hidden');
             if (typeof initPackSimulator === 'function') initPackSimulator();
         }
-        else if (hash === '#packs') {
-            if (packsView) packsView.classList.remove('hidden');
-            if (typeof backBtn !== 'undefined') backBtn.classList.remove('hidden');
-            if (typeof initPackSimulator === 'function') initPackSimulator();
-        }
         else {
             // Default Home UI
             deckView.classList.remove('hidden');
@@ -559,8 +395,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (moreMenu) moreMenu.classList.remove('hidden');
 
         }
-
-        renderEventCardBanner();
 
         renderEventCardBanner();
 
@@ -7945,36 +7779,6 @@ gradeButtons.forEach(button => {
         if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         updateCollectionMaxToggleButton();
     }
-    let collectionMaxToggleMode = 'fill';
-
-    function updateCollectionMaxToggleButton() {
-        const btn = document.getElementById('collectionMaxToggleBtn');
-        if (!btn) return;
-        btn.textContent = collectionMaxToggleMode === 'fill' ? 'Max Out Collection' : 'Reset Collection';
-        btn.classList.toggle('is-active', collectionMaxToggleMode === 'clear');
-    }
-
-    function toggleCollectionMaxState() {
-        const searchValue = document.getElementById('collectionPageSearch')?.value || '';
-
-        if (collectionMaxToggleMode === 'fill') {
-            Object.keys(cardDatabase || {}).forEach(rawName => {
-                if (rawName) ownedCollection[rawName] = 4;
-            });
-            collectionMaxToggleMode = 'clear';
-        } else {
-            Object.keys(ownedCollection).forEach(name => delete ownedCollection[name]);
-            collectionMaxToggleMode = 'fill';
-        }
-
-        saveOwnedCollection();
-        renderCollectionPageStats();
-        renderCollectionHeroGrid();
-        renderCollectionPageGrid(searchValue);
-        if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-        if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-        updateCollectionMaxToggleButton();
-    }
 
     // --- Collection persistence (localStorage) ---
     const OWNED_COLLECTION_KEY = 'pvz_owned_collection_v1';
@@ -8283,12 +8087,6 @@ gradeButtons.forEach(button => {
             renderCollectionList(collectionSearch ? collectionSearch.value : '');
             if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         });
-    }
-
-    const collectionMaxToggleBtn = document.getElementById('collectionMaxToggleBtn');
-    if (collectionMaxToggleBtn) {
-        collectionMaxToggleBtn.addEventListener('click', toggleCollectionMaxState);
-        updateCollectionMaxToggleButton();
     }
 
     const collectionMaxToggleBtn = document.getElementById('collectionMaxToggleBtn');
@@ -8737,21 +8535,8 @@ gradeButtons.forEach(button => {
             const isRare = rarity === 'rare';
             const isEvent = rarity === 'event';
             const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
-            const borderColor = getCollectionRarityBorderColor(rawName);
-            const rarity = (cardDatabase?.[rawName]?.Rarity || '').toLowerCase().trim();
-            const isLegendary = rarity === 'legendary';
-            const isSuperRare = rarity === 'super-rare' || rarity === 'super rare';
-            const isRare = rarity === 'rare';
-            const isEvent = rarity === 'event';
-            const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
 
             return `
-                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
-                    <div class="visual-card-art">
-                        <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
-                             onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
-                        <div class="card-quantity">${owned > 0 ? 'x' + owned : ''}</div>
-                    </div>
                 <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
                     <div class="visual-card-art">
                         <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
@@ -8852,41 +8637,9 @@ gradeButtons.forEach(button => {
     const collectionPageGridEl = document.getElementById('collectionPageGrid');
     if (collectionPageGridEl) {
         collectionPageGridEl.addEventListener('dblclick', (e) => {
-        collectionPageGridEl.addEventListener('dblclick', (e) => {
             const tile = e.target.closest('.collection-card-tile');
             if (!tile) return;
             const name = tile.dataset.name;
-            if (!name) return;
-            const current = ownedCollection[name] || 0;
-            if (current <= 0) {
-                ownedCollection[name] = 4;
-                saveOwnedCollection();
-                const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                renderCollectionPageGrid(searchVal);
-                renderCollectionPageStats();
-                if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-            }
-        });
-
-        collectionPageGridEl.addEventListener('click', (e) => {
-            if (e.detail > 1) return;
-            const plusBtn = e.target.closest('.collection-card-tile .plus-btn');
-            if (plusBtn) {
-                e.stopPropagation();
-                const name = plusBtn.dataset.name;
-                const current = ownedCollection[name] || 0;
-                if (isCommonCollectionFloorCard(name)) {
-                    ownedCollection[name] = Math.max(current, 4);
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                    return;
-                }
-                if (current >= 4 && !isCommonCollectionFloorCard(name)) {
             if (!name) return;
             const current = ownedCollection[name] || 0;
             if (current <= 0) {
@@ -8935,24 +8688,7 @@ gradeButtons.forEach(button => {
                     renderCollectionPageStats();
                     if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
                     if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                    return;
                 }
-                if (current < 4) {
-                    ownedCollection[name] = current + 1;
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                }
-                return;
                 return;
             }
 
@@ -11202,7 +10938,6 @@ let davePanelHideTimer = null;
 
 function setDavePanelVisible(isVisible) {
     if (!crazyDavePanel || !toggleDavePanelBtn || !crafterView) return;
-    if (!crazyDavePanel || !toggleDavePanelBtn || !crafterView) return;
     clearTimeout(davePanelHideTimer);
 
     if (isVisible) {
@@ -11258,29 +10993,10 @@ if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
     toggleDavePanelBtn.setAttribute("aria-label", "Show Crazy Dave panel");
     toggleDavePanelBtn.title = "Show Crazy Dave";
 
-if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
-    crazyDavePanel.classList.add("dave-panel-fully-hidden");
-    crafterView.classList.add("dave-panel-hidden");
-    toggleDavePanelBtn.classList.add("is-closed");
-    toggleDavePanelBtn.setAttribute("aria-expanded", "false");
-    toggleDavePanelBtn.setAttribute("aria-label", "Show Crazy Dave panel");
-    toggleDavePanelBtn.title = "Show Crazy Dave";
-
-    toggleDavePanelBtn.addEventListener("click", () => {
-        const isCurrentlyVisible =
-            !crafterView.classList.contains("dave-panel-hidden");
     toggleDavePanelBtn.addEventListener("click", () => {
         const isCurrentlyVisible =
             !crafterView.classList.contains("dave-panel-hidden");
 
-        if (!isCurrentlyVisible) {
-            const proceed = window.confirm("Warning: Dave feedback is horrible. Are you sure you know what you are doing?");
-            if (!proceed) return;
-        }
-
-        setDavePanelVisible(!isCurrentlyVisible);
-    });
-}
         if (!isCurrentlyVisible) {
             const proceed = window.confirm("Warning: Dave feedback is horrible. Are you sure you know what you are doing?");
             if (!proceed) return;
@@ -16523,12 +16239,6 @@ const sparkIcon = await loadCanvasImage([
 ]);
 
 const totalSparkCost = currentSeeds.reduce((sum, seed) => sum + (sparkCostFor(seed.name) * seed.count), 0);
-const sparkIcon = await loadCanvasImage([
-    `PvZH_Spark_Icon.webp`,
-    `PvZH_Spark_Icon.png`
-]);
-
-const totalSparkCost = currentSeeds.reduce((sum, seed) => sum + (sparkCostFor(seed.name) * seed.count), 0);
 
             // Header panel
             const headerX = padding;
@@ -16752,32 +16462,6 @@ ctx.fillStyle = 'rgba(241,245,249,0.82)';
 ctx.fillText(sparkLabel, padding + iconSize + 7, sparkY);
 ctx.restore();
 
-   // Bottom-left spark cost summary
-const sparkLabel = `${totalSparkCost.toLocaleString()} Sparks`;
-const iconSize = 15;
-const sparkY = canvasHeight - 15;
-
-ctx.save();
-ctx.textAlign = 'left';
-ctx.textBaseline = 'middle';
-ctx.font = '700 12px "Segoe UI", sans-serif';
-ctx.shadowColor = 'rgba(0,0,0,0.45)';
-ctx.shadowBlur = 4;
-ctx.shadowOffsetY = 1;
-
-if (sparkIcon) {
-    ctx.drawImage(sparkIcon, padding, sparkY - iconSize / 2, iconSize, iconSize);
-} else {
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath();
-    ctx.arc(padding + iconSize / 2, sparkY, iconSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-ctx.fillStyle = 'rgba(241,245,249,0.82)';
-ctx.fillText(sparkLabel, padding + iconSize + 7, sparkY);
-ctx.restore();
-
    // Minimal bottom-right watermark (no background)
 const brandText = 'PVZH VAULT';
 
@@ -16920,14 +16604,6 @@ ctx.restore();
         'Pirate Pack': { label: 'Pirate Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pirate'], subtitle: 'Zombie tribe pack' },
         'Pet Pack': { label: 'Pet Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pet'], subtitle: 'Zombie tribe pack' },
         'Mustache & Professional': { label: 'Mustache & Professional', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['mustache', 'professional'], subtitle: 'Zombie tribe pack' }
-    };
-
-    const PACK_SPECIAL_RULES = {
-        'Gargantuar Pack': {
-            guaranteedUncommons: [{ name: 'Yeti_Lunchbox', count: 3 }],
-            excludeFromUncommon: ['Yeti_Lunchbox'],
-            rareReplacement: { name: 'Gargologist', chance: 0.20 }
-        }
     };
 
     let packSimState = JSON.parse(JSON.stringify(PACK_SIM_DEFAULT_STATE));
@@ -17532,12 +17208,6 @@ ctx.restore();
     if (collectionPageBtn) {
         collectionPageBtn.addEventListener('click', () => {
             window.location.hash = 'collection';
-        });
-    }
-
-    if (packsPageBtn) {
-        packsPageBtn.addEventListener('click', () => {
-            window.location.hash = 'packs';
         });
     }
 
