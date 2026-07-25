@@ -227,6 +227,161 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderEventCardBanner();
     setInterval(renderEventCardBanner, 60000);
+
+    const eventCardBanner = document.getElementById('eventCardBanner');
+    const eventCardRotationData = {
+        version: 1,
+        eventDurationDays: 7,
+        reference: {
+            card: 'bad_moon_rising',
+            startsAt: '2026-07-21T18:48:00'
+        },
+        rotation: [
+            'regifting_zombie',
+            'toadstool',
+            'gargologist',
+            'energy_drink_zombie',
+            'fire_roster',
+            'defensive_end',
+            'blooming_heart',
+            'stupid_cupid',
+            'sportacus',
+            'bonus_track_buckethead',
+            'electric_blueberry',
+            'plucky_clover',
+            'shamrocket',
+            'spyris',
+            'lily_of_the_valley',
+            'snake_grass',
+            'zombie_high_diver',
+            'health_nut',
+            'banana_split',
+            'garlic',
+            'secret_agent',
+            'imposter',
+            'sun_shroom',
+            'high_voltage_currant',
+            'going_viral',
+            'sonic_bloom',
+            'synchronized_swimmer',
+            'corn_dog',
+            'trapper_zombie',
+            'sap_fling',
+            'clique_peas',
+            'bad_moon_rising',
+            'Forget-Me-Nuts',
+            'hover_goat_3000',
+            'atomic_bombegranate',
+            'imp_throwing_imp',
+            'thinking_cap',
+            'go_nuts',
+            'captain_flameface',
+            'ketchup_mechanic',
+            'fraidy_cat',
+            'haunted_pumpking',
+            'trick_or_treater',
+            'jack_o_lantern',
+            'frankentuar',
+            'sneezing_zombie',
+            'mayflower',
+            'turkey_rider',
+            'overstuffed_zombie',
+            'pear_cub',
+            'unexpected_gifts',
+            'jolly_holly'
+        ]
+    };
+
+    function formatEventCardName(cardKey) {
+        return (cardKey || '').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    function normalizeCardKey(cardKey) {
+        return (cardKey || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function getAvailableEventCards() {
+        const rotation = eventCardRotationData.rotation || [];
+        if (!rotation.length || !cardDatabase || typeof cardDatabase !== 'object') return [];
+
+        const databaseKeys = Object.keys(cardDatabase);
+        const availableKeys = new Set(databaseKeys.map(normalizeCardKey));
+
+        return rotation
+            .filter(cardKey => availableKeys.has(normalizeCardKey(cardKey)))
+            .map(cardKey => {
+                const match = databaseKeys.find(databaseKey => normalizeCardKey(databaseKey) === normalizeCardKey(cardKey));
+                return match || cardKey;
+            });
+    }
+
+    function getEventCardBannerState() {
+    const rotation = getAvailableEventCards();
+    if (!rotation.length) return null;
+
+    const startTime = new Date(eventCardRotationData.reference.startsAt);
+    const durationDays = Math.max(1, eventCardRotationData.eventDurationDays || 7);
+
+    const elapsedDays =
+        (Date.now() - startTime.getTime()) / (1000 * 60 * 60 * 24);
+
+    const cycleOffset = Math.floor(elapsedDays / durationDays);
+
+    const referenceKey = normalizeCardKey(eventCardRotationData.reference.card);
+    const referenceIndex = rotation.findIndex(
+        card => normalizeCardKey(card) === referenceKey
+    );
+
+    if (referenceIndex === -1) {
+        console.error("Reference card not found:", referenceKey);
+        return null;
+    }
+
+    const currentIndex =
+        (referenceIndex + cycleOffset + rotation.length) % rotation.length;
+
+    return {
+        current: rotation[currentIndex],
+        next: rotation[(currentIndex + 1) % rotation.length]
+    };
+}
+    function renderEventCardBanner() {
+        if (!eventCardBanner) return;
+
+        const hash = (window.location.hash || '#home').replace(/^#/, '').trim();
+        if (hash && hash !== 'home') {
+            eventCardBanner.classList.add('hidden');
+            return;
+        }
+
+        const state = getEventCardBannerState();
+        if (!state) {
+            eventCardBanner.classList.add('hidden');
+            return;
+        }
+
+        const currentCard = state.current;
+        const nextCard = state.next;
+
+        eventCardBanner.innerHTML = `
+            <div class="event-card-banner-card event-card-banner-current">
+                <div class="event-card-banner-label">Current</div>
+                <img src="card_images/${currentCard}.png" alt="${formatEventCardName(currentCard)}" loading="lazy" decoding="async"
+                     onerror="this.onerror=null;this.src='card_images/${currentCard}.webp'">
+                <span class="event-card-banner-name">${formatEventCardName(currentCard)}</span>
+            </div>
+            <div class="event-card-banner-card event-card-banner-next">
+                <div class="event-card-banner-label">Next</div>
+                <img src="card_images/${nextCard}.png" alt="${formatEventCardName(nextCard)}" loading="lazy" decoding="async"
+                     onerror="this.onerror=null;this.src='card_images/${nextCard}.webp'">
+                <span class="event-card-banner-name">${formatEventCardName(nextCard)}</span>
+            </div>
+        `;
+        eventCardBanner.classList.remove('hidden');
+    }
+
+    renderEventCardBanner();
+    setInterval(renderEventCardBanner, 60000);
     // --- DOM Elements ---
     const deckGrid = document.getElementById('deckGrid');
     const loadingEl = document.getElementById('loading');
@@ -260,6 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const synergyView = document.getElementById('synergyView');
     const collectionView = document.getElementById('collectionView');
     const collectionPageBtn = document.getElementById('collectionPageBtn');
+    const packsView = document.getElementById('packsView');
+    const packsPageBtn = document.getElementById('packsPageBtn');
     const packsView = document.getElementById('packsView');
     const packsPageBtn = document.getElementById('packsPageBtn');
 
@@ -297,6 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // KICK OFF THE ROUTER NOW THAT WE HAVE DATA!
             handleRouting();
             renderEventCardBanner();
+            renderEventCardBanner();
             renderSeeds(); // Initial render to show empty state
         })
         .catch(error => {
@@ -330,6 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tiersBtn.classList.add('hidden');
         synergyView.classList.add('hidden');
         if (collectionView) collectionView.classList.add('hidden');
+        if (packsView) packsView.classList.add('hidden');
         if (packsView) packsView.classList.add('hidden');
 
         if (typeof backBtn !== 'undefined') backBtn.classList.add('hidden');
@@ -381,6 +540,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof backBtn !== 'undefined') backBtn.classList.remove('hidden');
             if (typeof initPackSimulator === 'function') initPackSimulator();
         }
+        else if (hash === '#packs') {
+            if (packsView) packsView.classList.remove('hidden');
+            if (typeof backBtn !== 'undefined') backBtn.classList.remove('hidden');
+            if (typeof initPackSimulator === 'function') initPackSimulator();
+        }
         else {
             // Default Home UI
             deckView.classList.remove('hidden');
@@ -395,6 +559,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (moreMenu) moreMenu.classList.remove('hidden');
 
         }
+
+        renderEventCardBanner();
 
         renderEventCardBanner();
 
@@ -7779,6 +7945,36 @@ gradeButtons.forEach(button => {
         if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         updateCollectionMaxToggleButton();
     }
+    let collectionMaxToggleMode = 'fill';
+
+    function updateCollectionMaxToggleButton() {
+        const btn = document.getElementById('collectionMaxToggleBtn');
+        if (!btn) return;
+        btn.textContent = collectionMaxToggleMode === 'fill' ? 'Max Out Collection' : 'Reset Collection';
+        btn.classList.toggle('is-active', collectionMaxToggleMode === 'clear');
+    }
+
+    function toggleCollectionMaxState() {
+        const searchValue = document.getElementById('collectionPageSearch')?.value || '';
+
+        if (collectionMaxToggleMode === 'fill') {
+            Object.keys(cardDatabase || {}).forEach(rawName => {
+                if (rawName) ownedCollection[rawName] = 4;
+            });
+            collectionMaxToggleMode = 'clear';
+        } else {
+            Object.keys(ownedCollection).forEach(name => delete ownedCollection[name]);
+            collectionMaxToggleMode = 'fill';
+        }
+
+        saveOwnedCollection();
+        renderCollectionPageStats();
+        renderCollectionHeroGrid();
+        renderCollectionPageGrid(searchValue);
+        if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+        if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+        updateCollectionMaxToggleButton();
+    }
 
     // --- Collection persistence (localStorage) ---
     const OWNED_COLLECTION_KEY = 'pvz_owned_collection_v1';
@@ -7841,11 +8037,13 @@ gradeButtons.forEach(button => {
      * scrap clutter rather than anything actually good. May suggest scrapping
      * from more than one card if that's what it takes.
      */
-    function findScrapSuggestions(sparksNeeded, protectedNames) {
+    function findScrapSuggestions(sparksNeeded, protectedNames, excludedNames) {
+        const excluded = excludedNames instanceof Set ? excludedNames : new Set();
         const candidates = [];
 
         Object.keys(ownedCollection).forEach(name => {
             if (protectedNames && protectedNames.has(name)) return;
+            if (excluded.has(name)) return;
 
             const owned = ownedCollection[name] || 0;
             if (owned <= 0) return;
@@ -7890,6 +8088,7 @@ gradeButtons.forEach(button => {
 
     // --- Owned Sparks (user-entered balance, same persistence pattern as the collection) ---
     let ownedSparks = 0;
+    let collectionBuyScrapExclusions = new Set();
     const OWNED_SPARKS_KEY = 'pvz_owned_sparks_v1';
     function loadOwnedSparks() {
         try {
@@ -8092,6 +8291,12 @@ gradeButtons.forEach(button => {
         updateCollectionMaxToggleButton();
     }
 
+    const collectionMaxToggleBtn = document.getElementById('collectionMaxToggleBtn');
+    if (collectionMaxToggleBtn) {
+        collectionMaxToggleBtn.addEventListener('click', toggleCollectionMaxState);
+        updateCollectionMaxToggleButton();
+    }
+
     if (buildFromCollectionBtn) {
         buildFromCollectionBtn.addEventListener('click', () => {
             seedDefaultCollection();
@@ -8151,8 +8356,8 @@ gradeButtons.forEach(button => {
     }
 
     // --- My Collection PAGE (full view, reachable from More > My Collection) ---
-    const PLANT_HEROES = ["Green Shadow", "Solar Flare", "Wall-Knight", "Chompzilla", "Spudow", "Citron", "Beta-Carrotina", "Grass Knuckles", "Nightcap", "Captain Combustible", "Rose"];
-    const ZOMBIE_HEROES = ["Super Brainz", "Huge-Gigantacus", "The Smash", "Impfinity", "Rustbolt", "Electric Boogaloo", "Brain Freeze", "Professor Brainstorm", "Immorticia", "Z-Mech", "Neptuna"];
+    const PLANT_HEROES = ["Green Shadow", "Solar Flare", "Wall-Knight", "Chompzilla", "Spudow", "Citron", "Grass Knuckles", "Nightcap", "Rose", "Captain Combustible", "Beta-Carrotina"];
+    const ZOMBIE_HEROES = ["Super Brainz", "The Smash", "Impfinity", "Rustbolt", "Electric Boogaloo", "Brain Freeze", "Professor Brainstorm", "Immorticia", "Z-Mech", "Neptuna", "Huge-Gigantacus"];
 
     // Each hero leads two classes; used to color-split their collection portrait.
     const PLANT_HERO_CLASSES = {
@@ -8202,8 +8407,8 @@ gradeButtons.forEach(button => {
     }
 
     function getCollectionPageFaction() {
-        const el = document.getElementById('collectionPageFaction');
-        return el ? el.value : 'Plant';
+        const btn = document.querySelector('.collection-faction-btn.active');
+        return btn ? btn.dataset.faction : 'Plant';
     }
 
     function computeBuildableDecks() {
@@ -8360,6 +8565,7 @@ gradeButtons.forEach(button => {
         modal.dataset.name = rawName;
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
+        collectionBuyScrapExclusions.clear();
         updateCollectionBuyModal(rawName);
         // Compute the scrap route for whatever quantity is already in the
         // stepper (defaults to 1) so the suggestion shows immediately
@@ -8400,13 +8606,16 @@ gradeButtons.forEach(button => {
             return;
         }
 
-        const scrapPlan = findScrapSuggestions(shortfall, new Set([rawName]));
+        const scrapPlan = findScrapSuggestions(shortfall, new Set([rawName]), collectionBuyScrapExclusions);
         if (scrapNode) {
             const title = scrapPlan.stillShort > 0 ? 'Best available scrap route' : 'Scrap route';
             scrapNode.innerHTML = `
                 <div class="collection-buy-scrap-title">${title}</div>
                 ${renderCollectionScrapRows(scrapPlan.picks)}
             `;
+            if (collectionBuyScrapExclusions.size > 0) {
+                scrapNode.innerHTML += `<div class="collection-buy-scrap-note">Excluded from scrap: ${[...collectionBuyScrapExclusions].map(cleanCardName).join(', ')}</div>`;
+            }
         }
 
         if (scrapPlan.stillShort > 0) {
@@ -8434,6 +8643,7 @@ gradeButtons.forEach(button => {
                 </div>
                 <div class="collection-buy-scrap-name">${cleanCardName(p.name)}</div>
                 <div class="collection-buy-scrap-value">+${p.sparks.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
+                <button type="button" class="collection-buy-scrap-skip-btn" data-name="${p.name}" title="Keep this card">Keep</button>
             </div>
         `).join('');
     }
@@ -8460,14 +8670,12 @@ gradeButtons.forEach(button => {
                         <img src="hero_images/${base}.webp" alt="${name}" loading="lazy" decoding="async"
                              onerror="this.onerror=null;this.src='hero_images/${base}.png'">
                     </span>
-                    ${!owned ? '<span class="collection-hero-lock">🔒</span>' : ''}
-                    <span class="collection-hero-name">${name}</span>
-                    <span class="collection-hero-classes">${classLabel}</span>
+                    ${!owned ? '<img class="collection-hero-lock" src="lock.png" alt="Locked">' : ''}
                 </button>`;
         };
 
         grid.innerHTML = `
-            <div class="collection-hero-count-label">Heroes <strong>${ownedCount}/${heroList.length}</strong></div>
+            <div class="collection-hero-count-label"><span>Heroes</span><span> ${ownedCount}/${heroList.length}</span></div>
             <div class="collection-hero-row">${heroList.map(heroTile).join('')}</div>`;
     }
 
@@ -8505,7 +8713,13 @@ gradeButtons.forEach(button => {
             if (cardFaction !== wantedFaction) return;
 
             const cleanName = rawName.replace(/_/g, ' ');
-            if (q && !cleanName.toLowerCase().includes(q)) return;
+            const searchable = [
+                cleanName,
+                cardInfo?.Class || '',
+                cardInfo?.Type || '',
+                cardInfo?.Description || ''
+            ].join(' ').toLowerCase();
+            if (q && !searchable.includes(q)) return;
 
             totalCount++;
             if (!groups[cardClass]) groups[cardClass] = { owned: [], unowned: [] };
@@ -8523,6 +8737,13 @@ gradeButtons.forEach(button => {
             const isRare = rarity === 'rare';
             const isEvent = rarity === 'event';
             const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
+            const borderColor = getCollectionRarityBorderColor(rawName);
+            const rarity = (cardDatabase?.[rawName]?.Rarity || '').toLowerCase().trim();
+            const isLegendary = rarity === 'legendary';
+            const isSuperRare = rarity === 'super-rare' || rarity === 'super rare';
+            const isRare = rarity === 'rare';
+            const isEvent = rarity === 'event';
+            const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
 
             return `
                 <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
@@ -8531,9 +8752,15 @@ gradeButtons.forEach(button => {
                              onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
                         <div class="card-quantity">${owned > 0 ? 'x' + owned : ''}</div>
                     </div>
+                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
+                    <div class="visual-card-art">
+                        <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
+                             onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
+                        <div class="card-quantity">${owned > 0 ? 'x' + owned : ''}</div>
+                    </div>
                     <span class="collection-card-name">${cleanName}</span>
                     <div class="visual-card-controls">
-                        <button type="button" class="seed-btn minus-btn" data-name="${rawName}" aria-label="Remove one ${cleanName}" title="Remove one">−</button>
+                        <button type="button" class="seed-btn minus-btn" data-name="${rawName}" aria-label="Remove one ${cleanName}" title="Remove one">-</button>
                         <button type="button" class="seed-btn swap-btn" data-name="${rawName}" aria-label="Get ${cleanName}" title="Get">Get</button>
                         <button type="button" class="seed-btn plus-btn" data-name="${rawName}" aria-label="Add one ${cleanName}" title="Add one">+</button>
                     </div>
@@ -8548,9 +8775,9 @@ gradeButtons.forEach(button => {
             if (!list.length) return;
             const color = CLASS_COLORS[cls] || '#4dd0e1';
             html += `
-                <div class="collection-class-header" style="border-color:${color}">
-                    <img class="collection-class-icon" src="class_icons/${cls}.webp" alt="${cls}" onerror="this.style.display='none'">
-                    <span class="collection-class-name" style="color:${color}">${cls}</span>
+                <div class="collection-class-header" style="background: linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 100%); padding: 4px 6px 8px 5px;">
+                    <img class="collection-class-icon" src="hero_images/PvZH_${cls}_Icon.webp" alt="${cls}" onerror="this.style.display='none'">
+                    <span class="collection-class-name" style="color:#ffffff">${cls}</span>
                     <span class="collection-class-count">${groups[cls].owned.length}/${list.length}</span>
                 </div>
                 <div class="collection-class-grid">${list.map(cardTile).join('')}</div>`;
@@ -8560,14 +8787,106 @@ gradeButtons.forEach(button => {
 
         const countLabel = document.getElementById('collectionPageCardCount');
         if (countLabel) countLabel.textContent = totalCount.toLocaleString();
+        if (collectionHeroCountText) {
+            const heroList = wantedFaction === 'Plant' ? PLANT_HEROES : ZOMBIE_HEROES;
+            const ownedCount = heroList.filter(h => ownedHeroes[h]).length;
+            collectionHeroCountText.textContent = `${ownedCount}/${heroList.length}`;
+        }
+        // After rendering the grid, ensure each class grid is padded to a 5x3 layout
+        try { padCollectionGrids(); } catch (err) { console.debug('padCollectionGrids error', err); }
     }
+
+    // Ensure each .collection-class-grid displays as a 5x3 area by adding placeholder tiles
+    function padCollectionGrids() {
+        const gridContainers = Array.from(document.querySelectorAll('.collection-class-grid'));
+        if (!gridContainers.length) return;
+
+        const pageThemePlant = (collectionViewSection && collectionViewSection.classList.contains('collection-theme-plant')) || (getCollectionPageFaction() === 'Plant');
+        const placeholderImg = pageThemePlant ? 'hero_images/phero.png' : 'hero_images/zhero.png';
+
+        gridContainers.forEach(container => {
+            // Enforce five columns for visual consistency
+            container.style.gridTemplateColumns = 'repeat(5, 1fr)';
+
+            // Remove any old placeholders we added previously
+            Array.from(container.querySelectorAll('.collection-card-tile.placeholder')).forEach(el => el.remove());
+
+            const existing = Array.from(container.children).filter(n => n.nodeType === 1);
+            const existingCount = existing.length;
+            const desired = 15; // 5 columns x 3 rows
+            if (existingCount >= desired) return;
+
+            const toAdd = desired - existingCount;
+            for (let i = 0; i < toAdd; i++) {
+                const ph = document.createElement('div');
+                ph.className = 'collection-card-tile placeholder';
+                ph.setAttribute('aria-hidden', 'true');
+                ph.innerHTML = `
+                    <div class="visual-card-art">
+                        <img src="${placeholderImg}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.style.display='none'">
+                    </div>
+                    <span class="collection-card-name">&nbsp;</span>
+                `;
+                container.appendChild(ph);
+            }
+        });
+    }
+
+    // Watch for changes in the collection grid and re-pad when needed
+    (function observeCollectionGrid() {
+        const target = document.getElementById('collectionPageGrid');
+        if (!target) return;
+        const mo = new MutationObserver((mutations) => {
+            let changed = false;
+            for (const m of mutations) {
+                if (m.type === 'childList' || m.type === 'subtree') { changed = true; break; }
+            }
+            if (changed) {
+                // small delay to allow renderCollectionPageGrid to finish DOM writes
+                setTimeout(() => { try { padCollectionGrids(); } catch (e) { console.debug(e); } }, 10);
+            }
+        });
+        mo.observe(target, { childList: true, subtree: true });
+    })();
 
     const collectionPageGridEl = document.getElementById('collectionPageGrid');
     if (collectionPageGridEl) {
         collectionPageGridEl.addEventListener('dblclick', (e) => {
+        collectionPageGridEl.addEventListener('dblclick', (e) => {
             const tile = e.target.closest('.collection-card-tile');
             if (!tile) return;
             const name = tile.dataset.name;
+            if (!name) return;
+            const current = ownedCollection[name] || 0;
+            if (current <= 0) {
+                ownedCollection[name] = 4;
+                saveOwnedCollection();
+                const searchVal = document.getElementById('collectionPageSearch')?.value || '';
+                renderCollectionPageGrid(searchVal);
+                renderCollectionPageStats();
+                if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+                if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+            }
+        });
+
+        collectionPageGridEl.addEventListener('click', (e) => {
+            if (e.detail > 1) return;
+            const plusBtn = e.target.closest('.collection-card-tile .plus-btn');
+            if (plusBtn) {
+                e.stopPropagation();
+                const name = plusBtn.dataset.name;
+                const current = ownedCollection[name] || 0;
+                if (isCommonCollectionFloorCard(name)) {
+                    ownedCollection[name] = Math.max(current, 4);
+                    saveOwnedCollection();
+                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
+                    renderCollectionPageGrid(searchVal);
+                    renderCollectionPageStats();
+                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+                    return;
+                }
+                if (current >= 4 && !isCommonCollectionFloorCard(name)) {
             if (!name) return;
             const current = ownedCollection[name] || 0;
             if (current <= 0) {
@@ -8616,7 +8935,24 @@ gradeButtons.forEach(button => {
                     renderCollectionPageStats();
                     if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
                     if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+                    saveOwnedCollection();
+                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
+                    renderCollectionPageGrid(searchVal);
+                    renderCollectionPageStats();
+                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+                    return;
                 }
+                if (current < 4) {
+                    ownedCollection[name] = current + 1;
+                    saveOwnedCollection();
+                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
+                    renderCollectionPageGrid(searchVal);
+                    renderCollectionPageStats();
+                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+                }
+                return;
                 return;
             }
 
@@ -8681,6 +9017,20 @@ gradeButtons.forEach(button => {
     if (collectionBuyModal && collectionBuyModalClose) {
         collectionBuyModalClose.addEventListener('click', closeCollectionBuyModal);
         collectionBuyModal.addEventListener('click', (e) => {
+            const skipBtn = e.target.closest('.collection-buy-scrap-skip-btn');
+            if (skipBtn) {
+                e.stopPropagation();
+                const cardName = skipBtn.dataset.name;
+                if (cardName) {
+                    collectionBuyScrapExclusions.add(cardName);
+                    const rawName = collectionBuyModal.dataset.name;
+                    const qtyInput = document.getElementById('collectionBuyQtyInput');
+                    const maxAdd = Math.max(0, 4 - getCollectionOwnedCount(rawName));
+                    const qty = Math.max(0, Math.min(maxAdd, parseInt(qtyInput?.value, 10) || 0));
+                    purchaseCollectionCard(rawName, qty);
+                }
+                return;
+            }
             if (e.target === collectionBuyModal) closeCollectionBuyModal();
         });
 
@@ -8750,11 +9100,128 @@ gradeButtons.forEach(button => {
         });
     }
 
-    const collectionPageFactionEl = document.getElementById('collectionPageFaction');
-    if (collectionPageFactionEl) {
-        collectionPageFactionEl.addEventListener('change', () => {
+    const collectionPlantsBtn = document.getElementById('collectionPlantsBtn');
+    const collectionZombiesBtn = document.getElementById('collectionZombiesBtn');
+    const collectionSearchBtn = document.getElementById('collectionSearchBtn');
+    const collectionSearchOverlay = document.getElementById('collectionPageSearchOverlay');
+    const collectionExportBtn = document.getElementById('collectionExportBtn');
+    const collectionImportBtn = document.getElementById('collectionImportBtn');
+    const collectionImportInput = document.getElementById('collectionImportInput');
+    const collectionHeroCountText = document.getElementById('collectionHeroCountText');
+    const collectionViewSection = document.getElementById('collectionView');
+
+    function updateCollectionFactionTheme() {
+        const faction = getCollectionPageFaction();
+        if (collectionPlantsBtn) collectionPlantsBtn.classList.toggle('active', faction === 'Plant');
+        if (collectionZombiesBtn) collectionZombiesBtn.classList.toggle('active', faction === 'Zombie');
+        if (collectionViewSection) {
+            collectionViewSection.classList.toggle('collection-theme-plant', faction === 'Plant');
+            collectionViewSection.classList.toggle('collection-theme-zombie', faction === 'Zombie');
+        }
+    }
+
+    function exportCollectionToFile() {
+        try {
+            const data = JSON.stringify(ownedCollection, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'pvzh_collection_export.json';
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.debug('Collection export failed', error);
+        }
+    }
+
+    function importCollectionFromFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const parsed = JSON.parse(reader.result);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    ownedCollection = parsed;
+                    saveOwnedCollection();
+                    const searchValue = collectionPageSearchEl ? collectionPageSearchEl.value : '';
+                    renderCollectionPageStats();
+                    renderCollectionHeroGrid();
+                    renderCollectionPageGrid(searchValue);
+                    if (typeof renderCollectionList === 'function') renderCollectionList(searchValue);
+                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+                }
+            } catch (error) {
+                console.debug('Collection import failed', error);
+            } finally {
+                if (collectionImportInput) collectionImportInput.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    if (collectionPlantsBtn) {
+        collectionPlantsBtn.addEventListener('click', () => {
+            if (collectionPlantsBtn.classList.contains('active')) return;
+            collectionPlantsBtn.classList.add('active');
+            if (collectionZombiesBtn) collectionZombiesBtn.classList.remove('active');
             renderCollectionHeroGrid();
             renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
+            updateCollectionFactionTheme();
+        });
+    }
+    if (collectionZombiesBtn) {
+        collectionZombiesBtn.addEventListener('click', () => {
+            if (collectionZombiesBtn.classList.contains('active')) return;
+            collectionZombiesBtn.classList.add('active');
+            if (collectionPlantsBtn) collectionPlantsBtn.classList.remove('active');
+            renderCollectionHeroGrid();
+            renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
+            updateCollectionFactionTheme();
+        });
+    }
+
+    if (collectionExportBtn) {
+        collectionExportBtn.addEventListener('click', () => {
+            exportCollectionToFile();
+        });
+    }
+
+    if (collectionImportBtn && collectionImportInput) {
+        collectionImportBtn.addEventListener('click', () => {
+            collectionImportInput.click();
+        });
+        collectionImportInput.addEventListener('change', () => {
+            if (!collectionImportInput.files?.length) return;
+            importCollectionFromFile(collectionImportInput.files[0]);
+        });
+    }
+
+    if (collectionSearchBtn && collectionSearchOverlay) {
+        collectionSearchBtn.addEventListener('click', () => {
+            collectionSearchOverlay.classList.toggle('hidden');
+            collectionSearchOverlay.setAttribute('aria-hidden', String(collectionSearchOverlay.classList.contains('hidden')));
+            if (!collectionSearchOverlay.classList.contains('hidden')) {
+                collectionPageSearchEl?.focus();
+                collectionPageSearchEl?.select();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!collectionSearchOverlay || !collectionSearchBtn) return;
+            if (collectionSearchOverlay.contains(target) || collectionSearchBtn.contains(target)) return;
+            collectionSearchOverlay.classList.add('hidden');
+            collectionSearchOverlay.setAttribute('aria-hidden', 'true');
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && collectionSearchOverlay && !collectionSearchOverlay.classList.contains('hidden')) {
+                collectionSearchOverlay.classList.add('hidden');
+                collectionSearchOverlay.setAttribute('aria-hidden', 'true');
+            }
         });
     }
 
@@ -8764,6 +9231,7 @@ gradeButtons.forEach(button => {
         renderCollectionHeroGrid();
         renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
         updateCollectionMaxToggleButton();
+        updateCollectionFactionTheme();
     }
 
     function buildDeckFromCollection() {
@@ -9198,7 +9666,7 @@ gradeButtons.forEach(button => {
         data-name="${seed.name}"
         aria-label="Remove one ${displayName}"
         title="Remove one"
-    >−</button>
+    >-</button>
 
     <button
         type="button"
@@ -10734,6 +11202,7 @@ let davePanelHideTimer = null;
 
 function setDavePanelVisible(isVisible) {
     if (!crazyDavePanel || !toggleDavePanelBtn || !crafterView) return;
+    if (!crazyDavePanel || !toggleDavePanelBtn || !crafterView) return;
     clearTimeout(davePanelHideTimer);
 
     if (isVisible) {
@@ -10789,10 +11258,29 @@ if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
     toggleDavePanelBtn.setAttribute("aria-label", "Show Crazy Dave panel");
     toggleDavePanelBtn.title = "Show Crazy Dave";
 
+if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
+    crazyDavePanel.classList.add("dave-panel-fully-hidden");
+    crafterView.classList.add("dave-panel-hidden");
+    toggleDavePanelBtn.classList.add("is-closed");
+    toggleDavePanelBtn.setAttribute("aria-expanded", "false");
+    toggleDavePanelBtn.setAttribute("aria-label", "Show Crazy Dave panel");
+    toggleDavePanelBtn.title = "Show Crazy Dave";
+
+    toggleDavePanelBtn.addEventListener("click", () => {
+        const isCurrentlyVisible =
+            !crafterView.classList.contains("dave-panel-hidden");
     toggleDavePanelBtn.addEventListener("click", () => {
         const isCurrentlyVisible =
             !crafterView.classList.contains("dave-panel-hidden");
 
+        if (!isCurrentlyVisible) {
+            const proceed = window.confirm("Warning: Dave feedback is horrible. Are you sure you know what you are doing?");
+            if (!proceed) return;
+        }
+
+        setDavePanelVisible(!isCurrentlyVisible);
+    });
+}
         if (!isCurrentlyVisible) {
             const proceed = window.confirm("Warning: Dave feedback is horrible. Are you sure you know what you are doing?");
             if (!proceed) return;
@@ -14252,7 +14740,7 @@ if (scoreDiff > 0) {
     comparisonClass = "better";
     comparisonLabel = `Improves deck score by ${scoreDiff}%`;
 } else if (scoreDiff < 0) {
-    comparisonText = `−${Math.abs(scoreDiff)}%`;
+    comparisonText = `-${Math.abs(scoreDiff)}%`;
     comparisonClass = "worse";
     comparisonLabel = `Lowers deck score by ${Math.abs(scoreDiff)}%`;
 }
@@ -16035,6 +16523,12 @@ const sparkIcon = await loadCanvasImage([
 ]);
 
 const totalSparkCost = currentSeeds.reduce((sum, seed) => sum + (sparkCostFor(seed.name) * seed.count), 0);
+const sparkIcon = await loadCanvasImage([
+    `PvZH_Spark_Icon.webp`,
+    `PvZH_Spark_Icon.png`
+]);
+
+const totalSparkCost = currentSeeds.reduce((sum, seed) => sum + (sparkCostFor(seed.name) * seed.count), 0);
 
             // Header panel
             const headerX = padding;
@@ -16258,6 +16752,32 @@ ctx.fillStyle = 'rgba(241,245,249,0.82)';
 ctx.fillText(sparkLabel, padding + iconSize + 7, sparkY);
 ctx.restore();
 
+   // Bottom-left spark cost summary
+const sparkLabel = `${totalSparkCost.toLocaleString()} Sparks`;
+const iconSize = 15;
+const sparkY = canvasHeight - 15;
+
+ctx.save();
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.font = '700 12px "Segoe UI", sans-serif';
+ctx.shadowColor = 'rgba(0,0,0,0.45)';
+ctx.shadowBlur = 4;
+ctx.shadowOffsetY = 1;
+
+if (sparkIcon) {
+    ctx.drawImage(sparkIcon, padding, sparkY - iconSize / 2, iconSize, iconSize);
+} else {
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(padding + iconSize / 2, sparkY, iconSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+ctx.fillStyle = 'rgba(241,245,249,0.82)';
+ctx.fillText(sparkLabel, padding + iconSize + 7, sparkY);
+ctx.restore();
+
    // Minimal bottom-right watermark (no background)
 const brandText = 'PVZH VAULT';
 
@@ -16370,7 +16890,7 @@ ctx.restore();
         gems: 5000,
         gemsUsed: 0,
         opened: 0,
-        pulls: { Uncommon: 0, Rare: 0, 'Super-Rare': 0, Legendary: 0, Hero: 0 },
+        pulls: { Uncommon: 0, Rare: 0, 'Super-Rare': 0, Legendary: 0, Hero: 0, Event: 0 },
         cardCounts: {},
         earned: [],
         selected: 'Premium'
@@ -16400,6 +16920,14 @@ ctx.restore();
         'Pirate Pack': { label: 'Pirate Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pirate'], subtitle: 'Zombie tribe pack' },
         'Pet Pack': { label: 'Pet Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pet'], subtitle: 'Zombie tribe pack' },
         'Mustache & Professional': { label: 'Mustache & Professional', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['mustache', 'professional'], subtitle: 'Zombie tribe pack' }
+    };
+
+    const PACK_SPECIAL_RULES = {
+        'Gargantuar Pack': {
+            guaranteedUncommons: [{ name: 'Yeti_Lunchbox', count: 3 }],
+            excludeFromUncommon: ['Yeti_Lunchbox'],
+            rareReplacement: { name: 'Gargologist', chance: 0.20 }
+        }
     };
 
     let packSimState = JSON.parse(JSON.stringify(PACK_SIM_DEFAULT_STATE));
@@ -16483,7 +17011,10 @@ ctx.restore();
         const tribeCards = getTribePackCards(def);
         if (!tribeCards.length) return cards;
 
-        const uncommonPool = tribeCards.filter(card => normalizePackCardRarity(card) === 'Uncommon');
+        const specialRule = PACK_SPECIAL_RULES?.[def?.label];
+        const uncommonPool = tribeCards
+            .filter(card => normalizePackCardRarity(card) === 'Uncommon')
+            .filter(card => !specialRule?.excludeFromUncommon?.includes(card?.Name));
         const rarePool = tribeCards.filter(card => normalizePackCardRarity(card) === 'Rare');
         const superRarePool = tribeCards.filter(card => normalizePackCardRarity(card) === 'Super-Rare');
         const legendaryPool = tribeCards.filter(card => normalizePackCardRarity(card) === 'Legendary');
@@ -16492,30 +17023,48 @@ ctx.restore();
             const usedNames = new Set();
             const packPulls = [];
 
-            for (let i = 0; i < 4; i += 1) {
-                const chosen = pickCardFromPool(uncommonPool.length ? uncommonPool : tribeCards, 'Uncommon', usedNames);
+            if (specialRule?.guaranteedUncommons?.length) {
+                specialRule.guaranteedUncommons.forEach(entry => {
+                    const bonusCard = cardDatabase?.[entry.name];
+                    if (!bonusCard) return;
+                    for (let amount = 0; amount < (entry.count || 0); amount += 1) {
+                        packPulls.push(bonusCard);
+                    }
+                    usedNames.add(bonusCard.Name);
+                });
+            }
+
+            for (let i = packPulls.length; i < 4; i += 1) {
+                const pool = uncommonPool.length ? uncommonPool : tribeCards;
+                const chosen = pickCardFromPool(pool, 'Uncommon', usedNames);
                 if (chosen) packPulls.push(chosen);
             }
 
             let rareCard = null;
-            if (def?.featuredCard) {
-                rareCard = tribeCards.find(card => card?.Name === def.featuredCard || card?.Name === def.featuredCard.replace(/_/g, ' '));
+            if (specialRule?.rareReplacement?.name && Math.random() < (specialRule.rareReplacement.chance || 0)) {
+                rareCard = cardDatabase?.[specialRule.rareReplacement.name];
             }
             if (!rareCard) {
-                rareCard = pickCardFromPool(rarePool.length ? rarePool : tribeCards, 'Rare', usedNames);
-            } else {
-                usedNames.add(rareCard.Name);
+                if (def?.featuredCard) {
+                    rareCard = tribeCards.find(card => card?.Name === def.featuredCard || card?.Name === def.featuredCard.replace(/_/g, ' '));
+                }
+                if (!rareCard) {
+                    rareCard = pickCardFromPool(rarePool.length ? rarePool : tribeCards, 'Rare', usedNames);
+                }
             }
-            if (rareCard) packPulls.push(rareCard);
+            if (rareCard) {
+                usedNames.add(rareCard.Name);
+                packPulls.push(rareCard);
+            }
 
             const roll = Math.random();
             let slotRarity = 'Rare';
             if (roll < 0.10) slotRarity = 'Legendary';
             else if (roll < 0.40) slotRarity = 'Super-Rare';
 
-            const slotPool = slotRarity === 'Legendary' ? legendaryPool.length ? legendaryPool : tribeCards
-                : slotRarity === 'Super-Rare' ? superRarePool.length ? superRarePool : tribeCards
-                : rarePool.length ? rarePool : tribeCards;
+            const slotPool = slotRarity === 'Legendary' ? (legendaryPool.length ? legendaryPool : tribeCards)
+                : slotRarity === 'Super-Rare' ? (superRarePool.length ? superRarePool : tribeCards)
+                : (rarePool.length ? rarePool : tribeCards);
             const slotCard = pickCardFromPool(slotPool, slotRarity, usedNames);
             if (slotCard) packPulls.push(slotCard);
 
@@ -16645,6 +17194,7 @@ ctx.restore();
             <span class="pack-sim-stat rarity-rare">Rare: <strong>${p.Rare || 0}</strong></span>
             <span class="pack-sim-stat rarity-super-rare">Super-Rare: <strong>${p['Super-Rare'] || 0}</strong></span>
             <span class="pack-sim-stat rarity-legendary">Legendary: <strong>${p.Legendary || 0}</strong></span>
+            <span class="pack-sim-stat rarity-event">Event: <strong>${p.Event || 0}</strong></span>
             <span class="pack-sim-stat rarity-hero">Hero: <strong>${p.Hero || 0}</strong></span>
         `;
     }
@@ -16982,6 +17532,12 @@ ctx.restore();
     if (collectionPageBtn) {
         collectionPageBtn.addEventListener('click', () => {
             window.location.hash = 'collection';
+        });
+    }
+
+    if (packsPageBtn) {
+        packsPageBtn.addEventListener('click', () => {
+            window.location.hash = 'packs';
         });
     }
 
