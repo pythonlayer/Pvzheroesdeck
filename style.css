@@ -9769,7 +9769,7 @@ This prevents the inner duplicate from creating a second box.
     .collection-class-grid{ grid-template-columns:repeat(2, 1fr); gap:8px; }
 }
 .collection-card-tile{
-    position:relative; overflow:hidden; isolation:isolate; background:#1e2428; border:1px solid var(--collection-border-color, rgba(255,255,255,.08));
+    position:relative; overflow:visible; isolation:isolate; background:#1e2428; border:1px solid var(--collection-border-color, rgba(255,255,255,.08));
     border-radius:10px; padding:6px; text-align:center; display:flex; flex-direction:column; align-items:center;
     cursor:pointer; color:#fff; font:inherit;
     transition:none;
