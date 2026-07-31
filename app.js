@@ -2113,7 +2113,7 @@ const FINDER_STATIC_KEYS = [
     { label: "New Decks", type: "recency", value: "new", aliases: ["new", "recent", "latest", "newest", "fresh", "this month"] },
 
     // Archetypes / playstyles
-    { label: "Aggro", type: "archetype", value: "aggro", aliases: ["aggro", "rush", "fast", "quick", "early game", "smorc"] },
+    { label: "Aggro", type: "archetype", value: "aggro", aliases: ["aggro", "agro", "rush", "fast", "quick", "early game", "smorc"] },
     { label: "Tempo", type: "archetype", value: "tempo", aliases: ["tempo", "midrange tempo", "pressure"] },
     { label: "Control", type: "archetype", value: "control", aliases: ["control", "late game", "slow", "defensive", "removal"] },
     { label: "Midrange", type: "archetype", value: "midrange", aliases: ["midrange", "balanced", "solid"] },
@@ -4013,8 +4013,45 @@ function finderHeroPortraits(heroes) {
     }).join("");
 }
 
+/* Sorts raw "x4 Card_Name" deck strings into the same order the
+   cards appear in card_data.json (i.e. Object.keys() insertion order
+   of the loaded card database), instead of whatever order the deck
+   submitter happened to list them in. Unknown/unmatched cards sink
+   to the end, keeping their original relative order. Cached per
+   card database instance since it never changes after load. */
+let _pvzCardOrderIndexCache = null;
+let _pvzCardOrderIndexCacheDb = null;
+function getPvzCardOrderIndex(cardDb) {
+    if (_pvzCardOrderIndexCache && _pvzCardOrderIndexCacheDb === cardDb) {
+        return _pvzCardOrderIndexCache;
+    }
+    const map = new Map();
+    Object.keys(cardDb || {}).forEach((key, i) => map.set(key, i));
+    _pvzCardOrderIndexCache = map;
+    _pvzCardOrderIndexCacheDb = cardDb;
+    return map;
+}
+
+function sortDeckCardStringsByDbOrder(cardStrings, cardDb) {
+    if (!cardDb || !Array.isArray(cardStrings)) return cardStrings || [];
+    const orderMap = getPvzCardOrderIndex(cardDb);
+
+    return cardStrings
+        .map((str, i) => {
+            const parsed = parseFinderDeckCardEntry(str);
+            const key = parsed ? getFinderCardKey(parsed.name, cardDb) : undefined;
+            const idx = key !== undefined ? orderMap.get(key) : undefined;
+            return { str, i, idx: idx === undefined ? Number.MAX_SAFE_INTEGER : idx };
+        })
+        .sort((a, b) => (a.idx - b.idx) || (a.i - b.i))
+        .map(x => x.str);
+}
+
 function finderCardTilesHtml(deck) {
-    return (deck.cards || []).map((cardString, i) => {
+    const cardDb = resolveFinderCardDatabase();
+    const orderedCards = sortDeckCardStringsByDbOrder(deck.cards || [], cardDb);
+
+    return orderedCards.map((cardString, i) => {
         const parsed = parseFinderDeckCardEntry(cardString);
         if (!parsed) return "";
 
@@ -5975,7 +6012,11 @@ fragment.appendChild(
         const rarityCosts = RARITY_SPARKS;
 
         // real card images, using YOUR card_images path + png→webp fallback
-        const cardsHtml = (deckInfo.cards || []).map((cardString, i) => {
+        const orderedDeckCards = sortDeckCardStringsByDbOrder(
+            deckInfo.cards || [],
+            (typeof cardDatabase !== 'undefined' ? cardDatabase : null)
+        );
+        const cardsHtml = orderedDeckCards.map((cardString, i) => {
             const m = cardString.trim().match(/^x(\d+)\s+(.+)$/i);
             let count = 1, raw = cardString;
             if (m) { count = parseInt(m[1], 10); raw = m[2]; }
@@ -8189,10 +8230,15 @@ gradeButtons.forEach(button => {
         const q = filter.toLowerCase().trim();
         const wantedFaction = collectionFactionSelect ? collectionFactionSelect.value : 'Plant';
 
+        // Group by class (like the in-game Collection page) instead of one
+        // long flat list, so it's easy to page through class-by-class.
+        const groups = {}; // class -> [rawName, ...]
         let shown = 0;
+
         Object.keys(cardDatabase || {}).forEach(rawName => {
             const cardInfo = cardDatabase[rawName];
             const cardClass = cardInfo?.Class;
+            if (!cardClass) return;
             const cardFaction = plantClasses.has(cardClass) ? 'Plant' : 'Zombie';
             if (cardFaction !== wantedFaction) return;
 
@@ -8200,24 +8246,52 @@ gradeButtons.forEach(button => {
             if (q && !cleanName.toLowerCase().includes(q)) return;
             if (shown >= 200) return; // keep the list light
 
-            const owned = ownedCollection[rawName] || 0;
-            const isDefault = cardInfo?.Set === 'Basic';
-            const row = document.createElement('div');
-            row.className = 'collection-card' + (owned > 0 ? ' owned' : '');
-
-            const countBtns = [1, 2, 3, 4].map(n =>
-                `<button type="button" class="collection-count-btn${owned === n ? ' active' : ''}" data-name="${rawName}" data-n="${n}">${n}</button>`
-            ).join('');
-
-            row.innerHTML = `
-                <span class="collection-card-name">${cleanName}${isDefault ? ' <span class="collection-default-tag">auto</span>' : ''}</span>
-                <div class="collection-count-group">
-                    ${countBtns}
-                    <button type="button" class="collection-count-btn collection-clear-btn" data-name="${rawName}" data-n="0">✕</button>
-                </div>`;
-            collectionList.appendChild(row);
+            if (!groups[cardClass]) groups[cardClass] = [];
+            groups[cardClass].push(rawName);
             shown++;
         });
+
+        const classOrder = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+
+        classOrder.forEach(cls => {
+            const list = groups[cls];
+            if (!list.length) return;
+
+            const ownedInClass = list.filter(n => (ownedCollection[n] || 0) > 0).length;
+            const header = document.createElement('div');
+            header.className = 'collection-class-header';
+            header.style.cssText = 'background: linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 100%); padding: 4px 6px 8px 5px;';
+            header.innerHTML = `
+                <img class="collection-class-icon" src="hero_images/PvZH_${cls}_Icon.webp" alt="${cls}" onerror="this.style.display='none'">
+                <span class="collection-class-name" style="color:${CLASS_COLORS[cls] || '#4dd0e1'}">${cls}</span>
+                <span class="collection-class-count">${ownedInClass}/${list.length}</span>`;
+            collectionList.appendChild(header);
+
+            list.forEach(rawName => {
+                const cardInfo = cardDatabase[rawName];
+                const cleanName = rawName.replace(/_/g, ' ');
+                const owned = ownedCollection[rawName] || 0;
+                const isDefault = cardInfo?.Set === 'Basic';
+                const row = document.createElement('div');
+                row.className = 'collection-card' + (owned > 0 ? ' owned' : '');
+
+                const countBtns = [1, 2, 3, 4].map(n =>
+                    `<button type="button" class="collection-count-btn${owned === n ? ' active' : ''}" data-name="${rawName}" data-n="${n}">${n}</button>`
+                ).join('');
+
+                row.innerHTML = `
+                    <span class="collection-card-name">${cleanName}${isDefault ? ' <span class="collection-default-tag">auto</span>' : ''}</span>
+                    <div class="collection-count-group">
+                        ${countBtns}
+                        <button type="button" class="collection-count-btn collection-clear-btn" data-name="${rawName}" data-n="0">✕</button>
+                    </div>`;
+                collectionList.appendChild(row);
+            });
+        });
+
+        if (!shown) {
+            collectionList.innerHTML = `<div class="collection-value-empty">No cards match your search.</div>`;
+        }
 
         if (collectionOwnedCount) {
             collectionOwnedCount.innerText = Object.keys(ownedCollection).length;
