@@ -4123,6 +4123,31 @@ function finderCopyText(text, btn) {
     }
 }
 
+function finderOtherMatchesHtml(deck) {
+    if (!finderCurrentResults || finderCurrentResults.length <= 1) return "";
+
+    const chips = finderCurrentResults.slice(0, 16).map((d, i) => {
+        const active = d === deck;
+        const color = finderGradeColor(d);
+        return `<button type="button" class="finder-alt-chip" data-index="${i}" ${active ? 'aria-current="true"' : ''}
+            style="display:flex;align-items:center;gap:6px;flex:0 0 auto;padding:6px 10px;border-radius:8px;
+            border:1px solid ${active ? color : "rgba(255,255,255,0.15)"};
+            background:${active ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.03)"};
+            color:#fff;cursor:pointer;font-size:12px;white-space:nowrap;">
+            <span style="color:${color};font-weight:700;">${escapeHtml(d.grade || "?")}</span>
+            <span style="max-width:150px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.name)}</span>
+        </button>`;
+    }).join("");
+
+    return `
+        <div class="finder-other-matches" style="margin-top:14px;">
+            <div style="font-size:12px;opacity:0.7;margin-bottom:6px;">
+                ${finderCurrentResults.length} matching deck${finderCurrentResults.length === 1 ? "" : "s"} — pick one:
+            </div>
+            <div class="finder-other-matches-row" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">${chips}</div>
+        </div>`;
+}
+
 function renderFinderDeckResult(deck) {
     if (!finderResult || !deck) return;
 
@@ -4207,9 +4232,22 @@ function renderFinderDeckResult(deck) {
                     ${videoHtml}
                 </div>
             </div>
+            ${finderOtherMatchesHtml(deck)}
         </div>`;
 
     finderBindResultActions(deck);
+
+    const matchesRow = finderResult.querySelector(".finder-other-matches-row");
+    if (matchesRow) {
+        matchesRow.onclick = (e) => {
+            const chip = e.target.closest(".finder-alt-chip");
+            if (!chip) return;
+            const idx = parseInt(chip.dataset.index, 10);
+            if (!Number.isFinite(idx) || !finderCurrentResults[idx]) return;
+            finderRerollIndex = idx;
+            renderFinderDeckResult(finderCurrentResults[idx]);
+        };
+    }
 }
 
 function renderFinderNoResult(intent) {
