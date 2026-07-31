@@ -9664,8 +9664,8 @@ This prevents the inner duplicate from creating a second box.
 .collection-search-input::placeholder{color:rgba(255,255,255,.5);}
 
 /* Disable all animations and transitions in collection view to reduce lag */
-#collectionView,
-#collectionView * {
+.collection-page,
+.collection-page * {
     animation: none !important;
     transition: none !important;
 }
@@ -9769,7 +9769,7 @@ This prevents the inner duplicate from creating a second box.
     .collection-class-grid{ grid-template-columns:repeat(2, 1fr); gap:8px; }
 }
 .collection-card-tile{
-    position:relative; overflow:visible; isolation:isolate; background:#1e2428; border:1px solid var(--collection-border-color, rgba(255,255,255,.08));
+    position:relative; overflow:hidden; isolation:isolate; background:#1e2428; border:1px solid var(--collection-border-color, rgba(255,255,255,.08));
     border-radius:10px; padding:6px; text-align:center; display:flex; flex-direction:column; align-items:center;
     cursor:pointer; color:#fff; font:inherit;
     transition:none;
@@ -9869,9 +9869,6 @@ This prevents the inner duplicate from creating a second box.
 }
 .collection-card-tile.show-controls .visual-card-controls{
     opacity:1 !important; visibility:visible !important; pointer-events:auto !important; transform:translate(-50%, 0) !important;
-}
-.collection-card-tile.show-controls{
-    z-index: 30;
 }
 .collection-card-tile .collection-card-name{ font-size:11px; margin-top:4px; line-height:1.2; min-height:20px; }
 .collection-card-tile .visual-card-controls .swap-btn{ font-size:10px; }
@@ -10725,114 +10722,3 @@ This prevents the inner duplicate from creating a second box.
     margin-top: 2px;
 }
 .pack-sim-card-owned.maxed { color: #ff5f5f; font-weight: 800; }
-
-/* ---------------------------------------------------------------------
-   Craft recommendation highlight — curated "worth crafting" cards
-   (from the community craft/keep/scrap tier list) that the user can
-   currently afford based on their entered Sparks balance.
-   --------------------------------------------------------------------- */
-.collection-card-tile.craft-recommended {
-    border-color: #3ddc84;
-    box-shadow: 0 0 0 1px rgba(61, 220, 132, 0.35), 0 0 16px rgba(61, 220, 132, 0.32);
-    animation: craftRecommendedPulse 1.8s ease-in-out infinite;
-}
-.collection-card-tile.craft-recommended.not-owned {
-    filter: none;
-}
-.collection-card-tile.craft-recommended.not-owned img {
-    filter: none;
-    opacity: 1;
-}
-@keyframes craftRecommendedPulse {
-    0%, 100% { box-shadow: 0 0 0 1px rgba(61, 220, 132, 0.35), 0 0 14px rgba(61, 220, 132, 0.28); }
-    50%      { box-shadow: 0 0 0 1px rgba(61, 220, 132, 0.55), 0 0 22px rgba(61, 220, 132, 0.55); }
-}
-.craft-recommended-badge {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    z-index: 12;
-    background: #123a24;
-    color: #3ddc84;
-    border: 1px solid #3ddc84;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 0.3px;
-    padding: 1px 5px;
-    border-radius: 5px;
-    line-height: 14px;
-    text-transform: uppercase;
-    pointer-events: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    white-space: nowrap;
-}
-
-/* Same highlight on the deck-builder's flat collection list rows */
-.collection-card.craft-recommended {
-    border-left: 3px solid #3ddc84;
-    background: rgba(61, 220, 132, 0.08);
-    box-shadow: inset 0 0 0 1px rgba(61, 220, 132, 0.25);
-}
-.craft-recommended-tag {
-    display: inline-block;
-    margin-left: 6px;
-    font-size: 10px;
-    font-weight: 800;
-    color: #3ddc84;
-    background: rgba(61, 220, 132, 0.12);
-    border: 1px solid rgba(61, 220, 132, 0.4);
-    padding: 0 5px;
-    border-radius: 4px;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    vertical-align: middle;
-}
-
-/* ---------------------------------------------------------------------
-   Scrap fodder filters in the collection "Get" modal — restrict which
-   owned cards findScrapSuggestions is allowed to draw from.
-   --------------------------------------------------------------------- */
-.collection-scrap-filter-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 8px 0 2px;
-}
-.collection-scrap-filter-row.hidden {
-    display: none;
-}
-.collection-scrap-filter-group {
-    display: flex;
-    gap: 4px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 8px;
-    padding: 3px;
-}
-.collection-scrap-filter-btn {
-    border: none;
-    background: transparent;
-    color: #bbb;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-.collection-scrap-filter-btn:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.06);
-}
-.collection-scrap-filter-btn.active {
-    background: var(--accent, #4dd0e1);
-    color: #10151a;
-}
-.collection-scrap-class-select {
-    background: rgba(255, 255, 255, 0.04);
-    color: #eee;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 8px;
-}
