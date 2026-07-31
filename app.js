@@ -36,6 +36,28 @@ const heroMap = {
     "Hearty,Sneaky": "Neptuna"
 };
 
+// Card text (Description/LongDescription) comes from the game's own localized
+// strings. It only ever uses two things that need special handling:
+//   - literal "\n" sequences meant to be line breaks
+//   - <b>...</b> tags meant to render as bold
+// Everything else is escaped so nothing else can sneak in as real HTML.
+function formatCardText(raw) {
+    const str = String(raw || '');
+    const escaped = str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    return escaped
+        // Re-enable the one allowed tag pair after escaping.
+        .replace(/&lt;b&gt;/g, '<b>')
+        .replace(/&lt;\/b&gt;/g, '</b>')
+        // Turn literal backslash-n sequences into real line breaks.
+        .replace(/\\n/g, '<br>');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Random Funny Adjectives ---
     const adjectives = [
@@ -8080,6 +8102,10 @@ gradeButtons.forEach(button => {
     };
     function sparkCostFor(rawName) {
         const info = (typeof cardDatabase !== 'undefined') ? cardDatabase[rawName] : null;
+        // Prefer the card's own real craft cost when the database provides one.
+        if (info && Number.isFinite(Number(info.CraftCost)) && Number(info.CraftCost) > 0) {
+            return Number(info.CraftCost);
+        }
         const rarity = (info?.Rarity || '').toLowerCase();
         return RARITY_SPARKS[rarity] || 0;
     }
@@ -8098,6 +8124,10 @@ gradeButtons.forEach(button => {
     };
     function recycleValueFor(rawName) {
         const info = (typeof cardDatabase !== 'undefined') ? cardDatabase[rawName] : null;
+        // Prefer the card's own real scrap value when the database provides one.
+        if (info && Number.isFinite(Number(info.ScrapCost)) && Number(info.ScrapCost) > 0) {
+            return Number(info.ScrapCost);
+        }
         const rarity = (info?.Rarity || '').toLowerCase();
         return RECYCLE_SPARKS[rarity] || 0;
     }
@@ -8955,7 +8985,14 @@ gradeButtons.forEach(button => {
             imageNode.onerror = function () { this.onerror = null; this.src = `card_images/${rawName}.webp`; };
         }
         if (nameNode) nameNode.textContent = cleanName;
-        if (descriptionNode) descriptionNode.textContent = info.Description || 'No card text listed.';
+        if (descriptionNode) {
+            const cardText = info.LongDescription || info.Description || 'No card text listed.';
+            let html = formatCardText(cardText);
+            if (info.FlavorText) {
+                html += `<div class="collection-buy-card-flavor">${formatCardText(info.FlavorText)}</div>`;
+            }
+            descriptionNode.innerHTML = html;
+        }
         if (metaNode) {
             metaNode.innerHTML = `<span><strong>Class:</strong> ${info.Class || '—'}</span><span><strong>Type:</strong> ${info.Type || '—'}</span><span><strong>Rarity:</strong> ${info.Rarity || '—'}</span><span><strong>Set:</strong> ${info.Set || '—'}</span>`;
         }
