@@ -73,25 +73,51 @@ document.addEventListener('error', function (e) {
     if (!match) return;
     const [, name, ext] = match;
     if (ext.toLowerCase() !== 'webp') return; // let the element's own handler try png -> webp first
-    if (img.dataset.oldNameFallbackDone) return; // only attempt this once per <img>
 
     if (typeof cardDatabase === 'undefined') return;
-    const nameNorm = name.replace(/_/g, ' ').toLowerCase();
-    const card = cardDatabase[name] || cardDatabase[nameNorm] ||
-        Object.values(cardDatabase).find(c => c && (
-            (c.Name && c.Name.replace(/_/g, ' ').toLowerCase() === nameNorm) ||
-            (c.OldName && c.OldName.replace(/_/g, ' ').toLowerCase() === nameNorm)
-        ));
-    if (!card) return;
 
-    const currentIsNew = card.Name && card.Name.replace(/_/g, ' ').toLowerCase() === nameNorm;
-    const target = currentIsNew ? card.OldName : card.Name;
-    if (!target) return;
-    const targetNorm = target.replace(/_/g, ' ').toLowerCase();
-    if (targetNorm === nameNorm) return; // nothing different to try
+    // Build (once per <img>) an ordered queue of alternate filenames to try:
+    //   1. OldName, in case the card was renamed at some point (e.g. "Fig" -> "Transfiguration")
+    //   2. A straight hyphen<->underscore swap, in case the image was exported
+    //      with a different punctuation convention than the current card name
+    //      (e.g. card key "Small-Nut" but file saved as "Small_Nut.webp")
+    if (!img.dataset.fallbackQueue) {
+        const nameNorm = name.replace(/_/g, ' ').toLowerCase();
+        const card = cardDatabase[name] || cardDatabase[nameNorm] ||
+            Object.values(cardDatabase).find(c => c && (
+                (c.Name && c.Name.replace(/_/g, ' ').toLowerCase() === nameNorm) ||
+                (c.OldName && c.OldName.replace(/_/g, ' ').toLowerCase() === nameNorm)
+            ));
 
-    img.dataset.oldNameFallbackDone = '1';
-    const targetKey = target.replace(/ /g, '_');
+        const candidates = [];
+        const seen = new Set([name.toLowerCase()]);
+        const addCandidate = (n) => {
+            if (!n) return;
+            const key = n.replace(/ /g, '_');
+            if (seen.has(key.toLowerCase())) return;
+            seen.add(key.toLowerCase());
+            candidates.push(key);
+        };
+
+        if (card) {
+            const currentIsNew = card.Name && card.Name.replace(/_/g, ' ').toLowerCase() === nameNorm;
+            addCandidate(currentIsNew ? card.OldName : card.Name);
+        }
+        // Try swapping punctuation on whatever name we were just attempting.
+        if (name.includes('-')) addCandidate(name.replace(/-/g, '_'));
+        if (name.includes('_')) addCandidate(name.replace(/_/g, '-'));
+
+        img.dataset.fallbackQueue = JSON.stringify(candidates);
+        img.dataset.fallbackIndex = '0';
+    }
+
+    const queue = JSON.parse(img.dataset.fallbackQueue || '[]');
+    const idx = parseInt(img.dataset.fallbackIndex || '0', 10);
+    if (idx >= queue.length) return; // out of options, give up
+
+    const targetKey = queue[idx];
+    img.dataset.fallbackIndex = String(idx + 1);
+
     img.onerror = function () {
         this.onerror = null;
         this.src = `card_images/${targetKey}.webp`;
