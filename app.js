@@ -1075,6 +1075,114 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
         finisher: /\bstrikethrough\b|\bdouble strike\b|\bfrenzy\b|\ball .* get \+\d+/i
     };
 
+    // ---------------------------------------------------------------
+    // DECK BUILDING GUIDELINES (community doc, condensed into data)
+    // Aggro/Midrange/Control are the 3 real pacing archetypes. Tempo/Combo
+    // are win-condition descriptors layered on top of those three, not
+    // separate curve archetypes. curveRange is [min,max] fraction-of-deck
+    // per 6-bucket cost (<=1, 2, 3, 4, 5, 6+), derived from the guide's
+    // one-drop-count ranges (out of 40 cards) plus a reasonable taper for
+    // the rest of the curve. paceWindow is the cost range a "finisher"
+    // (2-4 of, per the guide) should sit in for that archetype's speed -
+    // this is what catches the Zombot/Octo-Zombie-in-an-aggro-combo-shell
+    // problem. reactiveRemovalMax/proactiveRemovalTarget implement the
+    // "removal is reactive, so slower decks can carry more of it" rule.
+    // ---------------------------------------------------------------
+    const DE_ARCHETYPE_GUIDE = {
+        Aggro: {
+            label: 'Aggro',
+            oneDropRange: [11, 14],
+            curveRange: [
+                [0.275, 0.35], [0.20, 0.30], [0.12, 0.22],
+                [0.04, 0.12], [0.00, 0.06], [0.00, 0.04]
+            ],
+            paceWindow: [1, 4],
+            reactiveRemovalMax: 3,
+            proactiveRemovalTarget: [1, 4]
+        },
+        Midrange: {
+            label: 'Midrange',
+            oneDropRange: [6, 10],
+            curveRange: [
+                [0.15, 0.25], [0.18, 0.26], [0.20, 0.28],
+                [0.12, 0.20], [0.06, 0.14], [0.02, 0.08]
+            ],
+            paceWindow: [2, 5],
+            reactiveRemovalMax: 6,
+            proactiveRemovalTarget: [2, 5]
+        },
+        Control: {
+            label: 'Control',
+            oneDropRange: [4, 8],
+            curveRange: [
+                [0.10, 0.20], [0.12, 0.20], [0.16, 0.24],
+                [0.16, 0.24], [0.12, 0.20], [0.08, 0.16]
+            ],
+            paceWindow: [3, 6],
+            reactiveRemovalMax: 10,
+            proactiveRemovalTarget: [3, 8]
+        }
+    };
+
+    // Clamp a computed curve (e.g. the k-NN blend from getFinishIdealCurve)
+    // into the chosen archetype's explicit range, then renormalize so it
+    // still sums to 1. The data-driven curve only breaks ties inside that
+    // window - it can no longer hand back something Aggro-shaped when the
+    // user asked for Control, or vice versa.
+    function de_clampCurveToArchetype(curve, archetypeName) {
+        const guide = DE_ARCHETYPE_GUIDE[archetypeName];
+        if (!guide || !Array.isArray(curve)) return curve;
+        const clamped = curve.map((v, i) => {
+            const range = guide.curveRange[i];
+            if (!range) return v;
+            const [min, max] = range;
+            return Math.min(max, Math.max(min, v));
+        });
+        const sum = clamped.reduce((a, b) => a + b, 0);
+        return sum > 0 ? clamped.map(v => v / sum) : clamped;
+    }
+
+    // Auto-detect which of the 3 *pacing* archetypes a set of seed cards
+    // is closest to, used when the user hasn't explicitly picked one from
+    // the crafter UI. Swarm/Ramp (from the meta-learner's 5-way clustering)
+    // aren't real pacing archetypes per the guide, so they're folded into
+    // whichever of the 3 they're closest to by curve shape (Swarm skews
+    // early like Aggro, Ramp skews late like Control).
+    function de_autoPacingArchetype(seeds, totalCards) {
+        if (!totalCards) return null;
+        const curve = [0, 0, 0, 0, 0, 0];
+        seeds.forEach(s => {
+            const c = s.norm.cost;
+            const idx = c <= 1 ? 0 : c === 2 ? 1 : c === 3 ? 2 : c === 4 ? 3 : c === 5 ? 4 : 5;
+            curve[idx] += s.count;
+        });
+        const shape = curve.map(c => c / totalCards);
+        let best = null, bestDist = Infinity;
+        for (const archName in DE_ARCHETYPE_GUIDE) {
+            const guide = DE_ARCHETYPE_GUIDE[archName];
+            let dist = 0;
+            for (let i = 0; i < 6; i++) {
+                const [min, max] = guide.curveRange[i];
+                const mid = (min + max) / 2;
+                dist += Math.abs(shape[i] - mid);
+            }
+            if (dist < bestDist) { bestDist = dist; best = archName; }
+        }
+        return best;
+    }
+
+    // Proactive-vs-reactive removal split (item 5). Removal is inherently
+    // reactive by nature, but a cheap body-plus-removal card you can jam in
+    // on curve reads as "proactive" for pacing purposes, while anything
+    // whose text is gated behind a trigger condition, or a pure freeze
+    // (stalling, not answering), only ever reacts to what the opponent did.
+    function de_classifyRemovalPace(mechanics, removalType, descLower) {
+        if (!mechanics.includes('removal') && removalType !== 'freeze') return null;
+        const gated = /\bwhen\b|\bif\b|\bafter\b/.test(descLower);
+        if (removalType === 'freeze' || gated) return 'reactive';
+        return 'proactive';
+    }
+
     let de_knownTribesCache = null;
     function de_getKnownTribes() {
         if (de_knownTribesCache) return de_knownTribesCache;
@@ -1133,6 +1241,10 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
         if (mechanics.includes('finisher')) roles.add('finisher');
         if (/evolv|upgrade/i.test(desc)) roles.add('evolution_enabler');
 
+        const removalPace = de_classifyRemovalPace(mechanics, removalType, descLower);
+        if (removalPace === 'proactive') roles.add('removal_proactive');
+        else if (removalPace === 'reactive') roles.add('removal_reactive');
+
         let curveBucket = 'early';
         if (cost >= 5) curveBucket = 'late';
         else if (cost >= 3) curveBucket = 'mid';
@@ -1151,7 +1263,8 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
             health: Number.isFinite(Number(data.Health)) ? Number(data.Health) : null,
             strength: Number.isFinite(Number(data.Strength)) ? Number(data.Strength) : null,
             description: desc,
-            knownCard: !!(cardDatabase && (cardDatabase[underscored] || cardDatabase[spaced]))
+            knownCard: !!(cardDatabase && (cardDatabase[underscored] || cardDatabase[spaced])),
+            isFinisherTagged: cost >= 5 || roles.has('finisher')
         };
         de_caches.cardTags.set(nameOrKey, normalized);
         return normalized;
@@ -1550,6 +1663,83 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
     }
 
     const DE_WEIGHTS = { curve: 0.12, removal: 0.15, finishers: 0.12, synergy: 0.18, consistency: 0.10, packages: 0.10, playability: 0.15, roleBalance: 0.08 };
+
+    // ---------------------------------------------------------------
+    // 7. ARCHETYPE / PACE SELF-CHECK (post-generation, for Dave's chat)
+    // Mirrors the guide's own worked "problem deck" examples - e.g. a
+    // Zombot/Octo Zombie-style finisher too slow for an aggro-combo shell -
+    // by flagging the same categories of mismatch the guide calls out:
+    // one-drop count, finisher pace, finisher count, and reactive-removal
+    // density, all against whichever archetype is active for this deck.
+    // ---------------------------------------------------------------
+    function de_buildArchetypeSelfCheck(deckCardStrings, chosenArchetype) {
+        const seeds = de_buildSeeds(deckCardStrings);
+        const totalCards = seeds.reduce((sum, s) => sum + s.count, 0);
+        if (!totalCards) return null;
+
+        const archetypeName = (chosenArchetype && DE_ARCHETYPE_GUIDE[chosenArchetype])
+            ? chosenArchetype
+            : de_autoPacingArchetype(seeds, totalCards);
+        const guide = DE_ARCHETYPE_GUIDE[archetypeName];
+        if (!guide) return null;
+
+        const issues = [];
+
+        // One-drop count vs the guide's explicit range.
+        const oneDropCopies = seeds
+            .filter(s => s.norm.cost <= 1)
+            .reduce((sum, s) => sum + s.count, 0);
+        const [minOne, maxOne] = guide.oneDropRange;
+        if (oneDropCopies < minOne) {
+            issues.push(`Only ${oneDropCopies} one-drops for a ${guide.label} shell (the guide wants ${minOne}-${maxOne}) — this deck may stumble out of the gate.`);
+        } else if (oneDropCopies > maxOne + 4) {
+            issues.push(`${oneDropCopies} one-drops is well past what a ${guide.label} deck needs (${minOne}-${maxOne}) — the curve may be too flat to close games.`);
+        }
+
+        // Finisher pace mismatch - the guide's Zombot/Octo Zombie example.
+        const mismatchedFinishers = [];
+        seeds.forEach(s => {
+            if (s.norm.isFinisherTagged && (s.norm.cost < guide.paceWindow[0] || s.norm.cost > guide.paceWindow[1])) {
+                mismatchedFinishers.push(s.norm.name);
+            }
+        });
+        if (mismatchedFinishers.length) {
+            const names = mismatchedFinishers.slice(0, 2).join(' and ');
+            issues.push(`${names}${mismatchedFinishers.length > 2 ? ' (and others)' : ''} sit outside the pace this ${guide.label} shell wants (cost ${guide.paceWindow[0]}-${guide.paceWindow[1]}) — their speed doesn't match the rest of the deck's win condition.`);
+        }
+
+        // Finisher count sweet spot (2-4 per the guide).
+        const finisherCopies = seeds
+            .filter(s => s.norm.isFinisherTagged)
+            .reduce((sum, s) => sum + s.count, 0);
+        if (finisherCopies > 4) {
+            issues.push(`${finisherCopies} finisher-tagged cards is above the guide's 2-4 sweet spot — some are likely dead in hand together.`);
+        } else if (finisherCopies === 0) {
+            issues.push(`No clear finishers — the deck may not have a reliable way to close out a won board.`);
+        }
+
+        // Reactive-only removal density vs the archetype's target.
+        const reactiveCopies = seeds
+            .filter(s => s.norm.roles.includes('removal_reactive'))
+            .reduce((sum, s) => sum + s.count, 0);
+        if (reactiveCopies > guide.reactiveRemovalMax) {
+            issues.push(`${reactiveCopies} reactive-only removal effects is heavy for a ${guide.label} deck (removal is inherently reactive, and this archetype's pace only really wants up to ${guide.reactiveRemovalMax}).`);
+        }
+
+        if (!issues.length) return null;
+        return { archetype: archetypeName, label: guide.label, issues };
+    }
+
+    function de_buildArchetypeCheckHtml(check) {
+        if (!check || !check.issues.length) return '';
+        const items = check.issues
+            .map(issue => `<li>${typeof escapeHtml === 'function' ? escapeHtml(issue) : issue}</li>`)
+            .join('');
+        return daveSay(`
+            <strong>Archetype check (${check.label}):</strong>
+            <ul class="archetype-check-list">${items}</ul>
+        `);
+    }
 
     function de_evaluate(deckCards, selfDeckKey, ctx, legacy) {
         const seeds = de_buildSeeds(deckCards);
@@ -7945,6 +8135,8 @@ gradeButtons.forEach(button => {
     const clearSeedsBtn = document.getElementById('clearSeedsBtn');
     const budgetToggle = document.getElementById('budgetToggle');
     const superBudgetToggle = document.getElementById('superBudgetToggle');
+    const archetypeSelect = document.getElementById('archetypeSelect');
+    const winConditionSelect = document.getElementById('winConditionSelect');
 
     // Toggles Logic
     if (budgetToggle && superBudgetToggle) {
@@ -8982,7 +9174,11 @@ gradeButtons.forEach(button => {
                 ? getVerdictContext()
                 : undefined;
 
-        const idealCurve = getFinishIdealCurve([], verdictCtx);
+        const chosenArchetype = archetypeSelect?.value || null;
+        const chosenWinCondition = winConditionSelect?.value || null;
+        const archetypeCtx = { archetype: chosenArchetype, winCondition: chosenWinCondition };
+
+        const idealCurve = getFinishIdealCurve([], verdictCtx, chosenArchetype);
 
         const profiles = [
             { synergy: 0.42, power: 0.275, curve: 0.255, consistency: 0.05 },
@@ -9029,7 +9225,8 @@ gradeButtons.forEach(button => {
                     false,
                     false,
                     true, // ownedOnly
-                    heroName
+                    heroName,
+                    archetypeCtx
                 );
 
                 // Skip combos that can't actually fill a real deck from the
@@ -9063,7 +9260,8 @@ gradeButtons.forEach(button => {
                         false,
                         false,
                         true,
-                        heroName
+                        heroName,
+                        archetypeCtx
                     );
                     const score = getExactFinishScore(completedDeck, verdictCtx);
                     if (score > bestScore) {
@@ -9094,7 +9292,8 @@ gradeButtons.forEach(button => {
                 false,
                 false,
                 false, // ownedOnly off for this pass, so it can actually finish
-                heroName
+                heroName,
+                archetypeCtx
             );
         }
 
@@ -9106,7 +9305,8 @@ gradeButtons.forEach(button => {
             false,
             false,
             { maxMilliseconds: 350, maxEvaluations: 140, maxPasses: 2 },
-            true // ownedOnly
+            true, // ownedOnly
+            archetypeCtx
         );
 
         currentSeeds = bestDeck;
@@ -13939,6 +14139,14 @@ starterTargetCopies = Math.max(
                 const baselineVerdict = getDeckVerdictFromCards(currentDeckStrings, null, ctx);
                 const baselineScore = baselineVerdict.score;
 
+                // Item 7: flag archetype/pace mismatches (mirrors the
+                // guide's own worked "problem deck" examples) against
+                // whichever archetype is selected in the crafter, or the
+                // auto-detected pacing archetype if none is chosen.
+                const archetypeCheckHtml = de_buildArchetypeCheckHtml(
+                    de_buildArchetypeSelfCheck(currentDeckStrings, archetypeSelect?.value || null)
+                );
+
                 let bestSwapIdea = null;
                 let maxImprovement = 0;
 
@@ -14149,7 +14357,7 @@ const deckLinkHtml = deckShareUrl
     `)
     : daveSay(`Your Deck Link could not be generated because one or more cards could not be found.`);
 
-chatFeed.innerHTML = baseHtml + swapHtml + deckLinkHtml;
+chatFeed.innerHTML = baseHtml + archetypeCheckHtml + swapHtml + deckLinkHtml;
 
                 const swapBtn = chatFeed.querySelector('.add-rec-btn[data-remove]');
                 if (swapBtn) {
@@ -14701,12 +14909,16 @@ function getHeroAffinityBonus(cardName, heroName) {
     const isBudget = Boolean(budgetToggle?.checked);
     const isSuperBudget = Boolean(superBudgetToggle?.checked);
 
+    const chosenArchetype = archetypeSelect?.value || null;
+    const chosenWinCondition = winConditionSelect?.value || null;
+    const archetypeCtx = { archetype: chosenArchetype, winCondition: chosenWinCondition };
+
     const verdictCtx =
         typeof getVerdictContext === "function"
             ? getVerdictContext()
             : undefined;
 
-    const idealCurve = getFinishIdealCurve(originalDeck, verdictCtx);
+    const idealCurve = getFinishIdealCurve(originalDeck, verdictCtx, chosenArchetype);
     const heroName = deckHeroLock?.name || null;
 
     /*
@@ -14746,7 +14958,8 @@ function getHeroAffinityBonus(cardName, heroName) {
             isBudget,
             isSuperBudget,
             false,
-            heroName
+            heroName,
+            archetypeCtx
         );
 
         const score = getExactFinishScore(completedDeck, verdictCtx);
@@ -14776,7 +14989,9 @@ function getHeroAffinityBonus(cardName, heroName) {
             maxMilliseconds: 350,
             maxEvaluations: 140,
             maxPasses: 2
-        }
+        },
+        false,
+        archetypeCtx
     );
 
     const finalVerdict = getExactFinishVerdict(bestDeck, verdictCtx);
@@ -14807,7 +15022,8 @@ function buildFastCompletion(
     isBudget,
     isSuperBudget,
     ownedOnly,
-    heroName
+    heroName,
+    archetypeCtx
 ) {
     const deck = startingDeck.map(card => ({ ...card }));
     const seedNames = new Set(startingDeck.map(card => card.name));
@@ -14850,7 +15066,9 @@ function buildFastCompletion(
                     workingClasses,
                     isBudget,
                     isSuperBudget,
-                    ownedOnly
+                    ownedOnly,
+                    false,
+                    archetypeCtx
                 )
             ) {
                 continue;
@@ -14863,7 +15081,8 @@ function buildFastCompletion(
                 profile,
                 idealCurve,
                 verdictCtx,
-                heroName
+                heroName,
+                archetypeCtx
             );
 
             if (candidateScore > bestCandidateScore) {
@@ -14888,7 +15107,9 @@ function buildFastCompletion(
                         workingClasses,
                         isBudget,
                         isSuperBudget,
-                        ownedOnly
+                        ownedOnly,
+                        false,
+                        archetypeCtx
                     )
                 ) {
                     continue;
@@ -14901,7 +15122,8 @@ function buildFastCompletion(
                     profile,
                     idealCurve,
                     verdictCtx,
-                    heroName
+                    heroName,
+                    archetypeCtx
                 );
 
                 if (candidateScore > bestCandidateScore) {
@@ -14928,7 +15150,8 @@ function buildFastCompletion(
                         isBudget,
                         isSuperBudget,
                         ownedOnly,
-                        true // allowNewClass
+                        true, // allowNewClass
+                        archetypeCtx
                     )
                 ) {
                     continue;
@@ -14941,7 +15164,8 @@ function buildFastCompletion(
                     profile,
                     idealCurve,
                     verdictCtx,
-                    heroName
+                    heroName,
+                    archetypeCtx
                 );
 
                 if (candidateScore > bestCandidateScore) {
@@ -14968,7 +15192,8 @@ function getFastFinishCandidateScore(
     profile,
     idealCurve,
     verdictCtx,
-    heroName
+    heroName,
+    archetypeCtx
 ) {
     const currentCopies =
         deck.find(card => card.name === candidateName)?.count || 0;
@@ -15001,6 +15226,69 @@ function getFastFinishCandidateScore(
     // (see getHeroAffinityBonus for what this is standing in for).
     if (heroName) {
         score += getHeroAffinityBonus(candidateName, heroName);
+    }
+
+    // Archetype-aware pace and removal-mix adjustments (items 4 & 5).
+    if (archetypeCtx?.archetype) {
+        const guide = DE_ARCHETYPE_GUIDE[archetypeCtx.archetype];
+        const norm = de_normalizeCard(candidateName);
+
+        if (norm.isFinisherTagged) {
+            // Item 4: penalize finishers whose cost sits outside this
+            // archetype's pace window - the guide's worked example is a
+            // Zombot/Octo Zombie-style top-end finisher in an aggro-combo
+            // shell that can't function at that speed.
+            const [minPace, maxPace] = guide.paceWindow;
+            if (norm.cost < minPace || norm.cost > maxPace) {
+                score -= 18;
+            }
+
+            // Item 6: soften the reward for finishers once the deck is
+            // already past the guide's 2-4 sweet spot, so scoring alone
+            // (not just the hard cap in canFinishAddCard) discourages the
+            // greedy loop from over-stacking them.
+            const finisherCopies = deck.reduce((sum, card) => {
+                return de_normalizeCard(card.name).isFinisherTagged
+                    ? sum + card.count
+                    : sum;
+            }, 0);
+            if (finisherCopies >= 4) score -= 14;
+            else if (finisherCopies >= 2 && currentCopies === 0) score -= 4;
+        }
+
+        // Item 5: proactive removal is welcome up to the archetype's
+        // target; reactive-only removal (freezes, trigger-gated effects)
+        // is fine for a slow deck but drags down anything meant to be fast.
+        if (norm.roles.includes('removal_reactive')) {
+            const reactiveCopies = deck.reduce((sum, card) => {
+                return de_normalizeCard(card.name).roles.includes('removal_reactive')
+                    ? sum + card.count
+                    : sum;
+            }, 0);
+            if (reactiveCopies >= guide.reactiveRemovalMax) score -= 10;
+        }
+        if (norm.roles.includes('removal_proactive')) {
+            const [minProactive, maxProactive] = guide.proactiveRemovalTarget;
+            const proactiveCopies = deck.reduce((sum, card) => {
+                return de_normalizeCard(card.name).roles.includes('removal_proactive')
+                    ? sum + card.count
+                    : sum;
+            }, 0);
+            if (proactiveCopies < minProactive) score += 4;
+            else if (proactiveCopies >= maxProactive) score -= 6;
+        }
+
+        // Optional win-condition tag: Tempo rewards proactive tempo plays
+        // (bounce/freeze/removal-on-curve), Combo rewards synergy density.
+        // These are descriptors layered on the archetype, not separate
+        // curve targets, so they only nudge score rather than the curve.
+        if (archetypeCtx.winCondition === 'Tempo') {
+            if (norm.roles.includes('removal_proactive') || norm.mechanics.includes('tempo')) {
+                score += 6;
+            }
+        } else if (archetypeCtx.winCondition === 'Combo') {
+            if (synergy >= 60) score += 6;
+        }
     }
 
     /*
@@ -15201,7 +15489,7 @@ function getFinishConsistencyScore(deck) {
 
     return Math.round(points / deck.length);
 }
-function getFinishIdealCurve(startingDeck, verdictCtx) {
+function getFinishIdealCurve(startingDeck, verdictCtx, archetypeName) {
     const fallbackCurve = [
         0.23,
         0.22,
@@ -15211,11 +15499,26 @@ function getFinishIdealCurve(startingDeck, verdictCtx) {
         0.10
     ];
 
+    // Resolve which pacing archetype governs the curve: an explicit user
+    // pick wins, otherwise auto-detect from the seeds so even the
+    // "Auto (data-driven)" path stays inside a real archetype's window
+    // instead of drifting toward whatever the nearest-neighbor decks
+    // happen to look like.
+    const seedsForArchetype = startingDeck.length ? de_buildSeeds(
+        startingDeck.map(card => `${card.count}x ${card.name}`)
+    ) : [];
+    const totalSeedCards = startingDeck.reduce((sum, card) => sum + card.count, 0);
+    const effectiveArchetype = (archetypeName && DE_ARCHETYPE_GUIDE[archetypeName])
+        ? archetypeName
+        : de_autoPacingArchetype(seedsForArchetype, totalSeedCards);
+
     if (
         !startingDeck.length ||
         !verdictCtx?.dbDecks
     ) {
-        return fallbackCurve;
+        return effectiveArchetype
+            ? de_clampCurveToArchetype(fallbackCurve, effectiveArchetype)
+            : fallbackCurve;
     }
 
     const seedCounts = new Map(
@@ -15256,7 +15559,9 @@ function getFinishIdealCurve(startingDeck, verdictCtx) {
     const closest = comparisons.slice(0, 8);
 
     if (!closest.length) {
-        return fallbackCurve;
+        return effectiveArchetype
+            ? de_clampCurveToArchetype(fallbackCurve, effectiveArchetype)
+            : fallbackCurve;
     }
 
     const totalWeight = closest.reduce(
@@ -15275,7 +15580,12 @@ function getFinishIdealCurve(startingDeck, verdictCtx) {
         }
     }
 
-    return idealCurve;
+    // The k-NN blend only gets to break ties inside the archetype's
+    // explicit range (item 3) - it can no longer hand back an Aggro-shaped
+    // curve just because the nearest overlapping decks happened to be fast.
+    return effectiveArchetype
+        ? de_clampCurveToArchetype(idealCurve, effectiveArchetype)
+        : idealCurve;
 }
 function polishFinishedDeck(
     startingDeck,
@@ -15285,7 +15595,8 @@ function polishFinishedDeck(
     isBudget,
     isSuperBudget,
     options = {},
-    ownedOnly
+    ownedOnly,
+    archetypeCtx
 ) {
     const maxMilliseconds = options.maxMilliseconds ?? 350;
     const maxEvaluations = options.maxEvaluations ?? 140;
@@ -15364,7 +15675,9 @@ function polishFinishedDeck(
                         consistency: 0.05
                     },
                     idealCurve,
-                    verdictCtx
+                    verdictCtx,
+                    null,
+                    archetypeCtx
                 )
             }))
             .sort((a, b) => b.fit - a.fit)
@@ -15406,7 +15719,9 @@ function polishFinishedDeck(
                         classesAfterRemoval,
                         isBudget,
                         isSuperBudget,
-                        ownedOnly
+                        ownedOnly,
+                        false,
+                        archetypeCtx
                     )
                 ) {
                     continue;
@@ -15468,7 +15783,8 @@ function canFinishAddCard(
     isBudget,
     isSuperBudget,
     ownedOnly,
-    allowNewClass
+    allowNewClass,
+    archetypeCtx
 ) {
     const candidateData = cardDatabase?.[candidateName];
     if (!candidateData) return false;
@@ -15549,6 +15865,22 @@ function canFinishAddCard(
             ) {
                 return false;
             }
+        }
+    }
+
+    // Item 6: cap finisher-tagged cards at roughly the guide's 2-4 sweet
+    // spot instead of letting the greedy loop keep adding more just
+    // because each one scores well in isolation. This is a hard backstop;
+    // getFastFinishCandidateScore also discourages it earlier via scoring.
+    if (archetypeCtx?.archetype && currentCopies === 0) {
+        const norm = de_normalizeCard(candidateName);
+        if (norm.isFinisherTagged) {
+            const finisherCopies = deck.reduce((sum, card) => {
+                return de_normalizeCard(card.name).isFinisherTagged
+                    ? sum + card.count
+                    : sum;
+            }, 0);
+            if (finisherCopies >= 6) return false;
         }
     }
 
