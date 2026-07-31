@@ -58,6 +58,47 @@ function formatCardText(raw) {
         .replace(/\\n/g, '<br>');
 }
 
+// Some cards were renamed at some point, but the image files in
+// card_images/ may still be saved under whichever name (old or new) they
+// originally shipped with. Every card image in this app already tries
+// NAME.png then NAME.webp on error; once BOTH of those fail for a given
+// name, this single global listener steps in and tries the card's other
+// known name (old<->new) as a last resort, so a renamed card's art still
+// shows up no matter which name a given deck/list happens to use.
+document.addEventListener('error', function (e) {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    const src = img.getAttribute('src') || '';
+    const match = src.match(/card_images\/([^/]+)\.(png|webp)$/i);
+    if (!match) return;
+    const [, name, ext] = match;
+    if (ext.toLowerCase() !== 'webp') return; // let the element's own handler try png -> webp first
+    if (img.dataset.oldNameFallbackDone) return; // only attempt this once per <img>
+
+    if (typeof cardDatabase === 'undefined') return;
+    const nameNorm = name.replace(/_/g, ' ').toLowerCase();
+    const card = cardDatabase[name] || cardDatabase[nameNorm] ||
+        Object.values(cardDatabase).find(c => c && (
+            (c.Name && c.Name.replace(/_/g, ' ').toLowerCase() === nameNorm) ||
+            (c.OldName && c.OldName.replace(/_/g, ' ').toLowerCase() === nameNorm)
+        ));
+    if (!card) return;
+
+    const currentIsNew = card.Name && card.Name.replace(/_/g, ' ').toLowerCase() === nameNorm;
+    const target = currentIsNew ? card.OldName : card.Name;
+    if (!target) return;
+    const targetNorm = target.replace(/_/g, ' ').toLowerCase();
+    if (targetNorm === nameNorm) return; // nothing different to try
+
+    img.dataset.oldNameFallbackDone = '1';
+    const targetKey = target.replace(/ /g, '_');
+    img.onerror = function () {
+        this.onerror = null;
+        this.src = `card_images/${targetKey}.webp`;
+    };
+    img.src = `card_images/${targetKey}.png`;
+}, true);
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Random Funny Adjectives ---
     const adjectives = [
@@ -305,6 +346,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // Both files are successfully downloaded!
             fullDatabase = deckData;
             cardDatabase = cardData;
+
+            // Some cards were renamed at some point (e.g. "Fig" -> "Transfiguration").
+            // Old saved decks and old image filenames may still reference the
+            // former name, so alias every OldName -> the same card object,
+            // under both the underscore and spaced key forms that the rest of
+            // this file already tries when looking a card up.
+            Object.values(cardDatabase).forEach(card => {
+                if (!card || !card.OldName) return;
+                const underscored = card.OldName.replace(/ /g, '_');
+                const spaced = card.OldName.replace(/_/g, ' ');
+                if (!cardDatabase[underscored]) cardDatabase[underscored] = card;
+                if (!cardDatabase[spaced]) cardDatabase[spaced] = card;
+            });
 
             loadingEl.style.display = 'none';
             const totalDecks = Object.keys(deckData).length;
