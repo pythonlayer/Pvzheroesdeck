@@ -1601,6 +1601,17 @@
                         <div class="collection-buy-qty-guide">Use the stepper to choose how many more copies you want to aim for. This page only suggests the spark route and the cards you could scrap.</div>
 
                         <div class="collection-buy-summary" id="collectionBuySummary"></div>
+
+                        <div class="collection-scrap-filter-row hidden" id="collectionScrapFilterRow" role="group" aria-label="Scrap fodder filters">
+                            <div class="collection-scrap-filter-group">
+                                <button type="button" class="collection-scrap-filter-btn active" data-faction="all">All</button>
+                                <button type="button" class="collection-scrap-filter-btn" data-faction="Plant">Plants</button>
+                                <button type="button" class="collection-scrap-filter-btn" data-faction="Zombie">Zombies</button>
+                            </div>
+                            <select id="collectionScrapClassFilter" class="collection-scrap-class-select" aria-label="Filter scrap fodder by class">
+                                <option value="all">All classes</option>
+                            </select>
+                        </div>
                         <div class="collection-buy-scrap" id="collectionBuyScrap"></div>
                         <div class="collection-buy-danger" id="collectionBuyDanger"></div>
                     </div>

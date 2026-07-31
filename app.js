@@ -8103,6 +8103,282 @@ gradeButtons.forEach(button => {
     }
 
     /*
+     * Curated craft/keep/scrap tiers per card, based on community meta
+     * consensus rather than raw deck-usage frequency. Values:
+     *   "Craft"            - worth crafting if you don't already have it
+     *   "KeepUse"/"KeepHold"/"KeepClassOnly" - never suggest scrapping these
+     *   "ScrappableUsable"/"ScrappableNiche"/"ScrapSpecial" - situational fodder
+     *   "Scrap"            - safe to scrap first
+     * Cards not in this list are unrated and fall back to the old
+     * usage-based heuristic.
+     */
+    const CRAFT_TIER_DATA = {
+    "Gravitree": "Craft",
+    "Forget-Me-Nuts": "Craft",
+    "Galacta-Cactus": "KeepUse",
+    "Pear_Cub": "KeepUse",
+    "Shamrocket": "KeepUse",
+    "Wall-Nut_Bowling": "KeepUse",
+    "Body-Gourd": "KeepHold",
+    "Poppin'_Poppies": "KeepHold",
+    "Garlic": "ScrappableUsable",
+    "Corn_Dog": "ScrappableUsable",
+    "Hot_Date": "ScrappableUsable",
+    "Red_Stinger": "ScrappableUsable",
+    "Marine_Bean": "ScrappableUsable",
+    "Tricarrotops": "ScrappableUsable",
+    "Soul_Patch": "ScrappableUsable",
+    "Health-Nut": "Scrap",
+    "Jugger-Nut": "Scrap",
+    "Primal_Wall-Nut": "Scrap",
+    "Three-Nut": "Scrap",
+    "Force_Field": "Scrap",
+    "Guacodile": "Scrap",
+    "Mirror-Nut": "Scrap",
+    "Doom-Shroom": "Scrap",
+    "Loco_Coco": "Scrap",
+    "Pecanolith": "Scrap",
+    "Transfiguration": "Craft",
+    "Astro-Shroom": "KeepUse",
+    "Veloci-Radish_Packmate": "KeepUse",
+    "Imitater": "KeepHold",
+    "Fireweed": "KeepClassOnly",
+    "Pair_Pearadise": "ScrappableNiche",
+    "Sonic_Bloom": "ScrappableNiche",
+    "Reincarnation": "ScrappableNiche",
+    "Molekale": "ScrappableNiche",
+    "Gloom-Shroom": "ScrappableNiche",
+    "Banana_Launcher": "Scrap",
+    "Punish-Shroom": "Scrap",
+    "Strawberrian": "Scrap",
+    "Sergeant_Strongberry": "Scrap",
+    "Cherry_Bomb": "Scrap",
+    "Grapes_of_Wrath": "Scrap",
+    "Blooming_Heart": "Scrap",
+    "High-Voltage_Currant": "Scrap",
+    "Atomic_Bombegranate": "Scrap",
+    "Electric_Blueberry": "Scrap",
+    "Pineclone": "Scrap",
+    "Dandy_Lion_King": "Scrap",
+    "Kernel_Corn": "Scrap",
+    "Clique_Peas": "Craft",
+    "Lily_of_the_Valley": "Craft",
+    "Espresso_Fiesta": "KeepUse",
+    "Split_Pea": "KeepUse",
+    "Gatling_Pea": "KeepUse",
+    "Apotatosaurus": "KeepHold",
+    "Savage_Spinach": "ScrappableUsable",
+    "Onion_Rings": "ScrappableNiche",
+    "Party_Thyme": "Scrap",
+    "Black-Eyed_Pea": "Scrap",
+    "Grape_Power": "Scrap",
+    "Moonbean": "Scrap",
+    "Pod_Fighter": "Scrap",
+    "Potted_Powerhouse": "Scrap",
+    "The_Red_Plant-It": "Scrap",
+    "Banana_Split": "Scrap",
+    "Plucky_Clover": "Scrap",
+    "Doubled_Mint": "Scrap",
+    "Captain_Cucumber": "Scrap",
+    "Muscle_Sprout": "Scrap",
+    "Bananasaurus_Rex": "Scrap",
+    "Brainana": "Craft",
+    "Laser_Cattail": "KeepUse",
+    "Rotobaga": "KeepUse",
+    "Sportacus": "KeepUse",
+    "Lima-Pleurodon": "KeepUse",
+    "Winter_Melon": "KeepUse",
+    "Bog_of_Enlightenment": "KeepHold",
+    "Jelly_Bean": "KeepHold",
+    "Shrinking_Violet": "KeepHold",
+    "Dark_Matter_Dragonfruit": "KeepHold",
+    "Cool_Bean": "ScrappableUsable",
+    "Snapdragon": "ScrappableUsable",
+    "Sow_Magic_Beans": "Scrap",
+    "Bean_Counter": "Scrap",
+    "Winter_Squash": "Scrap",
+    "Spyris": "Scrap",
+    "Go-Nuts": "Scrap",
+    "Mayflower": "Scrap",
+    "Snake_Grass": "Scrap",
+    "Witch_Hazel": "Scrap",
+    "Jolly_Holly": "Scrap",
+    "Sap-Fling": "Scrap",
+    "Bird_of_Paradise": "Scrap",
+    "Shooting_Starfruit": "Scrap",
+    "The_Great_Zucchini": "Scrap",
+    "Cross-Pollination": "Craft",
+    "Ketchup_Mechanic": "Craft",
+    "Laser_Bean": "KeepUse",
+    "Sun-Shroom": "KeepUse",
+    "Astrocado": "KeepUse",
+    "Primal_Sunflower": "KeepHold",
+    "Twin_Sunflower": "KeepHold",
+    "Aloesaurus": "KeepHold",
+    "Cob_Cannon": "KeepHold",
+    "Three-Headed_Chomper": "ScrappableUsable",
+    "Best_Taco_of_All_Time": "ScrappableNiche",
+    "Briar_Rose": "ScrapSpecial",
+    "Wing-Nut": "Scrap",
+    "Solar_Winds": "Scrap",
+    "Chomper": "Scrap",
+    "Tactical_Cuke": "Scrap",
+    "Haunted_Pumpking": "Scrap",
+    "Jack_O'_Lantern": "Scrap",
+    "Toadstool": "Scrap",
+    "Astro_Vera": "Scrap",
+    "Cornucopia": "Scrap",
+    "Cursed_Gargolith": "Craft",
+    "Cryo-Yeti": "Craft",
+    "Dr._Spacetime": "KeepUse",
+    "Laser_Base_Alpha": "KeepUse",
+    "Line_Dancing_Zombie": "KeepUse",
+    "Pogo_Bouncer": "KeepUse",
+    "Space_Cowboy": "KeepUse",
+    "Tomb_Raiser_Zombie": "KeepHold",
+    "Imposter": "KeepHold",
+    "Mixed-Up_Gravedigger": "KeepHold",
+    "Toxic_Waste_Imp": "ScrappableNiche",
+    "Excavator_Zombie": "ScrappableNiche",
+    "Imp-Throwing_Imp": "ScrappableNiche",
+    "Ducky_Tube_Zombie": "Scrap",
+    "Unthawed_Viking": "Scrap",
+    "Fire_Rooster": "Scrap",
+    "Captain_Flameface": "Scrap",
+    "Zombie_High_Diver": "Scrap",
+    "Trapper_Zombie": "Scrap",
+    "Raiding_Raptor": "Scrap",
+    "Zombot_Plank_Walker": "Scrap",
+    "Zombot_Aerostatic_Gondola": "Scrap",
+    "Zombot_Sharktronic_Sub": "Scrap",
+    "Black_Hole": "Craft",
+    "Going_Viral": "Craft",
+    "Turquoise_Skull_Zombie": "KeepUse",
+    "Zombology_Teacher": "KeepUse",
+    "Zombie_King": "KeepUse",
+    "Gargologist": "KeepHold",
+    "Knockout": "KeepHold",
+    "Intergalactic_Warlord": "KeepHold",
+    "Zombot_Battlecruiser_5000": "KeepHold",
+    "Genetic_Experiment": "ScrappableUsable",
+    "All-Star_Zombie": "ScrappableUsable",
+    "Coffee_Zombie": "ScrappableUsable",
+    "Undying_Pharaoh": "ScrappableNiche",
+    "Planetary_Gladiator": "Scrap",
+    "Jurassic_Fossilhead": "Scrap",
+    "Landscaper": "Scrap",
+    "Weed_Spray": "Scrap",
+    "Turkey_Rider": "Scrap",
+    "Bonus_Track_Buckethead": "Scrap",
+    "Defensive_End": "Scrap",
+    "Chum_Champion": "Scrap",
+    "Stompadon": "Scrap",
+    "Wannabe_Hero": "Scrap",
+    "Quickdraw_Con_Man": "Craft",
+    "Aerobics_Instructor": "KeepUse",
+    "Quasar_Wizard": "KeepUse",
+    "Binary_Stars": "KeepUse",
+    "Zippity_Hop_Gargantuar": "KeepHold",
+    "Gargantuar-Throwing_Imp": "KeepHold",
+    "Frankentuar": "KeepHold",
+    "Disco-Naut": "ScrappableUsable",
+    "Moon_Base_Z": "ScrappableUsable",
+    "Unexpected_Gifts": "ScrappableUsable",
+    "Grave_Robber": "ScrappableNiche",
+    "Abracadaver": "ScrappableNiche",
+    "Exploding_Fruitcake": "ScrappableNiche",
+    "Barrel_of_Deadbeards": "ScrappableNiche",
+    "Tankylosaurus": "ScrappableNiche",
+    "Zombie's_Best_Friend": "Scrap",
+    "Fireworks_Zombie": "Scrap",
+    "Disco-Tron_3000": "Scrap",
+    "Gas_Giant": "Scrap",
+    "Stupid_Cupid": "Scrap",
+    "Bobblehead": "Scrap",
+    "Valkyrie": "Scrap",
+    "Gargantuar's_Feast": "Scrap",
+    "Teleport": "Craft",
+    "Rocket_Science": "KeepUse",
+    "Teleportation_Zombie": "KeepUse",
+    "Shieldcrusher_Viking": "KeepUse",
+    "Duckstache": "KeepHold",
+    "Trickster": "KeepHold",
+    "Electrician": "ScrappableUsable",
+    "Parasol_Zombie": "ScrappableUsable",
+    "Leprechaun_Imp": "ScrappableUsable",
+    "Bad_Moon_Rising": "ScrappableUsable",
+    "Neutron_Imp": "ScrappableNiche",
+    "Evolutionary_Leap": "ScrappableNiche",
+    "Trick-or-Treater": "ScrappableNiche",
+    "Thinking_Cap": "ScrappableNiche",
+    "Interdimensional_Zombie": "ScrappableNiche",
+    "Zombot_Dinotronic_Mechasaur": "ScrappableNiche",
+    "Transformation_Station": "Scrap",
+    "Wormhole_Gatekeeper": "Scrap",
+    "Mad_Chemist": "Scrap",
+    "Portal_Technician": "Scrap",
+    "Regifting_Zombie": "Scrap",
+    "Kitchen_Sink_Zombie": "Scrap",
+    "Gargantuar_Mime": "Scrap",
+    "Cheese_Cutter": "Craft",
+    "Area_22": "Craft",
+    "Synchronized_Swimmer": "KeepUse",
+    "Supernova_Gargantuar": "KeepUse",
+    "Cyborg_Zombie": "KeepHold",
+    "Extinction_Event": "KeepHold",
+    "King_of_the_Grill": "KeepHold",
+    "Hunting_Grounds": "ScrappableNiche",
+    "Secret_Agent": "ScrappableNiche",
+    "Cat_Lady": "Scrap",
+    "Zombie_Yeti": "Scrap",
+    "Ancient_Vimpire": "Scrap",
+    "Deep_Sea_Gargantuar": "Scrap",
+    "Maniacal_Laugh": "Scrap",
+    "Fraidy_Cat": "Scrap",
+    "Energy_Drink_Zombie": "Scrap",
+    "Hover-Goat_3000": "Scrap",
+    "Overstuffed_Zombie": "Scrap",
+    "Sneezing_Zombie": "Scrap",
+    "Bounty_Hunter": "Scrap",
+    "Mondo_Bronto": "Scrap",
+    "Gargantuar-Throwing_Gargantuar": "Scrap",
+    "Nurse_Gargantuar": "Scrap",
+    "Octo_Zombie": "Scrap",
+    "Zombot_1000": "Scrap"
+};
+
+    // Resolve a card's curated tier, tolerant of punctuation/spacing
+    // differences with the card database (same idea as the deck finder's
+    // fuzzy card-name resolver).
+    let _craftTierLookupCache = null;
+    function getCraftTier(rawName) {
+        if (!rawName) return null;
+        if (CRAFT_TIER_DATA[rawName]) return CRAFT_TIER_DATA[rawName];
+
+        if (!_craftTierLookupCache) {
+            _craftTierLookupCache = new Map();
+            Object.keys(CRAFT_TIER_DATA).forEach(key => {
+                const norm = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+                _craftTierLookupCache.set(norm, CRAFT_TIER_DATA[key]);
+            });
+        }
+        const norm = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return _craftTierLookupCache.get(norm) || null;
+    }
+
+    // Scrap-priority rank: lower = scrap first. "Craft" cards are excluded
+    // entirely elsewhere (never suggested as scrap fodder).
+    const SCRAP_TIER_RANK = {
+        'Scrap': 0,
+        'ScrapSpecial': 1,
+        'ScrappableNiche': 2,
+        'ScrappableUsable': 3,
+        'KeepClassOnly': 5,
+        'KeepHold': 6,
+        'KeepUse': 7
+    };
+
+    /*
      * Given a spark shortfall and a set of card names to leave alone (things
      * already in the deck we're building), pick owned cards to scrap to
      * cover it. Prefers cards that barely show up in strong decks (using the
@@ -8110,8 +8386,10 @@ gradeButtons.forEach(button => {
      * scrap clutter rather than anything actually good. May suggest scrapping
      * from more than one card if that's what it takes.
      */
-    function findScrapSuggestions(sparksNeeded, protectedNames, excludedNames) {
+    function findScrapSuggestions(sparksNeeded, protectedNames, excludedNames, filters) {
         const excluded = excludedNames instanceof Set ? excludedNames : new Set();
+        const wantFaction = (filters && filters.faction && filters.faction !== 'all') ? filters.faction : null;
+        const wantClass = (filters && filters.cardClass && filters.cardClass !== 'all') ? filters.cardClass : null;
         const candidates = [];
 
         Object.keys(ownedCollection).forEach(name => {
@@ -8126,20 +8404,44 @@ gradeButtons.forEach(button => {
             // Basic cards come free with every hero and can't be scrapped.
             if (info.Set === 'Basic') return;
 
+            if (wantClass) {
+                if (info.Class !== wantClass) return;
+            } else if (wantFaction) {
+                const faction = plantClasses.has(info.Class) ? 'Plant' : 'Zombie';
+                if (faction !== wantFaction) return;
+            }
+
             const perCopyValue = recycleValueFor(name);
             if (perCopyValue <= 0) return;
+
+            // Never offer up a card that's curated as worth crafting/keeping.
+            const tier = getCraftTier(name);
+            if (tier === 'Craft') return;
+
+            const tierRank = SCRAP_TIER_RANK[tier];
 
             const usage = (typeof cardFrequencies === 'object' && cardFrequencies)
                 ? (cardFrequencies[name] || 0)
                 : 0;
 
-            candidates.push({ name, owned, usage, perCopyValue });
+            candidates.push({
+                name,
+                owned,
+                usage,
+                perCopyValue,
+                // Curated cards sort by their tier first; uncurated cards
+                // (no entry in the tier list) fall in between scrap fodder
+                // and keepers, ranked by the old usage heuristic.
+                tierRank: tierRank !== undefined ? tierRank : 4
+            });
         });
 
-        // Least-used cards in strong decks first (best scrap fodder); among
-        // equally-unused cards, prefer higher recycle value so fewer cards
-        // need to be broken down.
-        candidates.sort((a, b) => (a.usage - b.usage) || (b.perCopyValue - a.perCopyValue));
+        // Curated scrap tier first (Scrap > niche/special > usable); within
+        // the same tier (or for uncurated cards), least-used-in-strong-decks
+        // first, then higher recycle value so fewer cards need breaking down.
+        candidates.sort((a, b) =>
+            (a.tierRank - b.tierRank) || (a.usage - b.usage) || (b.perCopyValue - a.perCopyValue)
+        );
 
         const picks = [];
         let gathered = 0;
@@ -8162,6 +8464,9 @@ gradeButtons.forEach(button => {
     // --- Owned Sparks (user-entered balance, same persistence pattern as the collection) ---
     let ownedSparks = 0;
     let collectionBuyScrapExclusions = new Set();
+    // Which cards findScrapSuggestions is allowed to draw from: restrict to
+    // one faction and/or one class via the buy modal's filter row.
+    let collectionScrapFilters = { faction: 'all', cardClass: 'all' };
     const OWNED_SPARKS_KEY = 'pvz_owned_sparks_v1';
     function loadOwnedSparks() {
         try {
@@ -8186,6 +8491,21 @@ gradeButtons.forEach(button => {
         } catch (e) {
             return ownedSparks > 0;
         }
+    }
+
+    // A card is a "craft now" highlight when it's curated as worth crafting,
+    // not maxed out yet, and the user's entered spark balance actually
+    // covers at least one more copy. Never highlights before the user has
+    // told us a balance, since a fresh unset 0 would otherwise light up
+    // every card as unaffordable-but-shown-as-craftable.
+    function isAffordableCraftPick(rawName) {
+        if (getCraftTier(rawName) !== 'Craft') return false;
+        if (!hasEnteredSparks()) return false;
+        const owned = ownedCollection[rawName] || 0;
+        if (owned >= 4) return false;
+        const cost = sparkCostFor(rawName);
+        if (cost <= 0) return false;
+        return cost <= Math.max(0, ownedSparks || 0);
     }
 
     // --- Hero ownership (separate from card ownership, same persistence pattern) ---
@@ -8243,6 +8563,9 @@ gradeButtons.forEach(button => {
             const n = parseInt(ownedSparksInput.value, 10);
             ownedSparks = (!isNaN(n) && n >= 0) ? n : 0;
             saveOwnedSparks();
+            if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+            const pageSearchVal = document.getElementById('collectionPageSearch')?.value || '';
+            if (typeof renderCollectionPageGrid === 'function') renderCollectionPageGrid(pageSearchVal);
         });
     }
 
@@ -8310,15 +8633,17 @@ gradeButtons.forEach(button => {
                 const cleanName = rawName.replace(/_/g, ' ');
                 const owned = ownedCollection[rawName] || 0;
                 const isDefault = cardInfo?.Set === 'Basic';
+                const craftable = isAffordableCraftPick(rawName);
                 const row = document.createElement('div');
-                row.className = 'collection-card' + (owned > 0 ? ' owned' : '');
+                row.className = 'collection-card' + (owned > 0 ? ' owned' : '') + (craftable ? ' craft-recommended' : '');
+                if (craftable) row.title = 'Curated pick — you can afford to craft this now';
 
                 const countBtns = [1, 2, 3, 4].map(n =>
                     `<button type="button" class="collection-count-btn${owned === n ? ' active' : ''}" data-name="${rawName}" data-n="${n}">${n}</button>`
                 ).join('');
 
                 row.innerHTML = `
-                    <span class="collection-card-name">${cleanName}${isDefault ? ' <span class="collection-default-tag">auto</span>' : ''}</span>
+                    <span class="collection-card-name">${cleanName}${isDefault ? ' <span class="collection-default-tag">auto</span>' : ''}${craftable ? ' <span class="craft-recommended-tag">Craft now</span>' : ''}</span>
                     <div class="collection-count-group">
                         ${countBtns}
                         <button type="button" class="collection-count-btn collection-clear-btn" data-name="${rawName}" data-n="0">✕</button>
@@ -8668,6 +8993,11 @@ gradeButtons.forEach(button => {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
         collectionBuyScrapExclusions.clear();
+        collectionScrapFilters = { faction: 'all', cardClass: 'all' };
+        const filterBtns = document.querySelectorAll('.collection-scrap-filter-btn');
+        filterBtns.forEach(b => b.classList.toggle('active', b.dataset.faction === 'all'));
+        const classSelect = document.getElementById('collectionScrapClassFilter');
+        if (classSelect) classSelect.value = 'all';
         updateCollectionBuyModal(rawName);
         // Compute the scrap route for whatever quantity is already in the
         // stepper (defaults to 1) so the suggestion shows immediately
@@ -8695,6 +9025,7 @@ gradeButtons.forEach(button => {
             if (summaryNode) summaryNode.innerHTML = `<div class="collection-buy-summary-line"><strong>${cleanCardName(rawName)}</strong> is already maxed out at 4 copies.</div>`;
             if (scrapNode) scrapNode.innerHTML = '<div class="collection-buy-scrap-title">Scrap suggestions</div><div class="collection-buy-scrap-row">No extra copies to aim for.</div>';
             if (dangerNode) dangerNode.textContent = 'This card is already at the cap.';
+            toggleCollectionScrapFilterRow(false);
             return;
         }
 
@@ -8705,10 +9036,12 @@ gradeButtons.forEach(button => {
         if (totalCost <= totalSparks) {
             if (scrapNode) scrapNode.innerHTML = '<div class="collection-buy-scrap-title">Scrap guide</div><div class="collection-buy-scrap-row">You can afford this directly with your current sparks, so no scrap route is needed.</div>';
             if (dangerNode) dangerNode.textContent = 'This is just a planning guide — the app will not spend sparks or card copies for you.';
+            toggleCollectionScrapFilterRow(false);
             return;
         }
 
-        const scrapPlan = findScrapSuggestions(shortfall, new Set([rawName]), collectionBuyScrapExclusions);
+        toggleCollectionScrapFilterRow(true);
+        const scrapPlan = findScrapSuggestions(shortfall, new Set([rawName]), collectionBuyScrapExclusions, collectionScrapFilters);
         if (scrapNode) {
             const title = scrapPlan.stillShort > 0 ? 'Best available scrap route' : 'Scrap route';
             scrapNode.innerHTML = `
@@ -8730,6 +9063,11 @@ gradeButtons.forEach(button => {
 
     function cleanCardName(rawName) {
         return (rawName || '').replace(/_/g, ' ');
+    }
+
+    function toggleCollectionScrapFilterRow(show) {
+        const row = document.getElementById('collectionScrapFilterRow');
+        if (row) row.classList.toggle('hidden', !show);
     }
 
     function renderCollectionScrapRows(picks) {
@@ -8839,9 +9177,15 @@ gradeButtons.forEach(button => {
             const isRare = rarity === 'rare';
             const isEvent = rarity === 'event';
             const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
+            const craftable = isAffordableCraftPick(rawName);
+            const craftableClass = craftable ? ' craft-recommended' : '';
+            const craftBadge = craftable
+                ? `<div class="craft-recommended-badge" title="Curated pick — you can afford to craft this now">Craft&nbsp;now</div>`
+                : '';
 
             return `
-                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
+                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}${craftableClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}${craftable ? ' — recommended craft, affordable now' : ''}" style="--collection-border-color:${borderColor};">
+                    ${craftBadge}
                     <div class="visual-card-art">
                         <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
                              onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
@@ -9104,6 +9448,42 @@ gradeButtons.forEach(button => {
         if (qtyInput) {
             qtyInput.addEventListener('input', refreshCollectionBuyPlan);
         }
+
+        // Populate the class dropdown once (static game data, doesn't change).
+        const scrapClassSelect = document.getElementById('collectionScrapClassFilter');
+        if (scrapClassSelect && scrapClassSelect.options.length <= 1) {
+            ['Guardian', 'Kabloom', 'Mega-Grow', 'Smarty', 'Solar', 'Beastly', 'Brainy', 'Crazy', 'Hearty', 'Sneaky'].forEach(cls => {
+                const opt = document.createElement('option');
+                opt.value = cls;
+                opt.textContent = cls;
+                scrapClassSelect.appendChild(opt);
+            });
+        }
+
+        const scrapFilterBtns = Array.from(document.querySelectorAll('.collection-scrap-filter-btn'));
+        scrapFilterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                scrapFilterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                collectionScrapFilters.faction = btn.dataset.faction;
+                // A specific class filter always wins over the faction
+                // buttons, so reset it back to "all" on faction change.
+                collectionScrapFilters.cardClass = 'all';
+                if (scrapClassSelect) scrapClassSelect.value = 'all';
+                refreshCollectionBuyPlan();
+            });
+        });
+        if (scrapClassSelect) {
+            scrapClassSelect.addEventListener('change', () => {
+                collectionScrapFilters.cardClass = scrapClassSelect.value;
+                if (scrapClassSelect.value !== 'all') {
+                    // Picking a specific class supersedes the faction buttons.
+                    scrapFilterBtns.forEach(b => b.classList.toggle('active', b.dataset.faction === 'all'));
+                    collectionScrapFilters.faction = 'all';
+                }
+                refreshCollectionBuyPlan();
+            });
+        }
     }
 
     if (collectionPageGridEl) {
@@ -9136,6 +9516,8 @@ gradeButtons.forEach(button => {
                 ownedSparksInput.value = ownedSparks > 0 ? String(ownedSparks) : '';
             }
             renderCollectionPageStats();
+            renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
+            if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
             if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         });
     }
