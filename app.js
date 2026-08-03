@@ -2,12 +2,62 @@
 let fullDatabase = {};
 let cardDatabase = {};
 
+function urlSafeCardName(name) {
+    return String(name || '').replace(/'/g, '%27');
+}
+
+const heroQuotes = {
+                    "The Smash": "Let's smash some nuts!",
+                    "Rustbolt": "How typical...",
+                    "Rose": "Rose? Thats CRAAAZY. You annoying little guy!",
+                    "Nightcap": "Night cap ? Damn... this is gonna be hard."
+                };
+function getCardImageSrc(name) {
+    const key = String(name || '');
+    const card = cardDatabase[key] || cardDatabase[key.replace(/ /g, '_')];
+    if (card && card.Image) {
+        return `card_images/${card.Image}`;
+    }
+
+    return `card_images/${urlSafeCardName(key.replace(/ /g, '_'))}.png`;
+}
+
+
+function makeAliasedCardDatabase(rawData) {
+    const aliasMap = {};
+    Object.keys(rawData).forEach(canonicalKey => {
+        const card = rawData[canonicalKey];
+        if (!card || !card.OldName) return;
+        const underscored = card.OldName.replace(/ /g, '_');
+        const spaced = card.OldName.replace(/_/g, ' ');
+        [underscored, spaced].forEach(alias => {
+            if (alias && !(alias in rawData) && aliasMap[alias] === undefined) {
+                aliasMap[alias] = canonicalKey;
+            }
+        });
+    });
+
+    return new Proxy(rawData, {
+        get(target, prop, receiver) {
+            if (typeof prop === 'string' && !(prop in target) && aliasMap[prop] !== undefined) {
+                return target[aliasMap[prop]];
+            }
+            return Reflect.get(target, prop, receiver);
+        },
+        has(target, prop) {
+            if (typeof prop === 'string' && aliasMap[prop] !== undefined) return true;
+            return Reflect.has(target, prop);
+        }
+
+    });
+}
+
 let charts = {
     topCards: null,
     deckPresence: null,
     timeline: null,
-    pairs: null,        // NEW
-    buzzwords: null     // NEW
+    pairs: null,        
+    buzzwords: null     
 };
 
 const heroMap = {
@@ -35,6 +85,79 @@ const heroMap = {
     "Crazy,Hearty": "Z-Mech",
     "Hearty,Sneaky": "Neptuna"
 };
+
+function formatCardText(raw) {
+    const str = String(raw || '');
+    const escaped = str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    return escaped
+        .replace(/&lt;b&gt;/g, '<b>')
+        .replace(/&lt;\/b&gt;/g, '</b>')
+
+        .replace(/\\n/g, '<br>');
+}
+
+
+document.addEventListener('error', function (e) {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG') return;
+    const src = img.getAttribute('src') || '';
+    const match = src.match(/card_images\/([^/]+)\.(png|webp)$/i);
+    if (!match) return;
+    const [, name, ext] = match;
+    if (ext.toLowerCase() !== 'webp') return; // let the element's own handler try png -> webp first
+
+    if (typeof cardDatabase === 'undefined') return;
+
+
+    if (!img.dataset.fallbackQueue) {
+        const nameNorm = name.replace(/_/g, ' ').toLowerCase();
+        const card = cardDatabase[name] || cardDatabase[nameNorm] ||
+            Object.values(cardDatabase).find(c => c && (
+                (c.Name && c.Name.replace(/_/g, ' ').toLowerCase() === nameNorm) ||
+                (c.OldName && c.OldName.replace(/_/g, ' ').toLowerCase() === nameNorm)
+            ));
+
+        const candidates = [];
+        const seen = new Set([name.toLowerCase()]);
+        const addCandidate = (n) => {
+            if (!n) return;
+            const key = n.replace(/ /g, '_');
+            if (seen.has(key.toLowerCase())) return;
+            seen.add(key.toLowerCase());
+            candidates.push(key);
+        };
+
+        if (card) {
+            const currentIsNew = card.Name && card.Name.replace(/_/g, ' ').toLowerCase() === nameNorm;
+            addCandidate(currentIsNew ? card.OldName : card.Name);
+        }
+        // Try swapping punctuation on whatever name we were just attempting.
+        if (name.includes('-')) addCandidate(name.replace(/-/g, '_'));
+        if (name.includes('_')) addCandidate(name.replace(/_/g, '-'));
+
+        img.dataset.fallbackQueue = JSON.stringify(candidates);
+        img.dataset.fallbackIndex = '0';
+    }
+
+    const queue = JSON.parse(img.dataset.fallbackQueue || '[]');
+    const idx = parseInt(img.dataset.fallbackIndex || '0', 10);
+    if (idx >= queue.length) return; // out of options, give up
+
+    const targetKey = queue[idx];
+    img.dataset.fallbackIndex = String(idx + 1);
+
+    img.onerror = function () {
+        this.onerror = null;
+        this.src = `card_images/${targetKey}.webp`;
+    };
+    img.src = `${getCardImageSrc(targetKey)}`;
+}, true);
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Random Funny Adjectives ---
@@ -211,169 +334,14 @@ document.addEventListener('DOMContentLoaded', () => {
         eventCardBanner.innerHTML = `
             <div class="event-card-banner-card event-card-banner-current">
                 <div class="event-card-banner-label">Current</div>
-                <img src="card_images/${currentCard}.png" alt="${formatEventCardName(currentCard)}" loading="lazy" decoding="async"
-                     onerror="this.onerror=null;this.src='card_images/${currentCard}.webp'">
+                <img src="${getCardImageSrc(currentCard)}" alt="${formatEventCardName(currentCard)}" loading="lazy" decoding="async"
+                     onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(currentCard)}.webp'">
                 <span class="event-card-banner-name">${formatEventCardName(currentCard)}</span>
             </div>
             <div class="event-card-banner-card event-card-banner-next">
                 <div class="event-card-banner-label">Next</div>
-                <img src="card_images/${nextCard}.png" alt="${formatEventCardName(nextCard)}" loading="lazy" decoding="async"
-                     onerror="this.onerror=null;this.src='card_images/${nextCard}.webp'">
-                <span class="event-card-banner-name">${formatEventCardName(nextCard)}</span>
-            </div>
-        `;
-        eventCardBanner.classList.remove('hidden');
-    }
-
-    renderEventCardBanner();
-    setInterval(renderEventCardBanner, 60000);
-
-    const eventCardBanner = document.getElementById('eventCardBanner');
-    const eventCardRotationData = {
-        version: 1,
-        eventDurationDays: 7,
-        reference: {
-            card: 'bad_moon_rising',
-            startsAt: '2026-07-21T18:48:00'
-        },
-        rotation: [
-            'regifting_zombie',
-            'toadstool',
-            'gargologist',
-            'energy_drink_zombie',
-            'fire_roster',
-            'defensive_end',
-            'blooming_heart',
-            'stupid_cupid',
-            'sportacus',
-            'bonus_track_buckethead',
-            'electric_blueberry',
-            'plucky_clover',
-            'shamrocket',
-            'spyris',
-            'lily_of_the_valley',
-            'snake_grass',
-            'zombie_high_diver',
-            'health_nut',
-            'banana_split',
-            'garlic',
-            'secret_agent',
-            'imposter',
-            'sun_shroom',
-            'high_voltage_currant',
-            'going_viral',
-            'sonic_bloom',
-            'synchronized_swimmer',
-            'corn_dog',
-            'trapper_zombie',
-            'sap_fling',
-            'clique_peas',
-            'bad_moon_rising',
-            'Forget-Me-Nuts',
-            'hover_goat_3000',
-            'atomic_bombegranate',
-            'imp_throwing_imp',
-            'thinking_cap',
-            'go_nuts',
-            'captain_flameface',
-            'ketchup_mechanic',
-            'fraidy_cat',
-            'haunted_pumpking',
-            'trick_or_treater',
-            'jack_o_lantern',
-            'frankentuar',
-            'sneezing_zombie',
-            'mayflower',
-            'turkey_rider',
-            'overstuffed_zombie',
-            'pear_cub',
-            'unexpected_gifts',
-            'jolly_holly'
-        ]
-    };
-
-    function formatEventCardName(cardKey) {
-        return (cardKey || '').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-    }
-
-    function normalizeCardKey(cardKey) {
-        return (cardKey || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    }
-
-    function getAvailableEventCards() {
-        const rotation = eventCardRotationData.rotation || [];
-        if (!rotation.length || !cardDatabase || typeof cardDatabase !== 'object') return [];
-
-        const databaseKeys = Object.keys(cardDatabase);
-        const availableKeys = new Set(databaseKeys.map(normalizeCardKey));
-
-        return rotation
-            .filter(cardKey => availableKeys.has(normalizeCardKey(cardKey)))
-            .map(cardKey => {
-                const match = databaseKeys.find(databaseKey => normalizeCardKey(databaseKey) === normalizeCardKey(cardKey));
-                return match || cardKey;
-            });
-    }
-
-    function getEventCardBannerState() {
-    const rotation = getAvailableEventCards();
-    if (!rotation.length) return null;
-
-    const startTime = new Date(eventCardRotationData.reference.startsAt);
-    const durationDays = Math.max(1, eventCardRotationData.eventDurationDays || 7);
-
-    const elapsedDays =
-        (Date.now() - startTime.getTime()) / (1000 * 60 * 60 * 24);
-
-    const cycleOffset = Math.floor(elapsedDays / durationDays);
-
-    const referenceKey = normalizeCardKey(eventCardRotationData.reference.card);
-    const referenceIndex = rotation.findIndex(
-        card => normalizeCardKey(card) === referenceKey
-    );
-
-    if (referenceIndex === -1) {
-        console.error("Reference card not found:", referenceKey);
-        return null;
-    }
-
-    const currentIndex =
-        (referenceIndex + cycleOffset + rotation.length) % rotation.length;
-
-    return {
-        current: rotation[currentIndex],
-        next: rotation[(currentIndex + 1) % rotation.length]
-    };
-}
-    function renderEventCardBanner() {
-        if (!eventCardBanner) return;
-
-        const hash = (window.location.hash || '#home').replace(/^#/, '').trim();
-        if (hash && hash !== 'home') {
-            eventCardBanner.classList.add('hidden');
-            return;
-        }
-
-        const state = getEventCardBannerState();
-        if (!state) {
-            eventCardBanner.classList.add('hidden');
-            return;
-        }
-
-        const currentCard = state.current;
-        const nextCard = state.next;
-
-        eventCardBanner.innerHTML = `
-            <div class="event-card-banner-card event-card-banner-current">
-                <div class="event-card-banner-label">Current</div>
-                <img src="card_images/${currentCard}.png" alt="${formatEventCardName(currentCard)}" loading="lazy" decoding="async"
-                     onerror="this.onerror=null;this.src='card_images/${currentCard}.webp'">
-                <span class="event-card-banner-name">${formatEventCardName(currentCard)}</span>
-            </div>
-            <div class="event-card-banner-card event-card-banner-next">
-                <div class="event-card-banner-label">Next</div>
-                <img src="card_images/${nextCard}.png" alt="${formatEventCardName(nextCard)}" loading="lazy" decoding="async"
-                     onerror="this.onerror=null;this.src='card_images/${nextCard}.webp'">
+                <img src="${getCardImageSrc(nextCard)}" alt="${formatEventCardName(nextCard)}" loading="lazy" decoding="async"
+                     onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(nextCard)}.webp'">
                 <span class="event-card-banner-name">${formatEventCardName(nextCard)}</span>
             </div>
         `;
@@ -417,15 +385,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const collectionPageBtn = document.getElementById('collectionPageBtn');
     const packsView = document.getElementById('packsView');
     const packsPageBtn = document.getElementById('packsPageBtn');
-    const packsView = document.getElementById('packsView');
-    const packsPageBtn = document.getElementById('packsPageBtn');
 
-    // --- Fetch Database ---
-    // --- 1. SET UP A "DATA LOADED" FLAG ---
+
     let isDataLoaded = false;
 
-    // --- 2. YOUR FETCH CALLS (Slightly updated) ---
-    // We use Promise.all to wait for BOTH JSON files to finish downloading
+
     Promise.all([
         fetch('deck_database_final.json').then(res => {
             if (!res.ok) throw new Error("Could not load the database file.");
@@ -439,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(([deckData, cardData]) => {
             // Both files are successfully downloaded!
             fullDatabase = deckData;
-            cardDatabase = cardData;
+            cardDatabase = makeAliasedCardDatabase(cardData);
 
             loadingEl.style.display = 'none';
             const totalDecks = Object.keys(deckData).length;
@@ -453,7 +417,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // KICK OFF THE ROUTER NOW THAT WE HAVE DATA!
             handleRouting();
-            renderEventCardBanner();
             renderEventCardBanner();
             renderSeeds(); // Initial render to show empty state
         })
@@ -488,7 +451,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tiersBtn.classList.add('hidden');
         synergyView.classList.add('hidden');
         if (collectionView) collectionView.classList.add('hidden');
-        if (packsView) packsView.classList.add('hidden');
         if (packsView) packsView.classList.add('hidden');
 
         if (typeof backBtn !== 'undefined') backBtn.classList.add('hidden');
@@ -540,11 +502,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof backBtn !== 'undefined') backBtn.classList.remove('hidden');
             if (typeof initPackSimulator === 'function') initPackSimulator();
         }
-        else if (hash === '#packs') {
-            if (packsView) packsView.classList.remove('hidden');
-            if (typeof backBtn !== 'undefined') backBtn.classList.remove('hidden');
-            if (typeof initPackSimulator === 'function') initPackSimulator();
-        }
         else {
             // Default Home UI
             deckView.classList.remove('hidden');
@@ -559,8 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (moreMenu) moreMenu.classList.remove('hidden');
 
         }
-
-        renderEventCardBanner();
 
         renderEventCardBanner();
 
@@ -633,8 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const now = Date.now();
-        // Set your half-life here (in days). 
-        // 365 means a deck from 1 year ago is worth half as much "Power" as a deck uploaded today.
+
         const HALF_LIFE_DAYS = 365;
 
         for (const deckKey in fullDatabase) {
@@ -646,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dbDeck.upload_date) {
                 const deckDate = new Date(dbDeck.upload_date).getTime();
                 if (!isNaN(deckDate)) {
-                    // Calculate days elapsed (Math.max caps it at 0 to avoid future-date timezone bugs)
+
                     const daysAgo = Math.max(0, (now - deckDate) / (1000 * 60 * 60 * 24));
                     timeWeight = Math.pow(0.5, daysAgo / HALF_LIFE_DAYS);
                 }
@@ -672,8 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Multiply the raw copies by the timeWeight so old decks have less impact on the meta
                 ctx.cardPopularity[cleanName] = (ctx.cardPopularity[cleanName] || 0) + (copiesPower * timeWeight);
 
-                // Mirror the live builder's cost lookup EXACTLY, including the
-                // "NaN cost falls to 6+" quirk. Do NOT normalize NaN to 1 here.
+
                 const cardData = cardDatabase[cleanName] || cardDatabase[rawName];
                 const cost = cardData ? parseInt(cardData.Cost) : 1;
 
@@ -1241,6 +1194,114 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
         finisher: /\bstrikethrough\b|\bdouble strike\b|\bfrenzy\b|\ball .* get \+\d+/i
     };
 
+    // ---------------------------------------------------------------
+    // DECK BUILDING GUIDELINES (community doc, condensed into data)
+    // Aggro/Midrange/Control are the 3 real pacing archetypes. Tempo/Combo
+    // are win-condition descriptors layered on top of those three, not
+    // separate curve archetypes. curveRange is [min,max] fraction-of-deck
+    // per 6-bucket cost (<=1, 2, 3, 4, 5, 6+), derived from the guide's
+    // one-drop-count ranges (out of 40 cards) plus a reasonable taper for
+    // the rest of the curve. paceWindow is the cost range a "finisher"
+    // (2-4 of, per the guide) should sit in for that archetype's speed -
+    // this is what catches the Zombot/Octo-Zombie-in-an-aggro-combo-shell
+    // problem. reactiveRemovalMax/proactiveRemovalTarget implement the
+    // "removal is reactive, so slower decks can carry more of it" rule.
+    // ---------------------------------------------------------------
+    const DE_ARCHETYPE_GUIDE = {
+        Aggro: {
+            label: 'Aggro',
+            oneDropRange: [11, 14],
+            curveRange: [
+                [0.275, 0.35], [0.20, 0.30], [0.12, 0.22],
+                [0.04, 0.12], [0.00, 0.06], [0.00, 0.04]
+            ],
+            paceWindow: [1, 4],
+            reactiveRemovalMax: 3,
+            proactiveRemovalTarget: [1, 4]
+        },
+        Midrange: {
+            label: 'Midrange',
+            oneDropRange: [6, 10],
+            curveRange: [
+                [0.15, 0.25], [0.18, 0.26], [0.20, 0.28],
+                [0.12, 0.20], [0.06, 0.14], [0.02, 0.08]
+            ],
+            paceWindow: [2, 5],
+            reactiveRemovalMax: 6,
+            proactiveRemovalTarget: [2, 5]
+        },
+        Control: {
+            label: 'Control',
+            oneDropRange: [4, 8],
+            curveRange: [
+                [0.10, 0.20], [0.12, 0.20], [0.16, 0.24],
+                [0.16, 0.24], [0.12, 0.20], [0.08, 0.16]
+            ],
+            paceWindow: [3, 6],
+            reactiveRemovalMax: 10,
+            proactiveRemovalTarget: [3, 8]
+        }
+    };
+
+    // Clamp a computed curve (e.g. the k-NN blend from getFinishIdealCurve)
+    // into the chosen archetype's explicit range, then renormalize so it
+    // still sums to 1. The data-driven curve only breaks ties inside that
+    // window - it can no longer hand back something Aggro-shaped when the
+    // user asked for Control, or vice versa.
+    function de_clampCurveToArchetype(curve, archetypeName) {
+        const guide = DE_ARCHETYPE_GUIDE[archetypeName];
+        if (!guide || !Array.isArray(curve)) return curve;
+        const clamped = curve.map((v, i) => {
+            const range = guide.curveRange[i];
+            if (!range) return v;
+            const [min, max] = range;
+            return Math.min(max, Math.max(min, v));
+        });
+        const sum = clamped.reduce((a, b) => a + b, 0);
+        return sum > 0 ? clamped.map(v => v / sum) : clamped;
+    }
+
+    // Auto-detect which of the 3 *pacing* archetypes a set of seed cards
+    // is closest to, used when the user hasn't explicitly picked one from
+    // the crafter UI. Swarm/Ramp (from the meta-learner's 5-way clustering)
+    // aren't real pacing archetypes per the guide, so they're folded into
+    // whichever of the 3 they're closest to by curve shape (Swarm skews
+    // early like Aggro, Ramp skews late like Control).
+    function de_autoPacingArchetype(seeds, totalCards) {
+        if (!totalCards) return null;
+        const curve = [0, 0, 0, 0, 0, 0];
+        seeds.forEach(s => {
+            const c = s.norm.cost;
+            const idx = c <= 1 ? 0 : c === 2 ? 1 : c === 3 ? 2 : c === 4 ? 3 : c === 5 ? 4 : 5;
+            curve[idx] += s.count;
+        });
+        const shape = curve.map(c => c / totalCards);
+        let best = null, bestDist = Infinity;
+        for (const archName in DE_ARCHETYPE_GUIDE) {
+            const guide = DE_ARCHETYPE_GUIDE[archName];
+            let dist = 0;
+            for (let i = 0; i < 6; i++) {
+                const [min, max] = guide.curveRange[i];
+                const mid = (min + max) / 2;
+                dist += Math.abs(shape[i] - mid);
+            }
+            if (dist < bestDist) { bestDist = dist; best = archName; }
+        }
+        return best;
+    }
+
+    // Proactive-vs-reactive removal split (item 5). Removal is inherently
+    // reactive by nature, but a cheap body-plus-removal card you can jam in
+    // on curve reads as "proactive" for pacing purposes, while anything
+    // whose text is gated behind a trigger condition, or a pure freeze
+    // (stalling, not answering), only ever reacts to what the opponent did.
+    function de_classifyRemovalPace(mechanics, removalType, descLower) {
+        if (!mechanics.includes('removal') && removalType !== 'freeze') return null;
+        const gated = /\bwhen\b|\bif\b|\bafter\b/.test(descLower);
+        if (removalType === 'freeze' || gated) return 'reactive';
+        return 'proactive';
+    }
+
     let de_knownTribesCache = null;
     function de_getKnownTribes() {
         if (de_knownTribesCache) return de_knownTribesCache;
@@ -1299,6 +1360,10 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
         if (mechanics.includes('finisher')) roles.add('finisher');
         if (/evolv|upgrade/i.test(desc)) roles.add('evolution_enabler');
 
+        const removalPace = de_classifyRemovalPace(mechanics, removalType, descLower);
+        if (removalPace === 'proactive') roles.add('removal_proactive');
+        else if (removalPace === 'reactive') roles.add('removal_reactive');
+
         let curveBucket = 'early';
         if (cost >= 5) curveBucket = 'late';
         else if (cost >= 3) curveBucket = 'mid';
@@ -1317,7 +1382,8 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
             health: Number.isFinite(Number(data.Health)) ? Number(data.Health) : null,
             strength: Number.isFinite(Number(data.Strength)) ? Number(data.Strength) : null,
             description: desc,
-            knownCard: !!(cardDatabase && (cardDatabase[underscored] || cardDatabase[spaced]))
+            knownCard: !!(cardDatabase && (cardDatabase[underscored] || cardDatabase[spaced])),
+            isFinisherTagged: cost >= 5 || roles.has('finisher')
         };
         de_caches.cardTags.set(nameOrKey, normalized);
         return normalized;
@@ -1717,6 +1783,75 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
 
     const DE_WEIGHTS = { curve: 0.12, removal: 0.15, finishers: 0.12, synergy: 0.18, consistency: 0.10, packages: 0.10, playability: 0.15, roleBalance: 0.08 };
 
+    function de_buildArchetypeSelfCheck(deckCardStrings, chosenArchetype) {
+        const seeds = de_buildSeeds(deckCardStrings);
+        const totalCards = seeds.reduce((sum, s) => sum + s.count, 0);
+        if (!totalCards) return null;
+
+        const archetypeName = (chosenArchetype && DE_ARCHETYPE_GUIDE[chosenArchetype])
+            ? chosenArchetype
+            : de_autoPacingArchetype(seeds, totalCards);
+        const guide = DE_ARCHETYPE_GUIDE[archetypeName];
+        if (!guide) return null;
+
+        const issues = [];
+
+        // One-drop count vs the guide's explicit range.
+        const oneDropCopies = seeds
+            .filter(s => s.norm.cost <= 1)
+            .reduce((sum, s) => sum + s.count, 0);
+        const [minOne, maxOne] = guide.oneDropRange;
+        if (oneDropCopies < minOne) {
+            issues.push(`Only ${oneDropCopies} one-drops for a ${guide.label} shell (the guide wants ${minOne}-${maxOne}) — this deck may stumble out of the gate.`);
+        } else if (oneDropCopies > maxOne + 4) {
+            issues.push(`${oneDropCopies} one-drops is well past what a ${guide.label} deck needs (${minOne}-${maxOne}) — the curve may be too flat to close games.`);
+        }
+
+        // Finisher pace mismatch - the guide's Zombot/Octo Zombie example.
+        const mismatchedFinishers = [];
+        seeds.forEach(s => {
+            if (s.norm.isFinisherTagged && (s.norm.cost < guide.paceWindow[0] || s.norm.cost > guide.paceWindow[1])) {
+                mismatchedFinishers.push(s.norm.name);
+            }
+        });
+        if (mismatchedFinishers.length) {
+            const names = mismatchedFinishers.slice(0, 2).join(' and ');
+            issues.push(`${names}${mismatchedFinishers.length > 2 ? ' (and others)' : ''} sit outside the pace this ${guide.label} shell wants (cost ${guide.paceWindow[0]}-${guide.paceWindow[1]}) — their speed doesn't match the rest of the deck's win condition.`);
+        }
+
+        // Finisher count sweet spot (2-4 per the guide).
+        const finisherCopies = seeds
+            .filter(s => s.norm.isFinisherTagged)
+            .reduce((sum, s) => sum + s.count, 0);
+        if (finisherCopies > 4) {
+            issues.push(`${finisherCopies} finisher-tagged cards is above the guide's 2-4 sweet spot — some are likely dead in hand together.`);
+        } else if (finisherCopies === 0) {
+            issues.push(`No clear finishers — the deck may not have a reliable way to close out a won board.`);
+        }
+
+        // Reactive-only removal density vs the archetype's target.
+        const reactiveCopies = seeds
+            .filter(s => s.norm.roles.includes('removal_reactive'))
+            .reduce((sum, s) => sum + s.count, 0);
+        if (reactiveCopies > guide.reactiveRemovalMax) {
+            issues.push(`${reactiveCopies} reactive-only removal effects is heavy for a ${guide.label} deck (removal is inherently reactive, and this archetype's pace only really wants up to ${guide.reactiveRemovalMax}).`);
+        }
+
+        if (!issues.length) return null;
+        return { archetype: archetypeName, label: guide.label, issues };
+    }
+
+    function de_buildArchetypeCheckHtml(check) {
+        if (!check || !check.issues.length) return '';
+        const items = check.issues
+            .map(issue => `<li>${typeof escapeHtml === 'function' ? escapeHtml(issue) : issue}</li>`)
+            .join('');
+        return daveSay(`
+            <strong>Archetype check (${check.label}):</strong>
+            <ul class="archetype-check-list">${items}</ul>
+        `);
+    }
+
     function de_evaluate(deckCards, selfDeckKey, ctx, legacy) {
         const seeds = de_buildSeeds(deckCards);
         const totalCards = seeds.reduce((s, c) => s + c.count, 0);
@@ -1871,9 +2006,24 @@ if (totalCards > 0 && ctx.maxMetaCopies > 0) {
         return legacy;
     }
 
+    function getMainSwapImprovement(baselineVerdict, simVerdict) {
+        const baseScore = Math.round(baselineVerdict?.score || 0);
+        const newScore = Math.round(simVerdict?.score || 0);
+        const diff = newScore - baseScore;
+        const sign = diff > 0 ? '+' : '';
+        const boost = `a ${sign}${diff}% rating boost`;
+
+        const baseGrade = baselineVerdict?.grade;
+        const newGrade = simVerdict?.grade;
+        if (baseGrade && newGrade && baseGrade !== newGrade) {
+            return `${boost} (${baseGrade} \u2192 ${newGrade})`;
+        }
+        return boost;
+    }
+
     window.DeckEvaluator = {
         initialize(cardData, deckData) {
-            if (cardData) { cardDatabase = cardData; window.cardDatabase = cardData; }
+            if (cardData) { cardDatabase = makeAliasedCardDatabase(cardData); window.cardDatabase = cardDatabase; }
             if (deckData) { fullDatabase = deckData; window.fullDatabase = deckData; }
             de_metaModel = null;
             de_knownTribesCache = null;
@@ -2089,7 +2239,7 @@ const FINDER_STATIC_KEYS = [
     { label: "New Decks", type: "recency", value: "new", aliases: ["new", "recent", "latest", "newest", "fresh", "this month"] },
 
     // Archetypes / playstyles
-    { label: "Aggro", type: "archetype", value: "aggro", aliases: ["aggro", "rush", "fast", "quick", "early game", "smorc"] },
+    { label: "Aggro", type: "archetype", value: "aggro", aliases: ["aggro", "agro", "rush", "fast", "quick", "early game", "smorc"] },
     { label: "Tempo", type: "archetype", value: "tempo", aliases: ["tempo", "midrange tempo", "pressure"] },
     { label: "Control", type: "archetype", value: "control", aliases: ["control", "late game", "slow", "defensive", "removal"] },
     { label: "Midrange", type: "archetype", value: "midrange", aliases: ["midrange", "balanced", "solid"] },
@@ -3989,8 +4139,42 @@ function finderHeroPortraits(heroes) {
     }).join("");
 }
 
+/* Sorts raw "x4 Card_Name" deck strings by the card's cost first,
+   then alphabetically for same-cost cards. Unknown/unmatched cards
+   sink to the end, keeping their original relative order. */
+function sortDeckCardStringsByDbOrder(cardStrings, cardDb) {
+    if (!cardDb || !Array.isArray(cardStrings)) return cardStrings || [];
+
+    return cardStrings
+        .map((str, i) => {
+            const parsed = parseFinderDeckCardEntry(str);
+            const key = parsed ? getFinderCardKey(parsed.name, cardDb) : undefined;
+            const cardInfo = key ? cardDb[key] : null;
+            const cost = Number(cardInfo?.Cost);
+            const hasKnownCost = Number.isFinite(cost);
+            const sortName = (parsed?.name || str).replace(/_/g, ' ').toLowerCase();
+
+            return {
+                str,
+                i,
+                known: hasKnownCost,
+                cost: hasKnownCost ? cost : Number.MAX_SAFE_INTEGER,
+                sortName
+            };
+        })
+        .sort((a, b) => {
+            if (a.known !== b.known) return a.known ? -1 : 1;
+            if (a.cost !== b.cost) return a.cost - b.cost;
+            return a.sortName.localeCompare(b.sortName) || (a.i - b.i);
+        })
+        .map(x => x.str);
+}
+
 function finderCardTilesHtml(deck) {
-    return (deck.cards || []).map((cardString, i) => {
+    const cardDb = resolveFinderCardDatabase();
+    const orderedCards = sortDeckCardStringsByDbOrder(deck.cards || [], cardDb);
+
+    return orderedCards.map((cardString, i) => {
         const parsed = parseFinderDeckCardEntry(cardString);
         if (!parsed) return "";
 
@@ -3998,9 +4182,9 @@ function finderCardTilesHtml(deck) {
         const db = display.replace(/ /g, "_");
 
         return `<div class="pvz-card" style="--i:${i}">
-            <img src="card_images/${db}.png" alt="${escapeHtml(display)}" title="${escapeHtml(display)}"
+            <img src="${getCardImageSrc(db)}" alt="${escapeHtml(display)}" title="${escapeHtml(display)}"
                  loading="lazy" decoding="async" fetchpriority="low"
-                 onerror="this.onerror=null;this.src='card_images/${db}.webp'">
+                 onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(db)}.webp'">
             <span class="pvz-card-qty">x${parsed.count}</span>
         </div>`;
     }).join("");
@@ -4062,6 +4246,31 @@ function finderCopyText(text, btn) {
     }
 }
 
+function finderOtherMatchesHtml(deck) {
+    if (!finderCurrentResults || finderCurrentResults.length <= 1) return "";
+
+    const chips = finderCurrentResults.slice(0, 16).map((d, i) => {
+        const active = d === deck;
+        const color = finderGradeColor(d);
+        return `<button type="button" class="finder-alt-chip" data-index="${i}" ${active ? 'aria-current="true"' : ''}
+            style="display:flex;align-items:center;gap:6px;flex:0 0 auto;padding:6px 10px;border-radius:8px;
+            border:1px solid ${active ? color : "rgba(255,255,255,0.15)"};
+            background:${active ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.03)"};
+            color:#fff;cursor:pointer;font-size:12px;white-space:nowrap;">
+            <span style="color:${color};font-weight:700;">${escapeHtml(d.grade || "?")}</span>
+            <span style="max-width:150px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.name)}</span>
+        </button>`;
+    }).join("");
+
+    return `
+        <div class="finder-other-matches" style="margin-top:14px;">
+            <div style="font-size:12px;opacity:0.7;margin-bottom:6px;">
+                ${finderCurrentResults.length} matching deck${finderCurrentResults.length === 1 ? "" : "s"} — pick one:
+            </div>
+            <div class="finder-other-matches-row" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">${chips}</div>
+        </div>`;
+}
+
 function renderFinderDeckResult(deck) {
     if (!finderResult || !deck) return;
 
@@ -4113,7 +4322,7 @@ function renderFinderDeckResult(deck) {
                     <div class="pvz-deck-side">
                         <div class="pvz-deck-rating" style="color:${gradeColor};">
                             <span class="pvz-rating-label">Rating</span>
-                            <span class="pvz-rating-grade">${escapeHtml(deck.grade || "?")}</span>
+                            ${deckRatingStarsHtml(deck.grade, getDeckFlairLabelFromCardList(deck.grade, deck.cards))}
                         </div>
 
                         <div class="pvz-deck-rating pvz-deck-sparks" style="color:#4dd0e1;">
@@ -4146,9 +4355,22 @@ function renderFinderDeckResult(deck) {
                     ${videoHtml}
                 </div>
             </div>
+            ${finderOtherMatchesHtml(deck)}
         </div>`;
 
     finderBindResultActions(deck);
+
+    const matchesRow = finderResult.querySelector(".finder-other-matches-row");
+    if (matchesRow) {
+        matchesRow.onclick = (e) => {
+            const chip = e.target.closest(".finder-alt-chip");
+            if (!chip) return;
+            const idx = parseInt(chip.dataset.index, 10);
+            if (!Number.isFinite(idx) || !finderCurrentResults[idx]) return;
+            finderRerollIndex = idx;
+            renderFinderDeckResult(finderCurrentResults[idx]);
+        };
+    }
 }
 
 function renderFinderNoResult(intent) {
@@ -5717,7 +5939,7 @@ function pvzGetFeaturedCard(deckInfo) {
         ? `
         <div class="pvz-featured-card-float" aria-hidden="true" title="${featuredCard.name}">
           <img
-            src="card_images/${featuredCard.dbKey}.png"
+            src="${getCardImageSrc(featuredCard.dbKey)}"
             alt=""
             loading="eager"
             decoding="async"
@@ -5735,32 +5957,75 @@ function pvzGetFeaturedCard(deckInfo) {
       `
         : '';
 
-    tile.innerHTML = `
-    <div class="pvz-tile-inner">
-      <div class="pvz-tile-wash"></div>
+        // choose front image and wash background per-tile
+        const stars = (typeof gradeToStarCount === 'function') ? gradeToStarCount(verdict.grade) : 0;
+        const flairName = (typeof getDeckFlairLabelFromCardList === 'function') ? getDeckFlairLabelFromCardList(verdict.grade, deckInfo.cards) : null;
 
-      <div class="pvz-tile-heroes ${heroes.length === 2 ? 'two' : ''}${hasFeaturedCard ? ' with-featured-card' : ''}">
-        ${pvzHeroPortraits(heroes, hasFeaturedCard)}
-        ${featuredCardHtml}
-      </div>
+        let footFrontSrc = 'deckimg/legendfront.png';
+        let washSrc = 'deckimg/legendback.png';
+        if (stars === 3) {
+            if (flairName === 'Galactic') {
+                footFrontSrc = 'deckimg/galacticfront.png';
+                washSrc = 'deckimg/galacticbg.png';
+            } else if (flairName === 'Triassic' || flairName === 'Colossal') {
+                footFrontSrc = 'deckimg/triasicfront.png';
+                washSrc = 'deckimg/triassicbg.png';
+            } else {
+                footFrontSrc = 'deckimg/legendfront.png';
+                washSrc = 'deckimg/legendback.png';
+            }
+        } else if (stars === 2) {
+            footFrontSrc = 'deckimg/superrarefront.png';
+            washSrc = 'deckimg/superrareback.png';
+        } else {
+            footFrontSrc = 'deckimg/rarefront.png';
+            washSrc = 'deckimg/rareback.png';
+        }
 
-      <div class="pvz-grade-seal" style="color:${verdict.gradeColor || '#15140d'}">
-        ${verdict.grade || '?'}
-      </div>
+        // set per-tile wash via CSS variable so each tile can have its own centered, non-repeating bg
+        tile.style.setProperty('--pvz-wash-src', `url("${washSrc}")`);
 
-      ${isDup ? `<span class="deck-duplicate-badge" title="Older duplicate">Dup</span>` : ''}
+        // tally how many of this deck's card slots you already own, for the collection progress bar
+        let ownedSlots = 0;
+        let totalSlots = 0;
+        (deckInfo.cards || []).forEach(cardString => {
+            const m = cardString.trim().match(/^x(\d+)\s+(.+)$/i);
+            let count = 1, raw = cardString;
+            if (m) { count = parseInt(m[1], 10); raw = m[2]; }
+            const db = raw.replace(/ /g, '_');
+            totalSlots += count;
+            const owned = (typeof ownedCollection !== 'undefined' ? ownedCollection[db] : 0) || 0;
+            ownedSlots += Math.min(count, owned);
+        });
+        const collectionPct = totalSlots > 0 ? Math.min(100, Math.round((ownedSlots / totalSlots) * 100)) : 0;
 
-      <button class="deck-star-btn ${isStarred ? 'starred' : ''}" data-deck="${deckKey}" aria-label="Star deck">
-        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      </button>
+        tile.innerHTML = `
+        <div class="pvz-tile-inner">
+            <div class="pvz-tile-wash"></div>
 
-      <div class="pvz-tile-foot">
-        <p class="pvz-tile-name">${deckInfo.name}</p>
-        <span class="pvz-tile-credit">
-          <img src="${creditIcon}" alt="" loading="lazy" decoding="async" fetchpriority="low">${creditStr}
-        </span>
-      </div>
-    </div>`;
+            <div class="pvz-tile-heroes ${heroes.length === 2 ? 'two' : ''}${hasFeaturedCard ? ' with-featured-card' : ''}">
+                ${pvzHeroPortraits(heroes, hasFeaturedCard)}
+                ${featuredCardHtml}
+            </div>
+
+            ${isDup ? `<span class="deck-duplicate-badge" title="Older duplicate">Dup</span>` : ''}
+
+            <button class="deck-star-btn ${isStarred ? 'starred' : ''}" data-deck="${deckKey}" aria-label="Star deck">
+                <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </button>
+
+            <div class="pvz-tile-foot">
+                <img src="${footFrontSrc}" alt="" class="pvz-tile-foot-bg" loading="lazy" decoding="async" fetchpriority="low">
+                <p class="pvz-tile-name">${deckInfo.name}</p>
+                <span class="pvz-tile-credit">
+                    <img src="${creditIcon}" alt="" loading="lazy" decoding="async" fetchpriority="low">${creditStr}
+                </span>
+                <div class="pvz-tile-collection-bar" title="${ownedSlots}/${totalSlots} cards in your collection">
+                    <div class="pvz-tile-collection-fill" style="width:${collectionPct}%"></div>
+                    <span class="pvz-tile-collection-label">${ownedSlots} / ${totalSlots}</span>
+                </div>
+            </div>
+        </div>`;
 
     return tile;
 }
@@ -5951,7 +6216,11 @@ fragment.appendChild(
         const rarityCosts = RARITY_SPARKS;
 
         // real card images, using YOUR card_images path + png→webp fallback
-        const cardsHtml = (deckInfo.cards || []).map((cardString, i) => {
+        const orderedDeckCards = sortDeckCardStringsByDbOrder(
+            deckInfo.cards || [],
+            (typeof cardDatabase !== 'undefined' ? cardDatabase : null)
+        );
+        const cardsHtml = orderedDeckCards.map((cardString, i) => {
             const m = cardString.trim().match(/^x(\d+)\s+(.+)$/i);
             let count = 1, raw = cardString;
             if (m) { count = parseInt(m[1], 10); raw = m[2]; }
@@ -5975,8 +6244,8 @@ fragment.appendChild(
                 : '';
 
             return `<div class="pvz-card ${fullyOwned ? 'pvz-card-owned' : 'pvz-card-missing'}" style="--i:${i}">
-        <img src="card_images/${db}.png" alt="${display}" title="${display}" loading="lazy" decoding="async" fetchpriority="low"
-     onerror="this.onerror=null;this.src='card_images/${db}.webp'">
+        <img src="${getCardImageSrc(db)}" alt="${display}" title="${display}" loading="lazy" decoding="async" fetchpriority="low"
+     onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(db)}.webp'">
         <span class="pvz-card-qty">x${count}</span>
         ${costTag}
       </div>`;
@@ -6031,7 +6300,7 @@ fragment.appendChild(
         
         <div class="pvz-deck-rating" style="color:${verdict.gradeColor || '#fff'}; margin-bottom: 0 !important;">
           <span class="pvz-rating-label">Rating</span>
-          <span class="pvz-rating-grade">${verdict.grade || '?'}</span>
+          ${deckRatingStarsHtml(verdict.grade, getDeckFlairLabelFromCardList(verdict.grade, deckInfo.cards))}
         </div>
 
         <div class="pvz-deck-rating pvz-deck-sparks" style="color: #4dd0e1; margin-bottom: 0 !important;">
@@ -7913,45 +8182,506 @@ gradeButtons.forEach(button => {
     let activeClasses = new Set();
     let deckHeroLock = null; // { name, faction, classes } when "Build for hero" has a hero picked
     let currentClipboardText = "";
+    let activeCardControls = null;
     let lastAddedCard = null; // Memory for AI context
+    let manualDeckName = "";
     let ownedCollection = {}; // cardName -> owned copies (1-4), for "Build From My Collection"
     let collectionMaxToggleMode = 'fill';
+    const SAVED_DECKS_KEY = 'pvz_saved_decks_v1';
+    let savedDecks = [];
 
-    function updateCollectionMaxToggleButton() {
-        const btn = document.getElementById('collectionMaxToggleBtn');
-        if (!btn) return;
-        btn.textContent = collectionMaxToggleMode === 'fill' ? 'Max Out Collection' : 'Reset Collection';
-        btn.classList.toggle('is-active', collectionMaxToggleMode === 'clear');
+    function loadSavedDecks() {
+        try {
+            const raw = localStorage.getItem(SAVED_DECKS_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) savedDecks = parsed;
+        } catch (e) {
+            console.debug('Failed to load saved decks', e);
+            savedDecks = [];
+        }
     }
 
-    function toggleCollectionMaxState() {
-        const searchValue = document.getElementById('collectionPageSearch')?.value || '';
+    function saveSavedDecks() {
+        try {
+            localStorage.setItem(SAVED_DECKS_KEY, JSON.stringify(savedDecks));
+        } catch (e) {
+            console.debug('Failed to save decks', e);
+        }
+    }
 
-        if (collectionMaxToggleMode === 'fill') {
-            Object.keys(cardDatabase || {}).forEach(rawName => {
-                if (rawName) ownedCollection[rawName] = 4;
-            });
-            collectionMaxToggleMode = 'clear';
-        } else {
-            Object.keys(ownedCollection).forEach(name => delete ownedCollection[name]);
-            collectionMaxToggleMode = 'fill';
+    function getHeroDeckNumber(heroName) {
+        if (!heroName) return savedDecks.length + 1;
+        return savedDecks.filter(deck => deck.hero === heroName).length + 1;
+    }
+
+    function getAutoDeckName() {
+        const heroName = deckHeroLock?.name || null;
+        if (heroName) {
+            return `${heroName} #${getHeroDeckNumber(heroName)}`;
+        }
+        const classes = Array.from(activeClasses).sort();
+        if (classes.length > 0) {
+            const classLabel = classes.length === 1 ? classes[0] : `${classes[0]} / ${classes[1]}`;
+            return `${classLabel} #${savedDecks.length + 1}`;
+        }
+        return `Custom #${savedDecks.length + 1}`;
+    }
+
+    function getSavedDeckPortraitHeroes(deck) {
+        const heroNames = [];
+
+        if (deck?.hero) {
+            heroNames.push(...String(deck.hero).split(/\s*\/\s*/).map(name => name.trim()).filter(Boolean));
         }
 
-        saveOwnedCollection();
-        renderCollectionPageStats();
-        renderCollectionHeroGrid();
-        renderCollectionPageGrid(searchValue);
-        if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-        if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-        updateCollectionMaxToggleButton();
+        if (!heroNames.length && Array.isArray(deck?.classes)) {
+            heroNames.push(...deck.classes.map(name => String(name).trim()).filter(Boolean));
+        }
+
+        if (!heroNames.length) return [];
+
+        const useClassIcons = Array.isArray(deck?.classes) && deck.classes.length === 1;
+
+        return heroNames.slice(0, 2).map(name => {
+            const normalizedName = String(name).trim();
+            const imageSrc = useClassIcons
+                ? `hero_images/PvZH_${normalizedName.replace(/[\s-]+/g, '_')}_Icon.webp`
+                : `hero_images/${normalizedName.replace(/[\s-]+/g, '_')}.webp`;
+
+            return {
+                name: normalizedName,
+                img: imageSrc
+            };
+        });
     }
-    let collectionMaxToggleMode = 'fill';
+
+    const DECK_NAME_MAX_CHARS = 24;
+
+    function sanitizeDeckName(name) {
+        return String(name || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, DECK_NAME_MAX_CHARS);
+    }
+
+    function getCurrentDeckName() {
+        return sanitizeDeckName(manualDeckName) || getAutoDeckName();
+    }
+
+    function getUniqueDeckName(baseName) {
+        const existingNames = new Set(savedDecks.map(d => d.name));
+        if (!existingNames.has(baseName)) return baseName;
+
+        const match = baseName.match(/^(.*?)\s*#(\d+)$/);
+        const stem = match ? match[1] : baseName;
+        let n = match ? parseInt(match[2], 10) + 1 : 2;
+        let candidate = `${stem} #${n}`;
+        while (existingNames.has(candidate)) {
+            n++;
+            candidate = `${stem} #${n}`;
+        }
+        return sanitizeDeckName(candidate);
+    }
+
+    function renderSavedDecksPanel() {
+        const container = document.getElementById('savedDecksContainer');
+        if (!container) return;
+        if (!savedDecks.length) {
+            container.innerHTML = '<div class="saved-decks-empty">No saved decks yet. Save a deck to keep it here.</div>';
+            return;
+        }
+
+        container.innerHTML = savedDecks.map((deck, i) => {
+            const factionClass = deck.faction === 'Zombie' ? 'zombie-deck' : 'plant-deck';
+            const heroLabel = deck.hero || (deck.classes?.length ? deck.classes.join(' / ') : 'Mixed');
+            const cardCount = Array.isArray(deck.cards) ? deck.cards.reduce((sum, card) => sum + (card.count || 0), 0) : 0;
+            const portraitHeroes = getSavedDeckPortraitHeroes(deck);
+            const portraitMarkup = portraitHeroes.length
+                ? pvzHeroPortraits(portraitHeroes, true)
+                : '<div class="pvz-hero-portrait" aria-hidden="true">?</div>';
+
+            let ownedSlots = 0;
+            let totalSlots = 0;
+            (deck.cards || []).forEach(card => {
+                const count = Number(card?.count || 1);
+                const cardName = String(card?.name || '').trim();
+                const db = cardName.replace(/ /g, '_');
+                totalSlots += count;
+                const owned = Number(ownedCollection[db] || 0);
+                ownedSlots += Math.min(count, owned);
+            });
+            const collectionPct = totalSlots > 0 ? Math.min(100, Math.round((ownedSlots / totalSlots) * 100)) : 0;
+
+            return `
+                <div class="saved-deck-item" data-index="${i}">
+                    <div class="deck-card saved-deck-tile ${factionClass}" data-index="${i}" tabindex="0" role="button" aria-label="Load ${escapeHtml(deck.name)}">
+                        <div class="pvz-tile-inner">
+                            <div class="pvz-tile-wash"></div>
+                            <div class="pvz-tile-heroes ${portraitHeroes.length === 2 ? 'two' : ''}">
+                                ${portraitMarkup}
+                            </div>
+                            <div class="pvz-tile-foot">
+                                <img src="deckimg/rarefront.png" alt="" class="pvz-tile-foot-bg" loading="lazy" decoding="async" fetchpriority="low">
+                                <p class="pvz-tile-name">${escapeHtml(deck.name)}</p>
+                                <span class="pvz-tile-credit">${escapeHtml(heroLabel)} · ${cardCount} cards</span>
+                                <div class="pvz-tile-collection-bar" title="${ownedSlots}/${totalSlots} cards in your collection">
+                                    <div class="pvz-tile-collection-fill" style="width:${collectionPct}%"></div>
+                                    <span class="pvz-tile-collection-label">${ownedSlots} / ${totalSlots}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="saved-deck-actions">
+                        <button type="button" class="saved-deck-load-btn" data-index="${i}">Load</button>
+                        <button type="button" class="saved-deck-delete-btn" data-index="${i}" aria-label="Delete deck">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function renderDeckCollectionBottom() {
+        const grid = document.getElementById('deckCollectionBottomGrid');
+        if (!grid) return;
+        const heading = document.getElementById('deckCollectionHeading');
+        const header = document.querySelector('.deck-collection-bottom-header');
+        const classes = getDeckBuilderCollectionClasses();
+
+        // Nothing picked yet (no hero, no cards added) — show nothing at all
+        // instead of guessing a default pair of classes.
+        if (!classes.length) {
+            if (header) header.style.display = 'none';
+            grid.innerHTML = '';
+            renderSavedDecksPanel();
+            return;
+        }
+
+        if (header) header.style.display = '';
+        const classIcon = cls => `<img class="collection-class-icon deck-collection-heading-icon" src="hero_images/PvZH_${cls}_Icon.webp" alt="" onerror="this.style.display='none'">`;
+        if (heading) {
+            heading.innerHTML = `Owned cards: ${classes.map(cls => `${classIcon(cls)}<span>${cls}</span>`).join(' / ')}`;
+        }
+
+        if (!cardDatabase || !Object.keys(cardDatabase).length) {
+            grid.innerHTML = '<div class="collection-value-empty">No cards available for these classes.</div>';
+            renderSavedDecksPanel();
+            return;
+        }
+
+        const bottomCardTile = (rawName) => {
+            const cleanName = rawName.replace(/_/g, ' ');
+            const owned = ownedCollection[rawName] || 0;
+            const existingSeed = currentSeeds.find(s => s.name === rawName);
+            const inDeck = existingSeed ? existingSeed.count : 0;
+            const available = Math.max(0, owned - inDeck);
+            const borderColor = getCollectionRarityBorderColor(rawName);
+            const rarity = (cardDatabase?.[rawName]?.Rarity || '').toLowerCase().trim();
+            const isLegendary = rarity === 'legendary';
+            const isSuperRare = rarity === 'super-rare' || rarity === 'super rare';
+            const isRare = rarity === 'rare';
+            const isEvent = rarity === 'event';
+            const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
+            const craftable = typeof isAffordableCraftPick === 'function' && isAffordableCraftPick(rawName);
+            const craftableClass = craftable ? ' craft-recommended' : '';
+            const craftBadge = craftable
+                ? `<div class="craft-recommended-badge" title="Curated pick — you can afford to craft this now">Craft&nbsp;now</div>`
+                : '';
+            // Badge shows how many copies are still available to add — starts
+            // at how many you own and counts down as you add them to the deck.
+            const quantityLabel = String(available);
+            const disablePlus = getTotalCards() >= 40;
+            const disableMinus = inDeck <= 0;
+            const titleSuffix = ` — ${available} available to add (${inDeck} already in deck)`;
+
+            return `
+                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${inDeck > 0 ? ' in-deck' : ''}${premiumClass}${craftableClass}" data-name="${rawName}" title="${cleanName}${titleSuffix}${craftable ? ' — recommended craft, affordable now' : ''}" style="--collection-border-color:${borderColor};">
+                    ${craftBadge}
+                    <div class="visual-card-art">
+                        <img src="${getCardImageSrc(rawName)}" alt="${cleanName}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(rawName)}.webp'">
+                        <div class="card-quantity">${quantityLabel}</div>
+                    </div>
+                    <span class="collection-card-name">${cleanName}</span>
+                    <div class="visual-card-controls">
+                        <button type="button" class="seed-btn collection-bottom-minus-btn" data-name="${rawName}" aria-label="Remove one ${cleanName} from deck" title="Remove one from deck"${disableMinus ? ' disabled' : ''}>-</button>
+                        <button type="button" class="seed-btn collection-bottom-plus-btn" data-name="${rawName}" aria-label="Add one ${cleanName} to deck" title="Add one to deck"${disablePlus ? ' disabled' : ''}>+</button>
+                    </div>
+                </div>`;
+        };
+
+        const sectionsHtml = classes.map(cls => {
+            const namesForClass = Object.keys(cardDatabase || {})
+                .filter(rawName => (cardDatabase[rawName]?.Class || '') === cls)
+                // Once every owned copy of a card is placed in the deck,
+                // there's nothing left to add, so it drops out of this list.
+                // Removing a copy from the deck (available > 0 again) brings
+                // it right back.
+                .filter(rawName => {
+                    const owned = ownedCollection[rawName] || 0;
+                    const inDeck = currentSeeds.find(s => s.name === rawName)?.count || 0;
+                    return owned - inDeck > 0;
+                })
+                .sort(compareCollectionCardsByCost);
+
+            if (!namesForClass.length) return '';
+
+            return `
+                <div class="deck-collection-bottom-section">
+                    <h4 class="deck-collection-bottom-class-label">${classIcon(cls)}<span>${cls}</span></h4>
+                    <div class="deck-collection-bottom-class-grid">
+                        ${namesForClass.map(bottomCardTile).join('')}
+                    </div>
+                </div>`;
+        }).filter(Boolean).join('');
+
+        grid.innerHTML = sectionsHtml || '<div class="collection-value-empty">No more owned copies left to add for these classes.</div>';
+        renderSavedDecksPanel();
+    }
+
+    function getDeckBuilderCollectionClasses() {
+        if (deckHeroLock && Array.isArray(deckHeroLock.classes) && deckHeroLock.classes.length > 0) {
+            return deckHeroLock.classes.slice(0, 2);
+        }
+        // No hero locked in — only show classes once the deck actually has a
+        // card from them. Nothing added yet means nothing to show.
+        return Array.from(activeClasses).slice(0, 2);
+    }
+
+    function saveCurrentDeck() {
+        if (!currentSeeds.length) return;
+        const deckName = getUniqueDeckName(getCurrentDeckName());
+        const deckObject = {
+            name: deckName,
+            hero: deckHeroLock?.name || null,
+            classes: Array.from(activeClasses).sort(),
+            faction: currentFaction,
+            cards: currentSeeds.map(seed => ({ name: seed.name, count: seed.count, class: seed.class, faction: seed.faction }))
+        };
+        savedDecks = [deckObject, ...savedDecks].slice(0, 30);
+        saveSavedDecks();
+        renderSavedDecksPanel();
+    }
+
+    function loadSavedDeck(index) {
+        const deck = savedDecks[index];
+        if (!deck) return;
+        currentSeeds = (deck.cards || []).map(seed => ({ ...seed }));
+        currentFaction = deck.faction || null;
+        activeClasses = new Set(deck.classes || []);
+        deckHeroLock = deck.hero ? { name: deck.hero, faction: deck.faction, classes: deck.classes || [] } : null;
+        manualDeckName = deck.name || '';
+        lastAddedCard = null;
+        renderSeeds();
+
+        const resultsPane = document.querySelector('.crafter-results-container') || document.getElementById('generatedDeckList');
+        if (resultsPane) {
+            resultsPane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function deleteSavedDeck(index) {
+        savedDecks.splice(index, 1);
+        saveSavedDecks();
+        renderSavedDecksPanel();
+    }
+
+    // Double-clicking a tile either fills in the rest of the owned copies
+    // you haven't placed yet, or — if the deck already has every copy you
+    // own — clears this card back out of the deck. Mirrors the old
+    // "jump to 4 or 0" shortcut, just aimed at deck copies now.
+    function toggleDeckSeedFromOwnedPanel(name, addAll) {
+        const owned = ownedCollection[name] || 0;
+        if (!owned) return;
+        const cardInfo = cardDatabase[name];
+        if (!cardInfo) return;
+        const existing = currentSeeds.find(s => s.name === name);
+        const inDeck = existing ? existing.count : 0;
+
+        if (addAll) {
+            const spaceLeft = 40 - getTotalCards();
+            const toAdd = Math.min(owned - inDeck, spaceLeft);
+            if (toAdd <= 0) return;
+            deckBuiltFromCollection = false;
+            if (existing) {
+                existing.count += toAdd;
+            } else {
+                const faction = plantClasses.has(cardInfo.Class) ? "Plant" : "Zombie";
+                currentSeeds.push({ name, count: toAdd, class: cardInfo.Class, faction, cost: cardInfo.Cost });
+                currentFaction = faction;
+                activeClasses.add(cardInfo.Class);
+            }
+            lastAddedCard = name;
+        } else {
+            if (inDeck <= 0) return;
+            deckBuiltFromCollection = false;
+            currentSeeds = currentSeeds.filter(s => s.name !== name);
+            activeClasses.clear();
+            currentSeeds.forEach(s => activeClasses.add(s.class));
+            if (lastAddedCard === name) lastAddedCard = null;
+            if (activeClasses.size < 2) heroAnnounced = false;
+        }
+        renderSeeds();
+    }
+
+    // Keeps a card tile's +/- controls open across repeated clicks instead of
+    // forcing the person to re-tap the card between every click. Only stays
+    // open while the count is strictly between 0 and 4 — once it hits either
+    // boundary the controls close, matching the "reaches 4 or 0" cutoff.
+    function reopenCardTileControls(gridEl, name) {
+        if (!gridEl || !name) return;
+        const amount = ownedCollection[name] || 0;
+        if (amount <= 0 || amount >= 4) return;
+        const escaped = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/["\\]/g, '\\$&');
+        const tile = gridEl.querySelector(`.collection-card-tile[data-name="${escaped}"]`);
+        if (tile) tile.classList.add('show-controls');
+    }
+
+    // Same idea as reopenCardTileControls, but for the owned-cards panel.
+    // Closes once every copy has been pulled back out of the deck (inDeck
+    // reaches 0); the other boundary — every owned copy placed — already
+    // removes the tile from the grid entirely, so there's nothing to reopen.
+    function reopenDeckPanelTileControls(gridEl, name) {
+        if (!gridEl || !name) return;
+        const existing = currentSeeds.find(s => s.name === name);
+        const inDeck = existing ? existing.count : 0;
+        if (inDeck <= 0) return;
+        const escaped = (window.CSS && CSS.escape) ? CSS.escape(name) : name.replace(/["\\]/g, '\\$&');
+        const tile = gridEl.querySelector(`.collection-card-tile[data-name="${escaped}"]`);
+        if (tile) tile.classList.add('show-controls');
+    }
+
+    // Adds/removes one copy of an owned card to/from the deck being built
+    // (rather than editing the raw collection count), one click at a time,
+    // capped at how many copies you actually own.
+    function adjustDeckBuilderCollectionAmount(name, delta) {
+        const owned = ownedCollection[name] || 0;
+        const cardInfo = cardDatabase[name];
+        if (!cardInfo) return;
+        const existing = currentSeeds.find(s => s.name === name);
+        const inDeck = existing ? existing.count : 0;
+
+        if (delta > 0) {
+            const available = owned - inDeck;
+            const spaceLeft = 40 - getTotalCards();
+            if (available <= 0 || spaceLeft <= 0) return;
+            deckBuiltFromCollection = false;
+            if (existing) {
+                existing.count += 1;
+            } else {
+                const faction = plantClasses.has(cardInfo.Class) ? "Plant" : "Zombie";
+                currentSeeds.push({ name, count: 1, class: cardInfo.Class, faction, cost: cardInfo.Cost });
+                currentFaction = faction;
+                activeClasses.add(cardInfo.Class);
+            }
+            lastAddedCard = name;
+        } else if (delta < 0 && inDeck > 0) {
+            deckBuiltFromCollection = false;
+            existing.count -= 1;
+            if (existing.count <= 0) {
+                currentSeeds = currentSeeds.filter(s => s.name !== name);
+                activeClasses.clear();
+                currentSeeds.forEach(s => activeClasses.add(s.class));
+                if (lastAddedCard === name) lastAddedCard = null;
+                if (activeClasses.size < 2) heroAnnounced = false;
+            }
+        } else {
+            return;
+        }
+
+        renderSeeds();
+        reopenDeckPanelTileControls(document.getElementById('deckCollectionBottomGrid'), name);
+    }
 
     function updateCollectionMaxToggleButton() {
         const btn = document.getElementById('collectionMaxToggleBtn');
         if (!btn) return;
         btn.textContent = collectionMaxToggleMode === 'fill' ? 'Max Out Collection' : 'Reset Collection';
         btn.classList.toggle('is-active', collectionMaxToggleMode === 'clear');
+    }
+
+    loadSavedDecks();
+    configureDeckCollectionBottom();
+    renderDeckCollectionBottom();
+
+    function configureDeckCollectionBottom() {
+        const savedDecksContainer = document.getElementById('savedDecksContainer');
+        const saveDeckBtn = document.getElementById('saveDeckBtn');
+        const bottomGrid = document.getElementById('deckCollectionBottomGrid');
+
+        if (saveDeckBtn) {
+            saveDeckBtn.disabled = !currentSeeds.length;
+            saveDeckBtn.addEventListener('click', () => {
+                saveCurrentDeck();
+                saveDeckBtn.disabled = !currentSeeds.length;
+            });
+        }
+
+        if (savedDecksContainer) {
+            savedDecksContainer.addEventListener('click', event => {
+                const deleteBtn = event.target.closest('.saved-deck-delete-btn');
+                if (deleteBtn) {
+                    deleteSavedDeck(Number(deleteBtn.dataset.index));
+                    return;
+                }
+                const loadBtn = event.target.closest('.saved-deck-load-btn');
+                const tile = event.target.closest('.saved-deck-tile');
+                const trigger = loadBtn || tile;
+                if (!trigger) return;
+                loadSavedDeck(Number(trigger.dataset.index));
+                if (saveDeckBtn) saveDeckBtn.disabled = !currentSeeds.length;
+            });
+
+            savedDecksContainer.addEventListener('keydown', event => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                const tile = event.target.closest('.saved-deck-tile');
+                if (!tile) return;
+                event.preventDefault();
+                loadSavedDeck(Number(tile.dataset.index));
+                if (saveDeckBtn) saveDeckBtn.disabled = !currentSeeds.length;
+            });
+        }
+
+        if (bottomGrid) {
+            bottomGrid.addEventListener('click', event => {
+                const plusBtn = event.target.closest('.collection-bottom-plus-btn');
+                if (plusBtn) {
+                    event.stopPropagation();
+                    adjustDeckBuilderCollectionAmount(plusBtn.dataset.name, 1);
+                    return;
+                }
+                const minusBtn = event.target.closest('.collection-bottom-minus-btn');
+                if (minusBtn) {
+                    event.stopPropagation();
+                    adjustDeckBuilderCollectionAmount(minusBtn.dataset.name, -1);
+                    return;
+                }
+                const cardTile = event.target.closest('.collection-card-tile');
+                if (!cardTile) return;
+                document.querySelectorAll('#deckCollectionBottomGrid .collection-card-tile.show-controls').forEach(el => el.classList.remove('show-controls'));
+                cardTile.classList.toggle('show-controls');
+            });
+
+            bottomGrid.addEventListener('dblclick', event => {
+                const cardTile = event.target.closest('.collection-card-tile');
+                if (!cardTile) return;
+                const cardName = cardTile.dataset?.name;
+                if (!cardName) return;
+                const owned = ownedCollection[cardName] || 0;
+                const existing = currentSeeds.find(s => s.name === cardName);
+                const inDeck = existing ? existing.count : 0;
+                toggleDeckSeedFromOwnedPanel(cardName, inDeck < owned);
+            });
+
+            bottomGrid.addEventListener('keydown', event => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                const cardTile = event.target.closest('.collection-card-tile');
+                if (!cardTile) return;
+                event.preventDefault();
+                document.querySelectorAll('#deckCollectionBottomGrid .collection-card-tile.show-controls').forEach(el => el.classList.remove('show-controls'));
+                cardTile.classList.toggle('show-controls');
+            });
+        }
     }
 
     function toggleCollectionMaxState() {
@@ -8007,6 +8737,10 @@ gradeButtons.forEach(button => {
     };
     function sparkCostFor(rawName) {
         const info = (typeof cardDatabase !== 'undefined') ? cardDatabase[rawName] : null;
+        // Prefer the card's own real craft cost when the database provides one.
+        if (info && Number.isFinite(Number(info.CraftCost)) && Number(info.CraftCost) > 0) {
+            return Number(info.CraftCost);
+        }
         const rarity = (info?.Rarity || '').toLowerCase();
         return RARITY_SPARKS[rarity] || 0;
     }
@@ -8025,9 +8759,289 @@ gradeButtons.forEach(button => {
     };
     function recycleValueFor(rawName) {
         const info = (typeof cardDatabase !== 'undefined') ? cardDatabase[rawName] : null;
+        // Prefer the card's own real scrap value when the database provides one.
+        if (info && Number.isFinite(Number(info.ScrapCost)) && Number(info.ScrapCost) > 0) {
+            return Number(info.ScrapCost);
+        }
         const rarity = (info?.Rarity || '').toLowerCase();
         return RECYCLE_SPARKS[rarity] || 0;
     }
+
+    /*
+     * Curated craft/keep/scrap tiers per card, based on community meta
+     * consensus rather than raw deck-usage frequency. Values:
+     *   "Craft"            - worth crafting if you don't already have it
+     *   "KeepUse"/"KeepHold"/"KeepClassOnly" - never suggest scrapping these
+     *   "ScrappableUsable"/"ScrappableNiche"/"ScrapSpecial" - situational fodder
+     *   "Scrap"            - safe to scrap first
+     * Cards not in this list are unrated and fall back to the old
+     * usage-based heuristic.
+     */
+    const CRAFT_TIER_DATA = {
+    "Gravitree": "Craft",
+    "Forget-Me-Nuts": "Craft",
+    "Galacta-Cactus": "KeepUse",
+    "Pear_Cub": "KeepUse",
+    "Shamrocket": "KeepUse",
+    "Wall-Nut_Bowling": "KeepUse",
+    "Body-Gourd": "KeepHold",
+    "Poppin'_Poppies": "KeepHold",
+    "Garlic": "ScrappableUsable",
+    "Corn_Dog": "ScrappableUsable",
+    "Hot_Date": "ScrappableUsable",
+    "Red_Stinger": "ScrappableUsable",
+    "Marine_Bean": "ScrappableUsable",
+    "Tricarrotops": "ScrappableUsable",
+    "Soul_Patch": "ScrappableUsable",
+    "Health-Nut": "Scrap",
+    "Jugger-Nut": "Scrap",
+    "Primal_Wall-Nut": "Scrap",
+    "Three-Nut": "Scrap",
+    "Force_Field": "Scrap",
+    "Guacodile": "Scrap",
+    "Mirror-Nut": "Scrap",
+    "Doom-Shroom": "Scrap",
+    "Loco_Coco": "Scrap",
+    "Pecanolith": "Scrap",
+    "Transfiguration": "Craft",
+    "Astro-Shroom": "KeepUse",
+    "Veloci-Radish_Packmate": "KeepUse",
+    "Imitater": "KeepHold",
+    "Fireweed": "KeepClassOnly",
+    "Pair_Pearadise": "ScrappableNiche",
+    "Sonic_Bloom": "ScrappableNiche",
+    "Reincarnation": "ScrappableNiche",
+    "Molekale": "ScrappableNiche",
+    "Gloom-Shroom": "ScrappableNiche",
+    "Banana_Launcher": "Scrap",
+    "Punish-Shroom": "Scrap",
+    "Strawberrian": "Scrap",
+    "Sergeant_Strongberry": "Scrap",
+    "Cherry_Bomb": "Scrap",
+    "Grapes_of_Wrath": "Scrap",
+    "Blooming_Heart": "Scrap",
+    "High-Voltage_Currant": "Scrap",
+    "Atomic_Bombegranate": "Scrap",
+    "Electric_Blueberry": "Scrap",
+    "Pineclone": "Scrap",
+    "Dandy_Lion_King": "Scrap",
+    "Kernel_Corn": "Scrap",
+    "Clique_Peas": "Craft",
+    "Lily_of_the_Valley": "Craft",
+    "Espresso_Fiesta": "KeepUse",
+    "Split_Pea": "KeepUse",
+    "Gatling_Pea": "KeepUse",
+    "Apotatosaurus": "KeepHold",
+    "Savage_Spinach": "ScrappableUsable",
+    "Onion_Rings": "ScrappableNiche",
+    "Party_Thyme": "Scrap",
+    "Black-Eyed_Pea": "Scrap",
+    "Grape_Power": "Scrap",
+    "Moonbean": "Scrap",
+    "Pod_Fighter": "Scrap",
+    "Potted_Powerhouse": "Scrap",
+    "The_Red_Plant-It": "Scrap",
+    "Banana_Split": "Scrap",
+    "Plucky_Clover": "Scrap",
+    "Doubled_Mint": "Scrap",
+    "Captain_Cucumber": "Scrap",
+    "Muscle_Sprout": "Scrap",
+    "Bananasaurus_Rex": "Scrap",
+    "Brainana": "Craft",
+    "Laser_Cattail": "KeepUse",
+    "Rotobaga": "KeepUse",
+    "Sportacus": "KeepUse",
+    "Lima-Pleurodon": "KeepUse",
+    "Winter_Melon": "KeepUse",
+    "Bog_of_Enlightenment": "KeepHold",
+    "Jelly_Bean": "KeepHold",
+    "Shrinking_Violet": "KeepHold",
+    "Dark_Matter_Dragonfruit": "KeepHold",
+    "Cool_Bean": "ScrappableUsable",
+    "Snapdragon": "ScrappableUsable",
+    "Sow_Magic_Beans": "Scrap",
+    "Bean_Counter": "Scrap",
+    "Winter_Squash": "Scrap",
+    "Spyris": "Scrap",
+    "Go-Nuts": "Scrap",
+    "Mayflower": "Scrap",
+    "Snake_Grass": "Scrap",
+    "Witch_Hazel": "Scrap",
+    "Jolly_Holly": "Scrap",
+    "Sap-Fling": "Scrap",
+    "Bird_of_Paradise": "Scrap",
+    "Shooting_Starfruit": "Scrap",
+    "The_Great_Zucchini": "Scrap",
+    "Cross-Pollination": "Craft",
+    "Ketchup_Mechanic": "Craft",
+    "Laser_Bean": "KeepUse",
+    "Sun-Shroom": "KeepUse",
+    "Astrocado": "KeepUse",
+    "Primal_Sunflower": "KeepHold",
+    "Twin_Sunflower": "KeepHold",
+    "Aloesaurus": "KeepHold",
+    "Cob_Cannon": "KeepHold",
+    "Three-Headed_Chomper": "ScrappableUsable",
+    "Best_Taco_of_All_Time": "ScrappableNiche",
+    "Briar_Rose": "ScrapSpecial",
+    "Wing-Nut": "Scrap",
+    "Solar_Winds": "Scrap",
+    "Chomper": "Scrap",
+    "Tactical_Cuke": "Scrap",
+    "Haunted_Pumpking": "Scrap",
+    "Jack_O'_Lantern": "Scrap",
+    "Toadstool": "Scrap",
+    "Astro_Vera": "Scrap",
+    "Cornucopia": "Scrap",
+    "Cursed_Gargolith": "Craft",
+    "Cryo-Yeti": "Craft",
+    "Dr._Spacetime": "KeepUse",
+    "Laser_Base_Alpha": "KeepUse",
+    "Line_Dancing_Zombie": "KeepUse",
+    "Pogo_Bouncer": "KeepUse",
+    "Space_Cowboy": "KeepUse",
+    "Tomb_Raiser_Zombie": "KeepHold",
+    "Imposter": "KeepHold",
+    "Mixed-Up_Gravedigger": "KeepHold",
+    "Toxic_Waste_Imp": "ScrappableNiche",
+    "Excavator_Zombie": "ScrappableNiche",
+    "Imp-Throwing_Imp": "ScrappableNiche",
+    "Ducky_Tube_Zombie": "Scrap",
+    "Unthawed_Viking": "Scrap",
+    "Fire_Rooster": "Scrap",
+    "Captain_Flameface": "Scrap",
+    "Zombie_High_Diver": "Scrap",
+    "Trapper_Zombie": "Scrap",
+    "Raiding_Raptor": "Scrap",
+    "Zombot_Plank_Walker": "Scrap",
+    "Zombot_Aerostatic_Gondola": "Scrap",
+    "Zombot_Sharktronic_Sub": "Scrap",
+    "Black_Hole": "Craft",
+    "Going_Viral": "Craft",
+    "Turquoise_Skull_Zombie": "KeepUse",
+    "Zombology_Teacher": "KeepUse",
+    "Zombie_King": "KeepUse",
+    "Gargologist": "KeepHold",
+    "Knockout": "KeepHold",
+    "Intergalactic_Warlord": "KeepHold",
+    "Zombot_Battlecruiser_5000": "KeepHold",
+    "Genetic_Experiment": "ScrappableUsable",
+    "All-Star_Zombie": "ScrappableUsable",
+    "Coffee_Zombie": "ScrappableUsable",
+    "Undying_Pharaoh": "ScrappableNiche",
+    "Planetary_Gladiator": "Scrap",
+    "Jurassic_Fossilhead": "Scrap",
+    "Landscaper": "Scrap",
+    "Weed_Spray": "Scrap",
+    "Turkey_Rider": "Scrap",
+    "Bonus_Track_Buckethead": "Scrap",
+    "Defensive_End": "Scrap",
+    "Chum_Champion": "Scrap",
+    "Stompadon": "Scrap",
+    "Wannabe_Hero": "Scrap",
+    "Quickdraw_Con_Man": "Craft",
+    "Aerobics_Instructor": "KeepUse",
+    "Quasar_Wizard": "KeepUse",
+    "Binary_Stars": "KeepUse",
+    "Zippity_Hop_Gargantuar": "KeepHold",
+    "Gargantuar-Throwing_Imp": "KeepHold",
+    "Frankentuar": "KeepHold",
+    "Disco-Naut": "ScrappableUsable",
+    "Moon_Base_Z": "ScrappableUsable",
+    "Unexpected_Gifts": "ScrappableUsable",
+    "Grave_Robber": "ScrappableNiche",
+    "Abracadaver": "ScrappableNiche",
+    "Exploding_Fruitcake": "ScrappableNiche",
+    "Barrel_of_Deadbeards": "ScrappableNiche",
+    "Tankylosaurus": "ScrappableNiche",
+    "Zombie's_Best_Friend": "Scrap",
+    "Fireworks_Zombie": "Scrap",
+    "Disco-Tron_3000": "Scrap",
+    "Gas_Giant": "Scrap",
+    "Stupid_Cupid": "Scrap",
+    "Bobblehead": "Scrap",
+    "Valkyrie": "Scrap",
+    "Gargantuar's_Feast": "Scrap",
+    "Teleport": "Craft",
+    "Rocket_Science": "KeepUse",
+    "Teleportation_Zombie": "KeepUse",
+    "Shieldcrusher_Viking": "KeepUse",
+    "Duckstache": "KeepHold",
+    "Trickster": "KeepHold",
+    "Electrician": "ScrappableUsable",
+    "Parasol_Zombie": "ScrappableUsable",
+    "Leprechaun_Imp": "ScrappableUsable",
+    "Bad_Moon_Rising": "ScrappableUsable",
+    "Neutron_Imp": "ScrappableNiche",
+    "Evolutionary_Leap": "ScrappableNiche",
+    "Trick-or-Treater": "ScrappableNiche",
+    "Thinking_Cap": "ScrappableNiche",
+    "Interdimensional_Zombie": "ScrappableNiche",
+    "Zombot_Dinotronic_Mechasaur": "ScrappableNiche",
+    "Transformation_Station": "Scrap",
+    "Wormhole_Gatekeeper": "Scrap",
+    "Mad_Chemist": "Scrap",
+    "Portal_Technician": "Scrap",
+    "Regifting_Zombie": "Scrap",
+    "Kitchen_Sink_Zombie": "Scrap",
+    "Gargantuar_Mime": "Scrap",
+    "Cheese_Cutter": "Craft",
+    "Area_22": "Craft",
+    "Synchronized_Swimmer": "KeepUse",
+    "Supernova_Gargantuar": "KeepUse",
+    "Cyborg_Zombie": "KeepHold",
+    "Extinction_Event": "KeepHold",
+    "King_of_the_Grill": "KeepHold",
+    "Hunting_Grounds": "ScrappableNiche",
+    "Secret_Agent": "ScrappableNiche",
+    "Cat_Lady": "Scrap",
+    "Zombie_Yeti": "Scrap",
+    "Ancient_Vimpire": "Scrap",
+    "Deep_Sea_Gargantuar": "Scrap",
+    "Maniacal_Laugh": "Scrap",
+    "Fraidy_Cat": "Scrap",
+    "Energy_Drink_Zombie": "Scrap",
+    "Hover-Goat_3000": "Scrap",
+    "Overstuffed_Zombie": "Scrap",
+    "Sneezing_Zombie": "Scrap",
+    "Bounty_Hunter": "Scrap",
+    "Mondo_Bronto": "Scrap",
+    "Gargantuar-Throwing_Gargantuar": "Scrap",
+    "Nurse_Gargantuar": "Scrap",
+    "Octo_Zombie": "Scrap",
+    "Zombot_1000": "Scrap"
+};
+
+    // Resolve a card's curated tier, tolerant of punctuation/spacing
+    // differences with the card database (same idea as the deck finder's
+    // fuzzy card-name resolver).
+    let _craftTierLookupCache = null;
+    function getCraftTier(rawName) {
+        if (!rawName) return null;
+        if (CRAFT_TIER_DATA[rawName]) return CRAFT_TIER_DATA[rawName];
+
+        if (!_craftTierLookupCache) {
+            _craftTierLookupCache = new Map();
+            Object.keys(CRAFT_TIER_DATA).forEach(key => {
+                const norm = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+                _craftTierLookupCache.set(norm, CRAFT_TIER_DATA[key]);
+            });
+        }
+        const norm = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return _craftTierLookupCache.get(norm) || null;
+    }
+
+    // Scrap-priority rank: lower = scrap first. "Craft" cards are excluded
+    // entirely elsewhere (never suggested as scrap fodder).
+    const SCRAP_TIER_RANK = {
+        'Scrap': 0,
+        'ScrapSpecial': 1,
+        'ScrappableNiche': 2,
+        'ScrappableUsable': 3,
+        'KeepClassOnly': 5,
+        'KeepHold': 6,
+        'KeepUse': 7
+    };
 
     /*
      * Given a spark shortfall and a set of card names to leave alone (things
@@ -8037,8 +9051,10 @@ gradeButtons.forEach(button => {
      * scrap clutter rather than anything actually good. May suggest scrapping
      * from more than one card if that's what it takes.
      */
-    function findScrapSuggestions(sparksNeeded, protectedNames, excludedNames) {
+    function findScrapSuggestions(sparksNeeded, protectedNames, excludedNames, filters) {
         const excluded = excludedNames instanceof Set ? excludedNames : new Set();
+        const wantFaction = (filters && filters.faction && filters.faction !== 'all') ? filters.faction : null;
+        const wantClass = (filters && filters.cardClass && filters.cardClass !== 'all') ? filters.cardClass : null;
         const candidates = [];
 
         Object.keys(ownedCollection).forEach(name => {
@@ -8053,20 +9069,44 @@ gradeButtons.forEach(button => {
             // Basic cards come free with every hero and can't be scrapped.
             if (info.Set === 'Basic') return;
 
+            if (wantClass) {
+                if (info.Class !== wantClass) return;
+            } else if (wantFaction) {
+                const faction = plantClasses.has(info.Class) ? 'Plant' : 'Zombie';
+                if (faction !== wantFaction) return;
+            }
+
             const perCopyValue = recycleValueFor(name);
             if (perCopyValue <= 0) return;
+
+            // Never offer up a card that's curated as worth crafting/keeping.
+            const tier = getCraftTier(name);
+            if (tier === 'Craft') return;
+
+            const tierRank = SCRAP_TIER_RANK[tier];
 
             const usage = (typeof cardFrequencies === 'object' && cardFrequencies)
                 ? (cardFrequencies[name] || 0)
                 : 0;
 
-            candidates.push({ name, owned, usage, perCopyValue });
+            candidates.push({
+                name,
+                owned,
+                usage,
+                perCopyValue,
+                // Curated cards sort by their tier first; uncurated cards
+                // (no entry in the tier list) fall in between scrap fodder
+                // and keepers, ranked by the old usage heuristic.
+                tierRank: tierRank !== undefined ? tierRank : 4
+            });
         });
 
-        // Least-used cards in strong decks first (best scrap fodder); among
-        // equally-unused cards, prefer higher recycle value so fewer cards
-        // need to be broken down.
-        candidates.sort((a, b) => (a.usage - b.usage) || (b.perCopyValue - a.perCopyValue));
+        // Curated scrap tier first (Scrap > niche/special > usable); within
+        // the same tier (or for uncurated cards), least-used-in-strong-decks
+        // first, then higher recycle value so fewer cards need breaking down.
+        candidates.sort((a, b) =>
+            (a.tierRank - b.tierRank) || (a.usage - b.usage) || (b.perCopyValue - a.perCopyValue)
+        );
 
         const picks = [];
         let gathered = 0;
@@ -8089,6 +9129,9 @@ gradeButtons.forEach(button => {
     // --- Owned Sparks (user-entered balance, same persistence pattern as the collection) ---
     let ownedSparks = 0;
     let collectionBuyScrapExclusions = new Set();
+    // Which cards findScrapSuggestions is allowed to draw from: restrict to
+    // one faction and/or one class via the buy modal's filter row.
+    let collectionScrapFilters = { faction: 'all', cardClass: 'all' };
     const OWNED_SPARKS_KEY = 'pvz_owned_sparks_v1';
     function loadOwnedSparks() {
         try {
@@ -8115,6 +9158,21 @@ gradeButtons.forEach(button => {
         }
     }
 
+    // A card is a "craft now" highlight when it's curated as worth crafting,
+    // not maxed out yet, and the user's entered spark balance actually
+    // covers at least one more copy. Never highlights before the user has
+    // told us a balance, since a fresh unset 0 would otherwise light up
+    // every card as unaffordable-but-shown-as-craftable.
+    function isAffordableCraftPick(rawName) {
+        if (getCraftTier(rawName) !== 'Craft') return false;
+        if (!hasEnteredSparks()) return false;
+        const owned = ownedCollection[rawName] || 0;
+        if (owned >= 4) return false;
+        const cost = sparkCostFor(rawName);
+        if (cost <= 0) return false;
+        return cost <= Math.max(0, ownedSparks || 0);
+    }
+
     // --- Hero ownership (separate from card ownership, same persistence pattern) ---
     let ownedHeroes = {}; // heroName -> true
     const OWNED_HEROES_KEY = 'pvz_owned_heroes_v1';
@@ -8139,18 +9197,8 @@ gradeButtons.forEach(button => {
     const suggestionsBox = document.getElementById('smartSuggestions');
     const generateDeckBtn = document.getElementById('generateDeckBtn');
     const clearSeedsBtn = document.getElementById('clearSeedsBtn');
-    const budgetToggle = document.getElementById('budgetToggle');
-    const superBudgetToggle = document.getElementById('superBudgetToggle');
-
-    // Toggles Logic
-    if (budgetToggle && superBudgetToggle) {
-        budgetToggle.addEventListener('change', function () {
-            if (this.checked) superBudgetToggle.checked = false;
-        });
-        superBudgetToggle.addEventListener('change', function () {
-            if (this.checked) budgetToggle.checked = false;
-        });
-    }
+    const archetypeSelect = document.getElementById('archetypeSelect');
+    const winConditionSelect = document.getElementById('winConditionSelect');
 
     // --- My Collection (Build Best Deck From What I Own) ---
     const collectionToggleBtn = document.getElementById('collectionToggleBtn');
@@ -8168,6 +9216,9 @@ gradeButtons.forEach(button => {
             const n = parseInt(ownedSparksInput.value, 10);
             ownedSparks = (!isNaN(n) && n >= 0) ? n : 0;
             saveOwnedSparks();
+            if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
+            const pageSearchVal = document.getElementById('collectionPageSearch')?.value || '';
+            if (typeof renderCollectionPageGrid === 'function') renderCollectionPageGrid(pageSearchVal);
         });
     }
 
@@ -8187,16 +9238,33 @@ gradeButtons.forEach(button => {
         saveOwnedCollection();
     }
 
+    function getCollectionCardSortValue(rawName) {
+        const cardInfo = cardDatabase?.[rawName] || {};
+        const cost = Number(cardInfo.Cost);
+        return Number.isFinite(cost) ? cost : Number.MAX_SAFE_INTEGER;
+    }
+
+    function compareCollectionCardsByCost(a, b) {
+        const costDiff = getCollectionCardSortValue(a) - getCollectionCardSortValue(b);
+        if (costDiff !== 0) return costDiff;
+        return a.replace(/_/g, ' ').localeCompare(b.replace(/_/g, ' '));
+    }
+
     function renderCollectionList(filter = '') {
         if (!collectionList) return;
         collectionList.innerHTML = '';
         const q = filter.toLowerCase().trim();
         const wantedFaction = collectionFactionSelect ? collectionFactionSelect.value : 'Plant';
 
+        // Group by class (like the in-game Collection page) instead of one
+        // long flat list, so it's easy to page through class-by-class.
+        const groups = {}; // class -> [rawName, ...]
         let shown = 0;
+
         Object.keys(cardDatabase || {}).forEach(rawName => {
             const cardInfo = cardDatabase[rawName];
             const cardClass = cardInfo?.Class;
+            if (!cardClass) return;
             const cardFaction = plantClasses.has(cardClass) ? 'Plant' : 'Zombie';
             if (cardFaction !== wantedFaction) return;
 
@@ -8204,24 +9272,54 @@ gradeButtons.forEach(button => {
             if (q && !cleanName.toLowerCase().includes(q)) return;
             if (shown >= 200) return; // keep the list light
 
-            const owned = ownedCollection[rawName] || 0;
-            const isDefault = cardInfo?.Set === 'Basic';
-            const row = document.createElement('div');
-            row.className = 'collection-card' + (owned > 0 ? ' owned' : '');
-
-            const countBtns = [1, 2, 3, 4].map(n =>
-                `<button type="button" class="collection-count-btn${owned === n ? ' active' : ''}" data-name="${rawName}" data-n="${n}">${n}</button>`
-            ).join('');
-
-            row.innerHTML = `
-                <span class="collection-card-name">${cleanName}${isDefault ? ' <span class="collection-default-tag">auto</span>' : ''}</span>
-                <div class="collection-count-group">
-                    ${countBtns}
-                    <button type="button" class="collection-count-btn collection-clear-btn" data-name="${rawName}" data-n="0">✕</button>
-                </div>`;
-            collectionList.appendChild(row);
+            if (!groups[cardClass]) groups[cardClass] = [];
+            groups[cardClass].push(rawName);
             shown++;
         });
+
+        const classOrder = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+
+        classOrder.forEach(cls => {
+            const list = [...groups[cls]].sort(compareCollectionCardsByCost);
+            if (!list.length) return;
+
+            const ownedInClass = list.filter(n => (ownedCollection[n] || 0) > 0).length;
+            const header = document.createElement('div');
+            header.className = 'collection-class-header';
+            header.style.cssText = 'background: linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 100%); padding: 4px 6px 8px 5px;';
+            header.innerHTML = `
+                <img class="collection-class-icon" src="hero_images/PvZH_${cls}_Icon.webp" alt="${cls}" onerror="this.style.display='none'">
+                <span class="collection-class-name" style="color:${CLASS_COLORS[cls] || '#4dd0e1'}">${cls}</span>
+                <span class="collection-class-count">${ownedInClass}/${list.length}</span>`;
+            collectionList.appendChild(header);
+
+            list.forEach(rawName => {
+                const cardInfo = cardDatabase[rawName];
+                const cleanName = rawName.replace(/_/g, ' ');
+                const owned = ownedCollection[rawName] || 0;
+                const isDefault = cardInfo?.Set === 'Basic';
+                const craftable = isAffordableCraftPick(rawName);
+                const row = document.createElement('div');
+                row.className = 'collection-card' + (owned > 0 ? ' owned' : '') + (craftable ? ' craft-recommended' : '');
+                if (craftable) row.title = 'Curated pick — you can afford to craft this now';
+
+                const countBtns = [1, 2, 3, 4].map(n =>
+                    `<button type="button" class="collection-count-btn${owned === n ? ' active' : ''}" data-name="${rawName}" data-n="${n}">${n}</button>`
+                ).join('');
+
+                row.innerHTML = `
+                    <span class="collection-card-name">${cleanName}${isDefault ? ' <span class="collection-default-tag">auto</span>' : ''}${craftable ? ' <span class="craft-recommended-tag">Craft now</span>' : ''}</span>
+                    <div class="collection-count-group">
+                        ${countBtns}
+                        <button type="button" class="collection-count-btn collection-clear-btn" data-name="${rawName}" data-n="0">✕</button>
+                    </div>`;
+                collectionList.appendChild(row);
+            });
+        });
+
+        if (!shown) {
+            collectionList.innerHTML = `<div class="collection-value-empty">No cards match your search.</div>`;
+        }
 
         if (collectionOwnedCount) {
             collectionOwnedCount.innerText = Object.keys(ownedCollection).length;
@@ -8283,12 +9381,6 @@ gradeButtons.forEach(button => {
             renderCollectionList(collectionSearch ? collectionSearch.value : '');
             if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         });
-    }
-
-    const collectionMaxToggleBtn = document.getElementById('collectionMaxToggleBtn');
-    if (collectionMaxToggleBtn) {
-        collectionMaxToggleBtn.addEventListener('click', toggleCollectionMaxState);
-        updateCollectionMaxToggleButton();
     }
 
     const collectionMaxToggleBtn = document.getElementById('collectionMaxToggleBtn');
@@ -8523,12 +9615,19 @@ gradeButtons.forEach(button => {
         const maxAdd = Math.max(0, 4 - currentOwned);
 
         if (imageNode) {
-            imageNode.src = `card_images/${rawName}.png`;
+            imageNode.src = `${getCardImageSrc(rawName)}`;
             imageNode.alt = cleanName;
             imageNode.onerror = function () { this.onerror = null; this.src = `card_images/${rawName}.webp`; };
         }
         if (nameNode) nameNode.textContent = cleanName;
-        if (descriptionNode) descriptionNode.textContent = info.Description || 'No card text listed.';
+        if (descriptionNode) {
+            const cardText = info.LongDescription || info.Description || 'No card text listed.';
+            let html = formatCardText(cardText);
+            if (info.FlavorText) {
+                html += `<div class="collection-buy-card-flavor">${formatCardText(info.FlavorText)}</div>`;
+            }
+            descriptionNode.innerHTML = html;
+        }
         if (metaNode) {
             metaNode.innerHTML = `<span><strong>Class:</strong> ${info.Class || '—'}</span><span><strong>Type:</strong> ${info.Type || '—'}</span><span><strong>Rarity:</strong> ${info.Rarity || '—'}</span><span><strong>Set:</strong> ${info.Set || '—'}</span>`;
         }
@@ -8566,6 +9665,11 @@ gradeButtons.forEach(button => {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
         collectionBuyScrapExclusions.clear();
+        collectionScrapFilters = { faction: 'all', cardClass: 'all' };
+        const filterBtns = document.querySelectorAll('.collection-scrap-filter-btn');
+        filterBtns.forEach(b => b.classList.toggle('active', b.dataset.faction === 'all'));
+        const classSelect = document.getElementById('collectionScrapClassFilter');
+        if (classSelect) classSelect.value = 'all';
         updateCollectionBuyModal(rawName);
         // Compute the scrap route for whatever quantity is already in the
         // stepper (defaults to 1) so the suggestion shows immediately
@@ -8593,6 +9697,7 @@ gradeButtons.forEach(button => {
             if (summaryNode) summaryNode.innerHTML = `<div class="collection-buy-summary-line"><strong>${cleanCardName(rawName)}</strong> is already maxed out at 4 copies.</div>`;
             if (scrapNode) scrapNode.innerHTML = '<div class="collection-buy-scrap-title">Scrap suggestions</div><div class="collection-buy-scrap-row">No extra copies to aim for.</div>';
             if (dangerNode) dangerNode.textContent = 'This card is already at the cap.';
+            toggleCollectionScrapFilterRow(false);
             return;
         }
 
@@ -8603,10 +9708,12 @@ gradeButtons.forEach(button => {
         if (totalCost <= totalSparks) {
             if (scrapNode) scrapNode.innerHTML = '<div class="collection-buy-scrap-title">Scrap guide</div><div class="collection-buy-scrap-row">You can afford this directly with your current sparks, so no scrap route is needed.</div>';
             if (dangerNode) dangerNode.textContent = 'This is just a planning guide — the app will not spend sparks or card copies for you.';
+            toggleCollectionScrapFilterRow(false);
             return;
         }
 
-        const scrapPlan = findScrapSuggestions(shortfall, new Set([rawName]), collectionBuyScrapExclusions);
+        toggleCollectionScrapFilterRow(true);
+        const scrapPlan = findScrapSuggestions(shortfall, new Set([rawName]), collectionBuyScrapExclusions, collectionScrapFilters);
         if (scrapNode) {
             const title = scrapPlan.stillShort > 0 ? 'Best available scrap route' : 'Scrap route';
             scrapNode.innerHTML = `
@@ -8630,6 +9737,11 @@ gradeButtons.forEach(button => {
         return (rawName || '').replace(/_/g, ' ');
     }
 
+    function toggleCollectionScrapFilterRow(show) {
+        const row = document.getElementById('collectionScrapFilterRow');
+        if (row) row.classList.toggle('hidden', !show);
+    }
+
     function renderCollectionScrapRows(picks) {
         if (!Array.isArray(picks) || !picks.length) {
             return '<div class="collection-buy-scrap-row">No scrap cards found for this route.</div>';
@@ -8637,8 +9749,8 @@ gradeButtons.forEach(button => {
         return picks.map(p => `
             <div class="collection-buy-scrap-row">
                 <div class="collection-buy-scrap-art">
-                    <img src="card_images/${p.name}.png" alt="${cleanCardName(p.name)}" loading="lazy" decoding="async"
-                         onerror="this.onerror=null;this.src='card_images/${p.name}.webp'">
+                    <img src="${getCardImageSrc(p.name)}" alt="${cleanCardName(p.name)}" loading="lazy" decoding="async"
+                         onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(p.name)}.webp'">
                     <span class="collection-buy-scrap-copy-badge">x${p.copies}</span>
                 </div>
                 <div class="collection-buy-scrap-name">${cleanCardName(p.name)}</div>
@@ -8668,7 +9780,7 @@ gradeButtons.forEach(button => {
                 <button type="button" class="collection-hero-tile${owned ? ' owned' : ' not-owned'}" data-hero="${name}" title="${name} — ${classLabel}">
                     <span class="collection-hero-ring" style="background:linear-gradient(90deg, ${colorA} 50%, ${colorB} 50%);">
                         <img src="hero_images/${base}.webp" alt="${name}" loading="lazy" decoding="async"
-                             onerror="this.onerror=null;this.src='hero_images/${base}.png'">
+                             onerror="this.onerror=null;this.src='hero_images/${urlSafeCardName(base)}.png'">
                     </span>
                     ${!owned ? '<img class="collection-hero-lock" src="lock.png" alt="Locked">' : ''}
                 </button>`;
@@ -8737,25 +9849,18 @@ gradeButtons.forEach(button => {
             const isRare = rarity === 'rare';
             const isEvent = rarity === 'event';
             const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
-            const borderColor = getCollectionRarityBorderColor(rawName);
-            const rarity = (cardDatabase?.[rawName]?.Rarity || '').toLowerCase().trim();
-            const isLegendary = rarity === 'legendary';
-            const isSuperRare = rarity === 'super-rare' || rarity === 'super rare';
-            const isRare = rarity === 'rare';
-            const isEvent = rarity === 'event';
-            const premiumClass = isLegendary ? ' legendary' : isSuperRare ? ' super-rare' : isRare ? ' rare' : isEvent ? ' event' : '';
+            const craftable = isAffordableCraftPick(rawName);
+            const craftableClass = craftable ? ' craft-recommended' : '';
+            const craftBadge = craftable
+                ? `<div class="craft-recommended-badge" title="Curated pick — you can afford to craft this now">Craft&nbsp;now</div>`
+                : '';
 
             return `
-                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
+                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}${craftableClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}${craftable ? ' — recommended craft, affordable now' : ''}" style="--collection-border-color:${borderColor};">
+                    ${craftBadge}
                     <div class="visual-card-art">
-                        <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
-                             onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
-                        <div class="card-quantity">${owned > 0 ? 'x' + owned : ''}</div>
-                    </div>
-                <div role="button" tabindex="0" class="collection-card-tile${owned > 0 ? ' owned' : ' not-owned'}${premiumClass}" data-name="${rawName}" title="${cleanName}${owned > 0 ? ' — owned x' + owned : ' — not owned'}" style="--collection-border-color:${borderColor};">
-                    <div class="visual-card-art">
-                        <img src="card_images/${rawName}.png" alt="${cleanName}" loading="lazy" decoding="async"
-                             onerror="this.onerror=null;this.src='card_images/${rawName}.webp'">
+                        <img src="${getCardImageSrc(rawName)}" alt="${cleanName}" loading="lazy" decoding="async"
+                             onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(rawName)}.webp'">
                         <div class="card-quantity">${owned > 0 ? 'x' + owned : ''}</div>
                     </div>
                     <span class="collection-card-name">${cleanName}</span>
@@ -8771,7 +9876,9 @@ gradeButtons.forEach(button => {
 
         let html = '';
         classOrder.forEach(cls => {
-            const list = [...groups[cls].owned, ...groups[cls].unowned];
+            const ownedCards = [...groups[cls].owned].sort(compareCollectionCardsByCost);
+            const unownedCards = [...groups[cls].unowned].sort(compareCollectionCardsByCost);
+            const list = [...ownedCards, ...unownedCards];
             if (!list.length) return;
             const color = CLASS_COLORS[cls] || '#4dd0e1';
             html += `
@@ -8852,7 +9959,6 @@ gradeButtons.forEach(button => {
     const collectionPageGridEl = document.getElementById('collectionPageGrid');
     if (collectionPageGridEl) {
         collectionPageGridEl.addEventListener('dblclick', (e) => {
-        collectionPageGridEl.addEventListener('dblclick', (e) => {
             const tile = e.target.closest('.collection-card-tile');
             if (!tile) return;
             const name = tile.dataset.name;
@@ -8872,116 +9978,32 @@ gradeButtons.forEach(button => {
         collectionPageGridEl.addEventListener('click', (e) => {
             if (e.detail > 1) return;
             const plusBtn = e.target.closest('.collection-card-tile .plus-btn');
-            if (plusBtn) {
+            const minusBtn = e.target.closest('.collection-card-tile .minus-btn');
+
+            if (plusBtn || minusBtn) {
                 e.stopPropagation();
-                const name = plusBtn.dataset.name;
+                const name = (plusBtn || minusBtn).dataset.name;
                 const current = ownedCollection[name] || 0;
+
                 if (isCommonCollectionFloorCard(name)) {
                     ownedCollection[name] = Math.max(current, 4);
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+                } else if (plusBtn && current < 4) {
+                    ownedCollection[name] = current + 1;
+                } else if (minusBtn && current > 0) {
+                    const next = current - 1;
+                    if (next <= 0) delete ownedCollection[name];
+                    else ownedCollection[name] = next;
+                } else {
                     return;
                 }
-                if (current >= 4 && !isCommonCollectionFloorCard(name)) {
-            if (!name) return;
-            const current = ownedCollection[name] || 0;
-            if (current <= 0) {
-                ownedCollection[name] = 4;
+
                 saveOwnedCollection();
                 const searchVal = document.getElementById('collectionPageSearch')?.value || '';
                 renderCollectionPageGrid(searchVal);
                 renderCollectionPageStats();
                 if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
                 if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-            }
-        });
-
-        collectionPageGridEl.addEventListener('click', (e) => {
-            if (e.detail > 1) return;
-            const plusBtn = e.target.closest('.collection-card-tile .plus-btn');
-            if (plusBtn) {
-                e.stopPropagation();
-                const name = plusBtn.dataset.name;
-                const current = ownedCollection[name] || 0;
-                if (isCommonCollectionFloorCard(name)) {
-                    ownedCollection[name] = Math.max(current, 4);
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                    return;
-                }
-                if (current >= 4 && !isCommonCollectionFloorCard(name)) {
-                    delete ownedCollection[name];
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                    return;
-                }
-                if (current < 4) {
-                    ownedCollection[name] = current + 1;
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                    return;
-                }
-                if (current < 4) {
-                    ownedCollection[name] = current + 1;
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                }
-                return;
-                return;
-            }
-
-            const minusBtn = e.target.closest('.collection-card-tile .minus-btn');
-            if (minusBtn) {
-                e.stopPropagation();
-                const name = minusBtn.dataset.name;
-                const current = ownedCollection[name] || 0;
-                if (isCommonCollectionFloorCard(name)) {
-                    ownedCollection[name] = Math.max(current, 4);
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                    return;
-                }
-                if (current > 0) {
-                    const next = current - 1;
-                    if (next <= 0) delete ownedCollection[name];
-                    else ownedCollection[name] = next;
-                    saveOwnedCollection();
-                    const searchVal = document.getElementById('collectionPageSearch')?.value || '';
-                    renderCollectionPageGrid(searchVal);
-                    renderCollectionPageStats();
-                    if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
-                    if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
-                }
+                reopenCardTileControls(collectionPageGridEl, name);
                 return;
             }
 
@@ -9064,6 +10086,42 @@ gradeButtons.forEach(button => {
         if (qtyInput) {
             qtyInput.addEventListener('input', refreshCollectionBuyPlan);
         }
+
+        // Populate the class dropdown once (static game data, doesn't change).
+        const scrapClassSelect = document.getElementById('collectionScrapClassFilter');
+        if (scrapClassSelect && scrapClassSelect.options.length <= 1) {
+            ['Guardian', 'Kabloom', 'Mega-Grow', 'Smarty', 'Solar', 'Beastly', 'Brainy', 'Crazy', 'Hearty', 'Sneaky'].forEach(cls => {
+                const opt = document.createElement('option');
+                opt.value = cls;
+                opt.textContent = cls;
+                scrapClassSelect.appendChild(opt);
+            });
+        }
+
+        const scrapFilterBtns = Array.from(document.querySelectorAll('.collection-scrap-filter-btn'));
+        scrapFilterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                scrapFilterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                collectionScrapFilters.faction = btn.dataset.faction;
+                // A specific class filter always wins over the faction
+                // buttons, so reset it back to "all" on faction change.
+                collectionScrapFilters.cardClass = 'all';
+                if (scrapClassSelect) scrapClassSelect.value = 'all';
+                refreshCollectionBuyPlan();
+            });
+        });
+        if (scrapClassSelect) {
+            scrapClassSelect.addEventListener('change', () => {
+                collectionScrapFilters.cardClass = scrapClassSelect.value;
+                if (scrapClassSelect.value !== 'all') {
+                    // Picking a specific class supersedes the faction buttons.
+                    scrapFilterBtns.forEach(b => b.classList.toggle('active', b.dataset.faction === 'all'));
+                    collectionScrapFilters.faction = 'all';
+                }
+                refreshCollectionBuyPlan();
+            });
+        }
     }
 
     if (collectionPageGridEl) {
@@ -9096,6 +10154,8 @@ gradeButtons.forEach(button => {
                 ownedSparksInput.value = ownedSparks > 0 ? String(ownedSparks) : '';
             }
             renderCollectionPageStats();
+            renderCollectionPageGrid(collectionPageSearchEl ? collectionPageSearchEl.value : '');
+            if (typeof renderCollectionList === 'function') renderCollectionList(collectionSearch ? collectionSearch.value : '');
             if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
         });
     }
@@ -9238,7 +10298,11 @@ gradeButtons.forEach(button => {
         currentFaction = deckHeroLock
             ? deckHeroLock.faction
             : (collectionFactionSelect ? collectionFactionSelect.value : 'Plant');
-        currentSeeds = [];
+        // Keep whatever the user already added (e.g. a base card from Dave's
+        // starter picker) as locked-in seeds, instead of wiping them —
+        // the collection build should complete around them the same way
+        // buildOptimizedDeck() does for the non-collection path.
+        const baseSeeds = currentSeeds.map(card => ({ ...card }));
         lastAddedCard = null;
 
         const verdictCtx =
@@ -9246,7 +10310,11 @@ gradeButtons.forEach(button => {
                 ? getVerdictContext()
                 : undefined;
 
-        const idealCurve = getFinishIdealCurve([], verdictCtx);
+        const chosenArchetype = archetypeSelect?.value || null;
+        const chosenWinCondition = winConditionSelect?.value || null;
+        const archetypeCtx = { archetype: chosenArchetype, winCondition: chosenWinCondition };
+
+        const idealCurve = getFinishIdealCurve(baseSeeds, verdictCtx, chosenArchetype);
 
         const profiles = [
             { synergy: 0.42, power: 0.275, curve: 0.255, consistency: 0.05 },
@@ -9286,14 +10354,15 @@ gradeButtons.forEach(button => {
 
             for (const profile of profiles) {
                 const completedDeck = buildFastCompletion(
-                    [],
+                    baseSeeds,
                     profile,
                     idealCurve,
                     verdictCtx,
                     false,
                     false,
                     true, // ownedOnly
-                    heroName
+                    heroName,
+                    archetypeCtx
                 );
 
                 // Skip combos that can't actually fill a real deck from the
@@ -9320,14 +10389,15 @@ gradeButtons.forEach(button => {
                 activeClasses = new Set(combo);
                 for (const profile of profiles) {
                     const completedDeck = buildFastCompletion(
-                        [],
+                        baseSeeds,
                         profile,
                         idealCurve,
                         verdictCtx,
                         false,
                         false,
                         true,
-                        heroName
+                        heroName,
+                        archetypeCtx
                     );
                     const score = getExactFinishScore(completedDeck, verdictCtx);
                     if (score > bestScore) {
@@ -9358,7 +10428,8 @@ gradeButtons.forEach(button => {
                 false,
                 false,
                 false, // ownedOnly off for this pass, so it can actually finish
-                heroName
+                heroName,
+                archetypeCtx
             );
         }
 
@@ -9370,7 +10441,8 @@ gradeButtons.forEach(button => {
             false,
             false,
             { maxMilliseconds: 350, maxEvaluations: 140, maxPasses: 2 },
-            true // ownedOnly
+            true, // ownedOnly
+            archetypeCtx
         );
 
         currentSeeds = bestDeck;
@@ -9384,19 +10456,24 @@ gradeButtons.forEach(button => {
             const message = ownedCount > 0
                 ? `Your collection only had ${ownedCount} playable card${ownedCount === 1 ? '' : 's'} for this hero, so I filled the remaining ${finalCount - ownedCount} slots with the strongest cards available — you'll need to craft those.`
                 : `Your collection didn't have enough playable cards for this hero, so this deck is built from the strongest cards available — you'll need to craft most of it.`;
-            if (typeof daveSay === 'function') {
-                daveSay(message);
+            if (typeof daveChatAppend === 'function') {
+                daveChatAppend(daveSay(message));
+            } else if (typeof daveSay === 'function') {
+                const chatFeed = document.getElementById('aiChatFeed');
+                if (chatFeed) chatFeed.innerHTML += daveSay(message);
             } else {
                 console.warn(message);
             }
         }
     }
 
-    const getTotalCards = () => currentSeeds.reduce((sum, seed) => {
-        const type = String(cardDatabase?.[seed.name]?.Type || '').toLowerCase();
-        if (type.includes('superpower')) return sum;
-        return sum + seed.count;
-    }, 0);
+    function getTotalCards() {
+        return currentSeeds.reduce((sum, seed) => {
+            const type = String(cardDatabase?.[seed.name]?.Type || '').toLowerCase();
+            if (type.includes('superpower')) return sum;
+            return sum + seed.count;
+        }, 0);
+    }
 
 
     // --- 1. Smart Autocomplete ---
@@ -9485,6 +10562,15 @@ gradeButtons.forEach(button => {
         renderSeeds();
     }
 
+    // Clicking anywhere outside a card tile closes whichever one is open,
+    // for both the deck's own seed list and any collection-style grid.
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('.visual-card, .collection-card-tile')) return;
+        document.querySelectorAll('.visual-card.show-controls, .collection-card-tile.show-controls')
+            .forEach(el => el.classList.remove('show-controls'));
+        activeCardControls = null;
+    });
+
     // --- 2. Unified Visual Rendering ---
     function renderSeeds() {
         const resultsContainer = document.getElementById('generatedDeckList');
@@ -9492,9 +10578,14 @@ gradeButtons.forEach(button => {
         const title = document.getElementById('generatedDeckTitle');
         const actionContainer = document.getElementById('deckActionContainer');
         const clearSeedsBtn = document.getElementById('clearSeedsBtn');
+        const saveDeckBtn = document.getElementById('saveDeckBtn');
         const totalCards = getTotalCards();
         const isDeckComplete = totalCards === 40;
         syncDeckIdentityFromSeeds();
+
+        if (saveDeckBtn) {
+            saveDeckBtn.disabled = totalCards === 0;
+        }
 
         // A hero picked from "Build for hero" stays locked in even before any
         // cards are added, so Finish-For-Me knows which two classes to use.
@@ -9528,6 +10619,7 @@ gradeButtons.forEach(button => {
             lastAddedCard = null;
             triggerAICoPilot();
             if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+            if (typeof renderDeckCollectionBottom === 'function') renderDeckCollectionBottom();
             return;
         }
 
@@ -9566,7 +10658,7 @@ gradeButtons.forEach(button => {
         return `
             <img 
                 src="hero_images/${base}.webp" 
-                onerror="this.onerror=null; this.src='hero_images/${base}.png';"
+                onerror="this.onerror=null; this.src='hero_images/${urlSafeCardName(base)}.png';"
                 alt="${hero.name}" 
                 class="export-header-avatar"
                 style="left: ${i * 34}px;"
@@ -9644,11 +10736,11 @@ gradeButtons.forEach(button => {
 
             const cardDiv = document.createElement('div');
             // 2. ADD THE ANIMATION CLASS AND DYNAMIC DELAY
-            cardDiv.className = 'visual-card pop-animate';
+            cardDiv.className = 'visual-card pop-animate' + (activeCardControls === seed.name ? ' show-controls' : '');
             cardDiv.style.animationDelay = `${index * 35}ms`;
 
             const img = document.createElement('img');
-            img.src = `card_images/${dbName}.png`;
+            img.src = `${getCardImageSrc(dbName)}`;
             img.alt = displayName;
             img.title = displayName;
             img.onerror = function () { this.onerror = null; this.src = `card_images/${dbName}.webp`; };
@@ -9699,7 +10791,12 @@ resultsContainer.appendChild(cardDiv);
             cardDiv.addEventListener('click', () => {
                 const isOpen = cardDiv.classList.contains('show-controls');
                 document.querySelectorAll('.visual-card.show-controls').forEach(el => el.classList.remove('show-controls'));
-                if (!isOpen) cardDiv.classList.add('show-controls');
+                if (!isOpen) {
+                    cardDiv.classList.add('show-controls');
+                    activeCardControls = seed.name;
+                } else {
+                    activeCardControls = null;
+                }
             });
 
             controls.addEventListener('click', e => {
@@ -9715,6 +10812,7 @@ resultsContainer.appendChild(cardDiv);
         triggerAICoPilot();
         updateDeckStats();
         if (typeof updateDeckSparkCost === 'function') updateDeckSparkCost();
+        if (typeof renderDeckCollectionBottom === 'function') renderDeckCollectionBottom();
     }
     const PLANT_CARD_CLASSES = new Set([
     "Guardian",
@@ -10189,6 +11287,11 @@ if (document.readyState === "loading") {
                         currentSeeds.forEach(s => activeClasses.add(s.class));
                         if (lastAddedCard === name) lastAddedCard = null;
                         if (activeClasses.size < 2) heroAnnounced = false;
+                        // Card is gone entirely, so there's nothing left to keep open.
+                        activeCardControls = null;
+                    } else {
+                        // Still above 0, so keep the popup open for repeated taps.
+                        activeCardControls = name;
                     }
                     renderSeeds();
                 }
@@ -10203,6 +11306,8 @@ if (document.readyState === "loading") {
                     deckBuiltFromCollection = false;
                     seed.count++;
                     lastAddedCard = name; // Update context to the card they modified
+                    // Keep the popup open unless we just hit the 4-copy ceiling.
+                    activeCardControls = seed.count < 4 ? name : null;
                     renderSeeds();
                 }
             });
@@ -11157,11 +12262,44 @@ if (document.readyState === "loading") {
         _gaugeBuilt = true;
     }
 
+    function getActiveDaveSpeaker() {
+        if (daveFlow?.speaker) return daveFlow.speaker;
+        return deckHeroLock?.faction === 'Zombie' ? 'Zomboss' : 'Dave';
+    }
+
+    function isZombieDeck() {
+        return getActiveDaveSpeaker() === 'Zomboss';
+    }
+
+    function getDeckSpeakerAvatar() {
+        return getActiveDaveSpeaker() === 'Zomboss'
+            ? { src: 'zomboss.png', alt: 'Zomboss' }
+            : { src: 'crazydave.webp', alt: 'Crazy Dave' };
+    }
+
+    function updateDaveHeader() {
+        const avatarEl = document.getElementById('daveHeaderAvatar');
+        const titleEl = document.getElementById('daveHeaderTitle');
+        const speaker = getActiveDaveSpeaker();
+        const avatar = speaker === 'Zomboss'
+            ? { src: 'zomboss.png', alt: 'Zomboss' }
+            : { src: 'crazydave.webp', alt: 'Crazy Dave' };
+
+        if (avatarEl) {
+            avatarEl.src = avatar.src;
+            avatarEl.alt = avatar.alt;
+        }
+        if (titleEl) {
+            titleEl.textContent = speaker === 'Zomboss' ? 'Zomboss' : 'Crazy Dave';
+        }
+    }
+
     // Wraps a message in Dave's speech bubble (mini avatar + tail + pop animation)
     function daveSay(innerHtml) {
+        const avatar = getDeckSpeakerAvatar();
         return `
     <div class="dave-msg">
-        <img src="crazydave.webp" alt="" class="dave-msg-avatar">
+        <img src="${avatar.src}" alt="${avatar.alt}" class="dave-msg-avatar">
         <div class="speech-bubble">${innerHtml}</div>
     </div>`;
     }
@@ -11173,6 +12311,84 @@ if (document.readyState === "loading") {
             <span class="typing-dots"><span></span><span></span><span></span></span>
             <em style="opacity:0.8;">${text}</em>
         </span>`);
+    }
+
+    // ------------------------------------------------------------
+    // STAR RATING SYSTEM — F–S letter grades are still computed under the
+    // hood (GRADE_CUTOFFS / GRADE_BANDS above are unchanged), but the user
+    // now only ever sees 0–3 stars. Mapping: F = 0, D = 1, C/B = 2, A/S = 3.
+    // ------------------------------------------------------------
+    function gradeToStarCount(letter) {
+        switch (letter) {
+            case 'S':
+            case 'A': return 3;
+            case 'B':
+            case 'C': return 2;
+            case 'D': return 1;
+            default: return 0; // F, "—" (not enough cards yet), unrecognized
+        }
+    }
+
+    // Renders a row of filled/empty star glyphs for a given star count.
+    function starsHtml(count, max = 3) {
+        let html = '';
+        for (let i = 0; i < max; i++) {
+            html += `<span class="deck-star${i < count ? ' filled' : ''}">★</span>`;
+        }
+        return html;
+    }
+
+    // Flair labels only ever show up on a top (S-grade, 3-star) deck, as an
+    // extra "how S is this S" flourish. They're driven by how many
+    // Legendary / Rare / Uncommon cards are actually in the deck.
+    // Super-Rare/Event ("premium") cards are their own separate rarity and
+    // are excluded from these counts entirely. Checked hardest-first so a
+    // deck that clears the Triassic bar doesn't get stuck showing Colossal.
+    const DECK_FLAIR_TIERS = [
+        { name: 'Triassic', legendary: 4, rare: 12, uncommon: 24 },
+        { name: 'Colossal', legendary: 3, rare: 9, uncommon: 18 },
+        { name: 'Galactic', legendary: 2, rare: 6, uncommon: 12 },
+    ];
+
+    function getDeckFlairLabel(letter, seeds) {
+        if (letter !== 'S' || !Array.isArray(seeds) || seeds.length === 0) return null;
+
+        let legendary = 0, rare = 0, uncommon = 0;
+        seeds.forEach(seed => {
+            const rarity = (cardDatabase?.[seed.name]?.Rarity || '').toLowerCase().trim();
+            if (rarity === 'super-rare' || rarity === 'super rare' || rarity === 'event') return; // premium doesn't count
+            const count = seed.count || 0;
+            if (rarity === 'legendary') legendary += count;
+            else if (rarity === 'rare') rare += count;
+            else if (rarity === 'uncommon') uncommon += count;
+        });
+
+        for (const tier of DECK_FLAIR_TIERS) {
+            if (legendary > tier.legendary || rare > tier.rare || uncommon > tier.uncommon) {
+                return tier.name;
+            }
+        }
+        return null;
+    }
+
+    // Same as getDeckFlairLabel, but for the "3x Card_Name" string-array
+    // format used by saved/finder decks instead of the seeds {name,count}
+    // array used by the live deck builder.
+    function getDeckFlairLabelFromCardList(letter, cardList) {
+        if (letter !== 'S' || !Array.isArray(cardList) || cardList.length === 0) return null;
+        const map = typeof parseCardList === 'function' ? parseCardList(cardList) : {};
+        const seeds = Object.keys(map).map(name => ({ name, count: map[name] }));
+        return getDeckFlairLabel(letter, seeds);
+    }
+
+    // Small shared renderer for the "Rating" boxes on deck sheets/overlays —
+    // stars instead of a raw letter, plus the flair label underneath when earned.
+    function deckRatingStarsHtml(grade, flairName) {
+        const stars = starsHtml(gradeToStarCount(grade));
+        const flair = flairName
+            ? `<div class="pvz-rating-flair" data-flair="${flairName}">${flairName === 'Triassic' ? '‼️ TRIASSIC ‼️' : `❗ ${flairName.toUpperCase()} ❗`}</div>`
+            : '';
+        return `<span class="pvz-rating-grade">${stars}</span>${flair}`;
     }
 
     // Smoothly counts the "pts to next grade" number toward its new value
@@ -11201,7 +12417,6 @@ const DAVE_PANEL_ANIMATION_MS = 420;
 let davePanelHideTimer = null;
 
 function setDavePanelVisible(isVisible) {
-    if (!crazyDavePanel || !toggleDavePanelBtn || !crafterView) return;
     if (!crazyDavePanel || !toggleDavePanelBtn || !crafterView) return;
     clearTimeout(davePanelHideTimer);
 
@@ -11258,17 +12473,6 @@ if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
     toggleDavePanelBtn.setAttribute("aria-label", "Show Crazy Dave panel");
     toggleDavePanelBtn.title = "Show Crazy Dave";
 
-if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
-    crazyDavePanel.classList.add("dave-panel-fully-hidden");
-    crafterView.classList.add("dave-panel-hidden");
-    toggleDavePanelBtn.classList.add("is-closed");
-    toggleDavePanelBtn.setAttribute("aria-expanded", "false");
-    toggleDavePanelBtn.setAttribute("aria-label", "Show Crazy Dave panel");
-    toggleDavePanelBtn.title = "Show Crazy Dave";
-
-    toggleDavePanelBtn.addEventListener("click", () => {
-        const isCurrentlyVisible =
-            !crafterView.classList.contains("dave-panel-hidden");
     toggleDavePanelBtn.addEventListener("click", () => {
         const isCurrentlyVisible =
             !crafterView.classList.contains("dave-panel-hidden");
@@ -11281,14 +12485,382 @@ if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
         setDavePanelVisible(!isCurrentlyVisible);
     });
 }
-        if (!isCurrentlyVisible) {
-            const proceed = window.confirm("Warning: Dave feedback is horrible. Are you sure you know what you are doing?");
-            if (!proceed) return;
+
+    // ============================================================
+    // DAVE GUIDED FLOWS — button-driven, no free-text chat.
+    // "Build me a deck" walks: hero -> use collection? -> base around
+    // a card? -> build, then rates the result in stars.
+    // "Scrap or keep?" looks up a single card against the curated
+    // craft-tier data and gives a plain verdict.
+    // ============================================================
+
+    // Appends to Dave's chat feed instead of replacing it, and scrolls
+    // the feed so the newest message is visible.
+    function daveChatAppend(html) {
+        const chatFeed = document.getElementById('aiChatFeed');
+        if (!chatFeed) return;
+        chatFeed.innerHTML += html;
+        chatFeed.scrollTop = chatFeed.scrollHeight;
+    }
+
+    function daveChatReplace(html) {
+        const chatFeed = document.getElementById('aiChatFeed');
+        if (!chatFeed) return;
+        chatFeed.innerHTML = html;
+        chatFeed.scrollTop = chatFeed.scrollHeight;
+    }
+
+    function daveChatAppendUser(text) {
+        const chatFeed = document.getElementById('aiChatFeed');
+        if (!chatFeed || !text) return;
+        const safeText = escapeHtml(text);
+        chatFeed.innerHTML += `
+            <div class="dave-msg dave-msg-user">
+                <div class="speech-bubble speech-bubble-user">${safeText}</div>
+            </div>`;
+        chatFeed.scrollTop = chatFeed.scrollHeight;
+    }
+
+    function daveDisableChoiceButtons() {
+        const chatFeed = document.getElementById('aiChatFeed');
+        if (!chatFeed) return;
+        chatFeed.querySelectorAll('.dave-choice-btn, .dave-hero-btn').forEach(btn => {
+            if (!btn.disabled) {
+                btn.disabled = true;
+                btn.classList.add('is-used');
+            }
+        });
+    }
+
+    function resetDaveConversation() {
+        daveFlow.active = false;
+        daveFlow.useCollection = null;
+        daveFlow.speaker = deckHeroLock?.faction === 'Zombie' ? 'Zomboss' : 'Dave';
+
+        const chatFeed = document.getElementById('aiChatFeed');
+        if (chatFeed) {
+            chatFeed.innerHTML = '';
         }
 
-        setDavePanelVisible(!isCurrentlyVisible);
-    });
-}
+        updateDaveHeader();
+        daveChatReplace(daveSay(`Heey I'm Craaaazy Dave! Who am I building a deck for?`) + daveHeroPickerHtml());
+        wireDaveHeroPicker();
+    }
+
+    const daveFlow = { active: false, useCollection: null };
+
+    const daveBuildDeckBtn = document.getElementById('daveBuildDeckBtn');
+    const daveScrapKeepBtn = document.getElementById('daveScrapKeepBtn');
+    const daveClearChatBtn = document.getElementById('daveClearChatBtn');
+
+    function startDaveBuildFlow() {
+        daveFlow.active = true;
+        daveFlow.useCollection = null;
+        daveFlow.speaker = deckHeroLock?.faction === 'Zombie' ? 'Zomboss' : 'Dave';
+
+        daveChatAppendUser('Build me a deck');
+
+        if (daveBuildDeckBtn) daveBuildDeckBtn.disabled = true;
+
+        if (!deckHeroLock) {
+            daveFlow.speaker = 'Dave';
+            updateDaveHeader();
+            daveChatReplace(daveSay(`Heey I'm Craaaazy Dave! Who am I building a deck for?`) + daveHeroPickerHtml());
+            wireDaveHeroPicker();
+            if (daveBuildDeckBtn) daveBuildDeckBtn.disabled = false;
+            return;
+        }
+
+        // Hero's already locked in. If cards were already added before
+        // hitting the button, treat that as "base it around these cards".
+        const startedWithCards = currentSeeds.length > 0;
+        const defaultMsg = startedWithCards
+            ? `Building for <strong>${deckHeroLock.name}</strong>, and I'll build around the ${currentSeeds.length} card${currentSeeds.length === 1 ? '' : 's'} you've already got in there.`
+            : `Building for <strong>${deckHeroLock.name}</strong>, got it!`;
+
+        const heroMsg = heroQuotes[deckHeroLock.name] || defaultMsg;
+
+        updateDaveHeader();
+        daveChatReplace(daveSay(heroMsg));
+        daveAskUseCollection();
+    }
+
+    function daveHeroPickerHtml() {
+        const heroBtn = (name) => {
+            const base = name.trim().replace(/[\s-]+/g, '_');
+            return `
+                <button type="button" class="dave-hero-btn" data-hero="${escapeHtml(name)}">
+                    <img src="hero_images/${base}.webp" alt="" loading="lazy"
+                         onerror="this.onerror=null;this.src='hero_images/${base}.png';">
+                    <span>${escapeHtml(name)}</span>
+                </button>`;
+        };
+        return `<div class="dave-hero-grid">${[...PLANT_HEROES, ...ZOMBIE_HEROES].map(heroBtn).join('')}</div>`;
+    }
+
+    function wireDaveHeroPicker() {
+        const chatFeed = document.getElementById('aiChatFeed');
+        if (!chatFeed) return;
+        chatFeed.querySelectorAll('.dave-hero-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const heroName = btn.dataset.hero;
+                const deckHeroSelectEl = document.getElementById('deckHeroSelect');
+                if (deckHeroSelectEl) {
+                    deckHeroSelectEl.value = heroName;
+                    deckHeroSelectEl.dispatchEvent(new Event('change'));
+                }
+
+                daveFlow.speaker = (heroName && ZOMBIE_HEROES.includes(heroName)) ? 'Zomboss' : 'Dave';
+                daveDisableChoiceButtons();
+                daveChatAppendUser(heroName);
+                updateDaveHeader();
+
+                const line = heroQuotes[heroName] || `Building for <strong>${escapeHtml(heroName)}</strong>, alright!`;
+
+                daveChatAppend(daveSay(line));
+                daveAskUseCollection();
+            });
+        });
+    }
+
+    function daveAskUseCollection() {
+        const hasCollection = Object.keys(ownedCollection).length > 0;
+        const note = hasCollection ? '' : ` <span class="bubble-sub">(Heads up — you haven't marked any cards owned in My Collection yet.)</span>`;
+        daveChatAppend(daveSay(`do you want to use your collection, or just build a random good deck available?${note}`) + `
+            <div class="dave-choice-row">
+                <button type="button" class="dave-choice-btn" data-use-collection="yes">Use my collection</button>
+                <button type="button" class="dave-choice-btn dave-choice-secondary" data-use-collection="no">Just build the best deck</button>
+            </div>`);
+
+        const chatFeed = document.getElementById('aiChatFeed');
+        chatFeed.querySelectorAll('[data-use-collection]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                daveDisableChoiceButtons();
+                daveChatAppendUser(btn.dataset.useCollection === 'yes' ? 'Use my collection' : 'Just build the best deck');
+                daveFlow.useCollection = btn.dataset.useCollection === 'yes';
+                daveChatAppend(daveSay(daveFlow.useCollection
+                    ? `Using what you own. If I can't afford a great deck, I'll fill the gaps with the strongest cards and tell you what to craft. sounds good ?`
+                    : `Building with the most op ah cards available, no collection limits.`));
+
+                if (currentSeeds.length > 0) {
+                    // Hero step already told us they're basing it around
+                    // existing cards - skip straight to building.
+                    daveExecuteBuild();
+                } else {
+                    daveAskBuildAround();
+                }
+            });
+        });
+    }
+
+    // Third fork after hero + collection choice: base the deck around a
+    // specific card, or just let Dave build the strongest thing he can.
+    function daveAskBuildAround() {
+        daveChatAppend(daveSay(`Want create a deck arround a card, or just start without that stuff?`) + `
+            <div class="dave-choice-row">
+                <button type="button" class="dave-choice-btn" id="daveBuildAroundCardBtn">Base around a card</button>
+                <button type="button" class="dave-choice-btn dave-choice-secondary" id="daveBuildAroundSkipBtn">Just build</button>
+            </div>`);
+
+        const cardBtn = document.getElementById('daveBuildAroundCardBtn');
+        const skipBtn = document.getElementById('daveBuildAroundSkipBtn');
+
+        if (cardBtn) {
+            cardBtn.addEventListener('click', () => {
+                daveDisableChoiceButtons();
+                daveChatAppendUser('Base around a card');
+                daveAskBaseCard();
+            });
+        }
+        if (skipBtn) {
+            skipBtn.addEventListener('click', () => {
+                daveDisableChoiceButtons();
+                daveChatAppendUser('Just build');
+                daveExecuteBuild();
+            });
+        }
+    }
+
+    function daveAskBaseCard() {
+        daveChatAppend(daveSay(`Search for the card in the bar above and add it, then hit Continue below — or just have me build.`) + `
+            <div class="dave-choice-row">
+                <button type="button" class="dave-choice-btn" id="daveBaseCardContinueBtn">Continue</button>
+                <button type="button" class="dave-choice-btn dave-choice-secondary" id="daveBaseCardSkipBtn">Just build</button>
+            </div>`);
+
+        const continueBtn = document.getElementById('daveBaseCardContinueBtn');
+        const skipBtn = document.getElementById('daveBaseCardSkipBtn');
+
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                daveDisableChoiceButtons();
+                daveChatAppendUser('Continue');
+                if (currentSeeds.length === 0) {
+                    daveChatAppend(daveSay(`I don't see a card added yet — search for one up top and add it, or click "Just build" instead.`));
+                    return;
+                }
+                daveChatAppend(daveSay(`Building around what you added now.`));
+                daveExecuteBuild();
+            });
+        }
+        if (skipBtn) {
+            skipBtn.addEventListener('click', () => {
+                daveDisableChoiceButtons();
+                daveChatAppendUser('Just build');
+                daveExecuteBuild();
+            });
+        }
+    }
+
+    function daveExecuteBuild() {
+        daveChatAppend(daveThinking('Building your deck...'));
+
+        setTimeout(() => {
+            try {
+                if (daveFlow.useCollection) {
+                    buildDeckFromCollection();
+                } else {
+                    currentSeeds = buildOptimizedDeck();
+                    deckBuiltFromCollection = false;
+                    lastAddedCard = null;
+                    renderSeeds();
+                }
+                if (typeof updateDeckStats === 'function') updateDeckStats();
+                daveAnnounceRating();
+            } finally {
+                daveFlow.active = false;
+                if (daveBuildDeckBtn) daveBuildDeckBtn.disabled = false;
+            }
+        }, 60);
+    }
+
+    // Grade -> a blunt one-liner, matching the star/color rating instead of
+    // hedging with a percentage. No follow-up suggestions after this — this
+    // is Dave's final word on the deck.
+    const DAVE_GRADE_FLAVOR = {
+        'S': 'Absolute beast of a deck!',
+        'A': 'Awesome deck!',
+        'B': 'Cool deck!',
+        'C': 'Mid deck.',
+        'D': 'This deck looks ass.',
+        'F': 'Is this ragebait?',
+    };
+
+    const ZOMBOSS_GRADE_FLAVOR = {
+        'S': 'Victory will be ours!',
+        'A': 'Strong deck — the Plants Will Struggle to get by this deck.',
+        'B': 'Good.',
+        'C': 'This Deck barely qualifies to my standards.',
+        'D': 'This is Mediocre.',
+        'F': 'Is this Supoosed to be funny?',
+    };
+
+    function getSpeakerGradeFlavor(letter) {
+        const mapping = isZombieDeck() ? ZOMBOSS_GRADE_FLAVOR : DAVE_GRADE_FLAVOR;
+        return mapping[letter] || `Not enough cards in there yet for me to judge.`;
+    }
+
+    function daveAnnounceRating() {
+        const deckCards = currentSeeds.map(s => `${s.count}x ${s.name}`);
+        const stats = getDeckVerdictFromCards(deckCards);
+        const flavor = getSpeakerGradeFlavor(stats.grade);
+        daveChatAppend(daveSay(`<strong>${flavor}</strong>`));
+    }
+
+    if (daveBuildDeckBtn) {
+        daveBuildDeckBtn.addEventListener('click', startDaveBuildFlow);
+    }
+
+    if (daveClearChatBtn) {
+        daveClearChatBtn.addEventListener('click', resetDaveConversation);
+    }
+
+    // --- "Is this card scrap or keep?" ---
+    const CRAFT_TIER_VERDICTS = {
+        Craft: { verdict: 'Craft it!', text: 'Actually a top craft priority — worth picking up if you don\'t already have it.' },
+        KeepUse: { verdict: 'Keep it!', text: 'A solid playable — hang onto it.' },
+        KeepHold: { verdict: 'Keep it!', text: 'Strong enough that you don\'t want to scrap it, even if it\'s not in your current deck.' },
+        KeepClassOnly: { verdict: 'Keep it!', text: 'Good within its class, at least — worth holding onto.' },
+        ScrappableUsable: { verdict: 'Your call', text: 'Playable but not essential. Fine to scrap if you need the sparks elsewhere.' },
+        ScrappableNiche: { verdict: 'Lean scrap', text: 'Pretty niche. Safe to scrap unless you\'re building around it specifically.' },
+        ScrapSpecial: { verdict: 'Scrap it', text: 'Situational at best. Just scrap it.' },
+        Scrap: { verdict: 'Scrap it', text: 'Useless. Just scrap it.' },
+    };
+
+    function daveResolveCardName(query) {
+        const q = query.trim().toLowerCase();
+        if (!q) return null;
+        const keys = Object.keys(cardDatabase || {});
+        // Exact match on display name first, then a loose contains match.
+        let match = keys.find(k => k.replace(/_/g, ' ').toLowerCase() === q);
+        if (!match) match = keys.find(k => k.replace(/_/g, ' ').toLowerCase().includes(q));
+        return match || null;
+    }
+
+    function daveAnswerScrapOrKeep(query) {
+        const rawName = daveResolveCardName(query);
+        if (!rawName) {
+            daveChatAppend(daveSay(`I couldn't find a card matching "${escapeHtml(query)}". Try the exact name.`));
+            return;
+        }
+        const displayName = rawName.replace(/_/g, ' ');
+        const tier = getCraftTier(rawName);
+        const info = tier && CRAFT_TIER_VERDICTS[tier] ? CRAFT_TIER_VERDICTS[tier] : null;
+
+        if (info) {
+            daveChatAppend(daveSay(`<strong>${escapeHtml(displayName)}</strong>: <span style="color:var(--accent, #4CAF50);">${info.verdict}</span><br>${info.text}`));
+            return;
+        }
+
+        // Unrated card - fall back to a rarity-based cost readout instead
+        // of guessing.
+        const cardInfo = cardDatabase?.[rawName] || {};
+        const rarity = cardInfo.Rarity || 'Common';
+        const craftCost = sparkCostFor(rawName);
+        const scrapValue = recycleValueFor(rawName);
+        daveChatAppend(daveSay(`<strong>${escapeHtml(displayName)}</strong>: I don't have a curated read on this one yet. It's a ${escapeHtml(rarity)} — ${craftCost.toLocaleString()} sparks to craft, ${scrapValue.toLocaleString()} back if you scrap it.`));
+    }
+
+    function daveCardPickerHtml() {
+        const options = Object.keys(cardDatabase || {})
+            .map(rawName => `<option value="${escapeHtml(rawName.replace(/_/g, ' '))}">`)
+            .join('');
+        return `
+            <div class="dave-card-picker">
+                <input type="text" id="daveScrapCardInput" list="daveCardDatalist" placeholder="Type a card name..." autocomplete="off">
+                <datalist id="daveCardDatalist">${options}</datalist>
+            </div>
+            <div class="dave-choice-row">
+                <button type="button" class="dave-choice-btn" id="daveScrapCardCheckBtn">Check it</button>
+            </div>`;
+    }
+
+    function startDaveScrapKeepFlow() {
+        daveChatReplace(daveSay(`Which card do you want a scrap-or-keep read on?`) + daveCardPickerHtml());
+
+        const input = document.getElementById('daveScrapCardInput');
+        const checkBtn = document.getElementById('daveScrapCardCheckBtn');
+
+        const runCheck = () => {
+            if (!input || !input.value.trim()) return;
+            daveDisableChoiceButtons();
+            daveChatAppendUser(input.value.trim());
+            daveAnswerScrapOrKeep(input.value);
+            input.value = '';
+        };
+
+        if (checkBtn) checkBtn.addEventListener('click', runCheck);
+        if (input) {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); runCheck(); }
+            });
+        }
+    }
+
+    if (daveScrapKeepBtn) {
+        daveScrapKeepBtn.addEventListener('click', startDaveScrapKeepFlow);
+    }
+
     // ------------------------------------------------------------
     // LIVE DECK ANALYTICS — Power Meter edition
     // ------------------------------------------------------------
@@ -11352,10 +12924,32 @@ if (crazyDavePanel && toggleDavePanelBtn && crafterView) {
         document.querySelectorAll('.pm-letter').forEach(l =>
             l.classList.toggle('active', l.dataset.g === activeLetter));
 
-        // Big grade letter (uses the verdict's own grade + color)
+        // Big grade display — now stars instead of a raw letter. The letter
+        // grade still drives everything under the hood (color, gauge, etc.);
+        // it's just not shown as text anymore.
         const gradeEl = document.getElementById('verdictGrade');
-        gradeEl.innerText = stats.grade;
+        gradeEl.innerHTML = starsHtml(gradeToStarCount(stats.grade));
         gradeEl.style.color = stats.gradeColor;
+        gradeEl.title = `Grade: ${stats.grade}`;
+
+        const flairName = getDeckFlairLabel(stats.grade, currentSeeds);
+        let flairEl = document.getElementById('pmFlairBadge');
+        if (!flairEl) {
+            flairEl = document.createElement('div');
+            flairEl.id = 'pmFlairBadge';
+            flairEl.className = 'pm-flair-badge';
+            const metaHost = document.querySelector('.pm-meta');
+            if (metaHost) metaHost.appendChild(flairEl);
+        }
+        if (flairName) {
+            flairEl.style.display = '';
+            flairEl.dataset.flair = flairName;
+            flairEl.textContent = flairName === 'Triassic'
+                ? '‼️ TRIASSIC ‼️'
+                : `❗ ${flairName.toUpperCase()} ❗`;
+        } else {
+            flairEl.style.display = 'none';
+        }
 
         // ==========================================
         // UI 2: Mana Curve Chart (SVG — unchanged renderer)
@@ -11507,92 +13101,6 @@ const scoreChips = debugChips.map((c, i) => `
 
 calloutHost.innerHTML = [...normalChips, ...scoreChips].join('');
     }
-    let manualDeckName = "";
-const DECK_NAME_MAX_CHARS = 24;
-function sanitizeDeckName(name) {
-    return (name || "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, DECK_NAME_MAX_CHARS);
-}
-
-function escapeHtml(str) {
-    return String(str || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
-}
-
-function getAutoDeckName() {
-    const isPlant = currentFaction === "Plant";
-
-    return typeof generateDeckName === "function"
-        ? generateDeckName(currentSeeds, isPlant)
-        : "Custom Deck";
-}
-
-function getCurrentDeckName() {
-    return sanitizeDeckName(manualDeckName) || getAutoDeckName();
-}
-    function buildCurrentDeckShareUrl(deckToShare = currentSeeds) {
-    const cardDictionary = Object.keys(cardDatabase).sort();
-
-    const encodedCards = deckToShare.map(card => {
-        const index = cardDictionary.indexOf(card.name);
-
-        if (index === -1) {
-            console.error(`🚨 Could not find card in dictionary: ${card.name}`);
-            return null;
-        }
-
-        const cardIndex = index.toString(36);
-        return card.count === 4 ? cardIndex : `${cardIndex}.${card.count}`;
-    });
-
-    if (encodedCards.includes(null)) {
-        return null;
-    }
-
-    const minimalDeckString = encodedCards.join('-');
-
-    // No #crafter — bare link so it auto-opens the panel on the home screen.
-    return `${window.location.origin}${window.location.pathname}?deck=${minimalDeckString}`;
-}
-function getMainSwapImprovement(oldVerdict, newVerdict) {
-    const improvements = [
-        {
-            key: "synergy",
-            label: "better card synergy",
-            delta: newVerdict.synergyScore - oldVerdict.synergyScore
-        },
-        {
-            key: "consistency",
-            label: "a more reliable game plan",
-            delta: newVerdict.consistencyScore - oldVerdict.consistencyScore
-        },
-        {
-            key: "power",
-            label: "higher card quality",
-            delta: newVerdict.powerScore - oldVerdict.powerScore
-        },
-        {
-            key: "curve",
-            label: "a smoother curve",
-            delta: newVerdict.curveNumeric - oldVerdict.curveNumeric
-        }
-    ];
-
-    improvements.sort((a, b) => b.delta - a.delta);
-
-    const best = improvements[0];
-
-    if (!best || best.delta <= 0) {
-        return "a stronger overall deck";
-    }
-
-    return best.label;
-}
     // ------------------------------------------------------------
     // CONVERSATIONAL AI CO-PILOT — speech bubble edition
     // ------------------------------------------------------------
@@ -12856,10 +14364,10 @@ function buildStarterSuggestion(cardName) {
                     <span class="rec-badge gold">Starter</span>
 
                     <img
-                        src="card_images/${cardName}.png"
+                        src="${getCardImageSrc(cardName)}"
                         alt="${escapeHtml(displayName)}"
                         title="${escapeHtml(displayName)}"
-                        onerror="this.onerror=null; this.src='card_images/${cardName}.webp';"
+                        onerror="this.onerror=null; this.src='card_images/${urlSafeCardName(cardName)}.webp';"
                     >
 
                     <button
@@ -14059,416 +15567,65 @@ const SmartDeckPlan = (() => {
         return;
     }
 
-    /*
-     * Keep the real database key here.
-     * Only remove underscores for display.
-     */
-    const randomCard =
-        cardNames[Math.floor(Math.random() * cardNames.length)];
+    const starterOptions = cardNames
+        .map(rawName => `<option value="${escapeHtml(rawName.replace(/_/g, ' '))}">`)
+        .join('');
 
-    const data =
-        cardDatabase[randomCard] || {};
-
-    const displayName =
-        randomCard.replace(/_/g, ' ');
-
-    const why =
-        getStarterCardReason(randomCard);
-
-    let starterTargetCopies = 3;
-
-const starterAverageData =
-    typeof cardAverageCopies !== "undefined"
-        ? cardAverageCopies?.[randomCard]
-        : null;
-
-if (starterAverageData?.appearances > 0) {
-    starterTargetCopies = Math.round(
-        starterAverageData.total /
-        starterAverageData.appearances
-    );
-}
-
-starterTargetCopies = Math.max(
-    1,
-    Math.min(starterTargetCopies, 4)
-);
-
-    
-
-    /*
-     * Same speech-bubble presentation as the
-     * normal top-three recommendation explanations.
-     */
-    const dialogue = `
+    chatFeed.innerHTML = daveSay(`
         Heey I'm Craaaazy Dave! I'm the best at creating amazing PvZ Heroes decks!
-        Pick any card to get started, or try this one.
-
-        <div class="rec-why-list starter-why-list">
-            <div class="rec-why-item">
-                <strong>
-                    Starter pick: ${escapeHtml(displayName)}
-                </strong>
-
-                <div class="rec-why-text">
-                    ${escapeHtml(why)}
-                </div>
-            </div>
+        What card do you want to start with?
+    `) + `
+        <div class="dave-card-picker">
+            <input type="text" id="daveStarterCardInput" list="daveStarterCardDatalist" placeholder="Type a card name..." autocomplete="off">
+            <datalist id="daveStarterCardDatalist">${starterOptions}</datalist>
+        </div>
+        <div class="dave-choice-row">
+            <button type="button" class="dave-choice-btn" id="daveStarterCardAddBtn">Add it</button>
         </div>
     `;
 
-    let htmlString =
-        daveSay(dialogue);
+    const starterInput = document.getElementById('daveStarterCardInput');
+    const starterAddBtn = document.getElementById('daveStarterCardAddBtn');
 
-    /*
-     * Use the exact same card-row structure as
-     * the normal top-three recommendations.
-     */
-    htmlString += `
-        <div class="rec-row starter-rec-row">
-            <div class="rec-card starter-rec-card" style="--d: 0ms;">
-                <span class="rec-badge gold">
-                    Starter
-                </span>
+    const runStarterAdd = () => {
+        if (!starterInput || !starterInput.value.trim()) return;
+        const rawName = daveResolveCardName(starterInput.value);
+        if (!rawName) {
+            daveChatAppend(daveSay(`I couldn't find a card matching "${escapeHtml(starterInput.value)}". Try the exact name.`));
+            return;
+        }
+        const data = cardDatabase[rawName] || {};
+        const displayName = rawName.replace(/_/g, ' ');
+        addSeed(rawName, data.Class || '', currentFaction, 1);
+        starterInput.value = '';
+        daveChatAppend(daveSay(`Added <strong>${escapeHtml(displayName)}</strong>. Let's build around it!`));
+    };
 
-                <img
-                    src="card_images/${randomCard}.png"
-                    alt="${escapeHtml(displayName)}"
-                    title="${escapeHtml(displayName)}"
-                    onerror="this.onerror=null; this.src='card_images/${randomCard}.webp';"
-                >
-
-                <button
-                    class="add-rec-btn generate-btn"
-                    data-name="${randomCard}"
-                    data-class="${escapeHtml(data.Class || '')}"
-                    data-amount="${starterTargetCopies}"
->
-    +${starterTargetCopies}
-                </button>
-            </div>
-        </div>
-    `;
-
-    chatFeed.innerHTML =
-        htmlString;
-
-    const starterButton =
-        chatFeed.querySelector(
-            '.starter-rec-row .add-rec-btn'
-        );
-
-    if (starterButton) {
-        starterButton.addEventListener(
-            'click',
-            event => {
-                const button =
-                    event.currentTarget;
-
-                const amount =
-                    parseInt(
-                        button.getAttribute('data-amount'),
-                        10
-                    ) || 1;
-
-                addSeed(
-                    button.getAttribute('data-name'),
-                    button.getAttribute('data-class'),
-                    currentFaction,
-                    amount
-                );
-            }
-        );
+    if (starterAddBtn) starterAddBtn.addEventListener('click', runStarterAdd);
+    if (starterInput) {
+        starterInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); runStarterAdd(); }
+        });
     }
 
     return;
 }
 
         if (getTotalCards() >= 40) {
-            const closestDeck = getClosestDeckMatch();
-            let baseHtml = "";
+            // Deck's complete - just give the same "cool deck" rating +
+            // flavor line Dave's guided build flow ends on, plus a call-out
+            // of any dead-weight owned cards. No closest-match lookup, no
+            // share-link generation, no further swap suggestions.
+            daveChatReplace(daveThinking("Hmm, let me study this deck..."));
 
-            if (!closestDeck) {
-                baseHtml = daveSay(`Your deck is complete! I could not find a close match in the deck database.`);
-            } else {
-                const deckName = (closestDeck.name || "").trim();
-                const uploadDate = closestDeck.upload_date || "Unknown date";
-
-                if (closestDeck.youtube_url) {
-                    baseHtml = daveSay(`
-                    Your deck is complete! Your deck is closest to
-                    <a href="${closestDeck.youtube_url}" target="_blank" rel="noopener noreferrer">${deckName}</a>
-                    from ${uploadDate}
-                    <span class="bubble-sub">Video: ${closestDeck.youtube_title || "YouTube deck video"}</span>
-                `);
-                } else {
-                    baseHtml = daveSay(`
-                    Your deck is complete! Your deck is closest to
-                    <strong style="color: var(--accent, #4CAF50);">${deckName}</strong>
-                    (from ${uploadDate}).
-                `);
-                }
-            }
-
-            // Show thinking bubble immediately so the UI doesn't feel frozen
-            chatFeed.innerHTML = baseHtml + daveThinking("Hmm, let me study this deck...");
-
-            // Yield the main thread so the browser paints the thinking bubble
             setTimeout(() => {
-                initSynergyMatrix();
-
-                const ctx = typeof getVerdictContext === "function" ? getVerdictContext() : {};
-
-                const currentDeckStrings = currentSeeds.map(s => `${s.count}x ${s.name}`);
-                const baselineVerdict = getDeckVerdictFromCards(currentDeckStrings, null, ctx);
-                const baselineScore = baselineVerdict.score;
-
-                let bestSwapIdea = null;
-                let maxImprovement = 0;
-
-                currentSeeds.forEach(seed => {
-                    const recommendations = getTopThreeRecommendations(seed.name);
-
-                    recommendations.forEach(rec => {
-                        // If this deck was just built from the user's
-                        // collection, don't turn around and suggest a card
-                        // they don't own - that directly contradicts what
-                        // "build from collection" is supposed to mean. Only
-                        // suggest swaps to cards they already have enough
-                        // copies of.
-                        if (deckBuiltFromCollection) {
-                            const neededCopies = rec.suggestedAmount || seed.count;
-                            const owned = (typeof ownedCollection === 'object' && ownedCollection)
-                                ? (ownedCollection[rec.name] || 0)
-                                : 0;
-                            if (owned < neededCopies) return;
-                        }
-
-                        const simulatedStrings = currentSeeds.map(s => {
-                            if (s.name === seed.name) return `${s.count}x ${rec.name}`;
-                            return `${s.count}x ${s.name}`;
-                        });
-
-                        const simVerdict = getDeckVerdictFromCards(simulatedStrings, null, ctx);
-                        const simScore = simVerdict.score;
-                        const improvement = simScore - baselineScore;
-
-                        if (improvement > maxImprovement) {
-                            maxImprovement = improvement;
-                            bestSwapIdea = {
-    removeCard: seed.name,
-    addCard: rec.name,
-    neededCopies: rec.suggestedAmount || seed.count,
-    oldScore: baselineScore,
-    newScore: simScore,
-    improvementText: getMainSwapImprovement(baselineVerdict, simVerdict)
-};
-                        }
-                    });
-                });
-
-                // --- Spark/crafting awareness for the winning swap idea ---
-                let craftInfo = null;
-                if (bestSwapIdea) {
-                    const addName = bestSwapIdea.addCard;
-                    const neededCopies = bestSwapIdea.neededCopies;
-                    const owned = (typeof ownedCollection === 'object' && ownedCollection) ? (ownedCollection[addName] || 0) : 0;
-                    const missing = Math.max(0, neededCopies - owned);
-
-                    if (missing > 0) {
-                        const perCopyCraftCost = sparkCostFor(addName);
-                        const craftCost = perCopyCraftCost * missing;
-                        const knowsBalance = hasEnteredSparks();
-                        const shortfall = knowsBalance ? Math.max(0, craftCost - ownedSparks) : craftCost;
-
-                        craftInfo = {
-                            craftCost,
-                            missing,
-                            affordable: knowsBalance && shortfall === 0,
-                            knowsBalance,
-                            scrapPlan: null
-                        };
-
-                        // Whether or not we know the user's balance, work out
-                        // what it'd take to scrap-fund the gap, so we can
-                        // actually answer "is this worth it" instead of just
-                        // pointing at a cost number.
-                        if (craftCost > 0 && shortfall > 0) {
-                            const protectedNames = new Set(currentSeeds.map(s => s.name));
-                            protectedNames.add(addName);
-                            craftInfo.scrapPlan = findScrapSuggestions(shortfall, protectedNames);
-                        }
-
-                        // Worth-it read: how many sparks this swap costs per
-                        // point of rating gained. Cheap-and-strong swaps are
-                        // clearly worth it; expensive swaps for a small bump
-                        // usually aren't, especially if they cost real
-                        // collection value (not just banked sparks) to fund.
-                        if (craftCost > 0 && maxImprovement > 0) {
-                            const costPerPoint = craftCost / maxImprovement;
-                            if (costPerPoint <= 150) {
-                                craftInfo.verdict = 'good';
-                                craftInfo.verdictText = 'Worth it — solid gain for the cost.';
-                            } else if (costPerPoint <= 400) {
-                                craftInfo.verdict = 'fair';
-                                craftInfo.verdictText = "Fair trade, but not a slam dunk.";
-                            } else {
-                                craftInfo.verdict = 'steep';
-                                craftInfo.verdictText = "Steep price for a gain this small — probably not worth scrapping for.";
-                            }
-                        }
-                    }
-                }
-
-                let swapHtml = "";
-
-                if (bestSwapIdea) {
-                    const weakName = bestSwapIdea.removeCard.replace(/_/g, ' ');
-                    const topName = bestSwapIdea.addCard.replace(/_/g, ' ');
-                    const boostText = `+${Math.round(maxImprovement)}% rating`;
-
-                    swapHtml = daveSay(`
-    I found something! Swapping out
-    <strong class="card-name-accent">${escapeHtml(weakName)}</strong>
-    for
-    <strong class="card-name-accent">${escapeHtml(topName)}</strong>
-    should give you ${bestSwapIdea.improvementText}.
-`) + `
-                <div class="swap-duel">
-                    <div class="swap-duel-label">Top swap idea · ${boostText}</div>
-                    <div class="swap-duel-cards">
-                        <div class="swap-card out">
-                            <img src="card_images/${bestSwapIdea.removeCard}.png" alt="${weakName}" title="${weakName}"
-                                onerror="this.onerror=null; this.src='card_images/${bestSwapIdea.removeCard}.webp';">
-                            <span class="swap-tag">Out</span>
-                        </div>
-                        <span class="swap-arrow">➜</span>
-                        <div class="swap-card in">
-                            <img src="card_images/${bestSwapIdea.addCard}.png" alt="${topName}" title="${topName}"
-                                onerror="this.onerror=null; this.src='card_images/${bestSwapIdea.addCard}.webp';">
-                            <span class="swap-tag">In</span>
-                        </div>
-                    </div>
-                    <button class="add-rec-btn generate-btn" data-remove="${bestSwapIdea.removeCard}" data-add="${bestSwapIdea.addCard}" data-craft-needed="${craftInfo ? '1' : '0'}">
-                        ${craftInfo ? 'Review & swap' : 'Make the swap'}
-                    </button>
-                </div>`;
-
-                    if (craftInfo) {
-                        const verdictHtml = craftInfo.verdictText
-                            ? `<div class="craft-suggestion-verdict craft-verdict-${craftInfo.verdict}">${escapeHtml(craftInfo.verdictText)}</div>`
-                            : '';
-
-                        if (craftInfo.affordable) {
-                            swapHtml += `
-                <div class="craft-suggestion craft-affordable">
-                    <div class="craft-suggestion-label">You can craft this now</div>
-                    <div class="craft-suggestion-body">
-                        ${escapeHtml(topName)} costs <strong>${craftInfo.craftCost.toLocaleString()}</strong>
-                        <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"> to craft
-                        (you have ${ownedSparks.toLocaleString()}).
-                    </div>
-                    ${verdictHtml}
-                </div>`;
-                        } else if (craftInfo.scrapPlan) {
-                            const plan = craftInfo.scrapPlan;
-                            const shortfall = craftInfo.knowsBalance
-                                ? craftInfo.craftCost - ownedSparks
-                                : craftInfo.craftCost;
-                            const balanceLine = craftInfo.knowsBalance
-                                ? `You have ${ownedSparks.toLocaleString()} sparks — short by ${shortfall.toLocaleString()}.`
-                                : `You haven't told me your Sparks balance, so here's what it'd take to craft this from scratch:`;
-
-                            if (plan.picks.length > 0) {
-                                const rows = plan.picks.map(p => {
-                                    const displayName = p.name.replace(/_/g, ' ');
-                                    return `<li><strong>${escapeHtml(displayName)}</strong> × ${p.copies} <span class="craft-scrap-value">(+${p.sparks.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon">)</span></li>`;
-                                }).join('');
-
-                                swapHtml += `
-                <div class="craft-suggestion craft-needs-scrap">
-                    <div class="craft-suggestion-label">Craft needed: ${craftInfo.craftCost.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
-                    <div class="craft-suggestion-body">
-                        ${balanceLine}
-                        These barely see play, so scrap them to cover it:
-                    </div>
-                    <ul class="craft-scrap-list">${rows}</ul>
-                    ${plan.stillShort > 0
-                        ? `<div class="craft-suggestion-warning">Still short ${plan.stillShort.toLocaleString()} sparks even after scrapping everything unused in your collection.</div>`
-                        : ''}
-                    ${verdictHtml}
-                </div>`;
-                            } else {
-                                swapHtml += `
-                <div class="craft-suggestion craft-needs-scrap">
-                    <div class="craft-suggestion-label">Craft needed: ${craftInfo.craftCost.toLocaleString()} <img src="PvZH_Spark_Icon.webp" alt="Sparks" class="spark-icon"></div>
-                    <div class="craft-suggestion-body">
-                        ${balanceLine}
-                        Nothing obvious in your collection is worth scrapping for it yet.
-                    </div>
-                    ${verdictHtml}
-                </div>`;
-                            }
-                        }
-                    }
-                } else {
-    swapHtml = daveSay(
-        SmartDeckPlan.buildHtml()
-    );
-}
-
-                const baseDeckShareUrl = buildCurrentDeckShareUrl();
-
-const deckShareUrl = baseDeckShareUrl
-    ? `${baseDeckShareUrl}#crafter`
-    : null;
-
-const classArray = Array.from(activeClasses).sort();
-const heroName = heroMap[classArray.join(',')] || `Unknown Hero`;
-
-const deckLinkHtml = deckShareUrl
-    ? daveSay(`
-        <strong>Share this ${heroName} deck:</strong><br><br>
-        <a href="${deckShareUrl}" target="_blank" rel="noopener noreferrer">${deckShareUrl}</a>
-    `)
-    : daveSay(`Your Deck Link could not be generated because one or more cards could not be found.`);
-
-chatFeed.innerHTML = baseHtml + swapHtml + deckLinkHtml;
-
-                const swapBtn = chatFeed.querySelector('.add-rec-btn[data-remove]');
-                if (swapBtn) {
-                    swapBtn.addEventListener('click', (e) => {
-                        const removeName = e.target.getAttribute('data-remove');
-                        const addName = e.target.getAttribute('data-add');
-
-                        if (e.target.getAttribute('data-craft-needed') === '1' && craftInfo) {
-                            const addDisplay = addName.replace(/_/g, ' ');
-                            const lines = [`You don't have enough copies of ${addDisplay} for this swap.`];
-                            lines.push(`Crafting it costs ${craftInfo.craftCost.toLocaleString()} sparks.`);
-
-                            if (craftInfo.scrapPlan && craftInfo.scrapPlan.picks.length > 0) {
-                                const scrapList = craftInfo.scrapPlan.picks
-                                    .map(p => `${p.copies}x ${p.name.replace(/_/g, ' ')}`)
-                                    .join(', ');
-                                lines.push(`To cover it, you'd scrap: ${scrapList}.`);
-                            }
-                            if (craftInfo.verdictText) {
-                                lines.push(craftInfo.verdictText);
-                            }
-                            lines.push('Make this swap anyway?');
-
-                            if (!confirm(lines.join('\n'))) {
-                                return;
-                            }
-                        }
-
-                        applyFullSwap(removeName, addName);
-                    });
-                }
+                daveChatReplace(daveSay(`Your deck is complete!`));
+                daveAnnounceRating();
             }, 50);
 
             return;
         }
+
 
         // --- Deck NOT complete: greeting + 3 recommendations ---
         initSynergyMatrix();
@@ -14660,8 +15817,8 @@ return {
                 htmlString += `
             <div class="rec-card" style="--d: ${index * 70}ms;">
                 <span class="rec-badge ${index === 0 ? 'gold' : ''}">${badgeText}</span>
-                <img src="card_images/${rec.name}.png" alt="${rec.displayName}" title="${rec.displayName}"
-                    onerror="this.onerror=null; this.src='card_images/${rec.name}.webp';">
+                <img src="${getCardImageSrc(rec.name)}" alt="${rec.displayName}" title="${rec.displayName}"
+                    onerror="this.onerror=null; this.src='card_images/${urlSafeCardName(rec.name)}.webp';">
                 <button class="add-rec-btn generate-btn" data-name="${rec.name}" data-class="${rec.data.Class}" data-amount="${rec.targetCopies}">
                     +${rec.targetCopies}
                 </button>
@@ -14748,8 +15905,8 @@ if (scoreDiff > 0) {
                 html += `
             <div class="rec-card" style="--d: ${index * 70}ms;">
                 <span class="rec-badge ${index === 0 ? 'gold' : ''}">${badgeText}</span>
-                <img src="card_images/${rec.name}.png" alt="${cardName}" title="${cardName}"
-                    onerror="this.onerror=null; this.src='card_images/${rec.name}.webp';">
+                <img src="${getCardImageSrc(rec.name)}" alt="${cardName}" title="${cardName}"
+                    onerror="this.onerror=null; this.src='card_images/${urlSafeCardName(rec.name)}.webp';">
                 <button class="add-rec-btn generate-btn" data-remove="${baseCardName}" data-add="${rec.name}">
                     Swap
                 </button>
@@ -14982,15 +16139,19 @@ function getHeroAffinityBonus(cardName, heroName) {
         originalDeck.map(card => [card.name, card.count])
     );
 
-    const isBudget = Boolean(budgetToggle?.checked);
-    const isSuperBudget = Boolean(superBudgetToggle?.checked);
+    const isBudget = false;
+    const isSuperBudget = false;
+
+    const chosenArchetype = archetypeSelect?.value || null;
+    const chosenWinCondition = winConditionSelect?.value || null;
+    const archetypeCtx = { archetype: chosenArchetype, winCondition: chosenWinCondition };
 
     const verdictCtx =
         typeof getVerdictContext === "function"
             ? getVerdictContext()
             : undefined;
 
-    const idealCurve = getFinishIdealCurve(originalDeck, verdictCtx);
+    const idealCurve = getFinishIdealCurve(originalDeck, verdictCtx, chosenArchetype);
     const heroName = deckHeroLock?.name || null;
 
     /*
@@ -15030,7 +16191,8 @@ function getHeroAffinityBonus(cardName, heroName) {
             isBudget,
             isSuperBudget,
             false,
-            heroName
+            heroName,
+            archetypeCtx
         );
 
         const score = getExactFinishScore(completedDeck, verdictCtx);
@@ -15060,7 +16222,9 @@ function getHeroAffinityBonus(cardName, heroName) {
             maxMilliseconds: 350,
             maxEvaluations: 140,
             maxPasses: 2
-        }
+        },
+        false,
+        archetypeCtx
     );
 
     const finalVerdict = getExactFinishVerdict(bestDeck, verdictCtx);
@@ -15091,7 +16255,8 @@ function buildFastCompletion(
     isBudget,
     isSuperBudget,
     ownedOnly,
-    heroName
+    heroName,
+    archetypeCtx
 ) {
     const deck = startingDeck.map(card => ({ ...card }));
     const seedNames = new Set(startingDeck.map(card => card.name));
@@ -15134,7 +16299,9 @@ function buildFastCompletion(
                     workingClasses,
                     isBudget,
                     isSuperBudget,
-                    ownedOnly
+                    ownedOnly,
+                    false,
+                    archetypeCtx
                 )
             ) {
                 continue;
@@ -15147,7 +16314,8 @@ function buildFastCompletion(
                 profile,
                 idealCurve,
                 verdictCtx,
-                heroName
+                heroName,
+                archetypeCtx
             );
 
             if (candidateScore > bestCandidateScore) {
@@ -15172,7 +16340,9 @@ function buildFastCompletion(
                         workingClasses,
                         isBudget,
                         isSuperBudget,
-                        ownedOnly
+                        ownedOnly,
+                        false,
+                        archetypeCtx
                     )
                 ) {
                     continue;
@@ -15185,7 +16355,8 @@ function buildFastCompletion(
                     profile,
                     idealCurve,
                     verdictCtx,
-                    heroName
+                    heroName,
+                    archetypeCtx
                 );
 
                 if (candidateScore > bestCandidateScore) {
@@ -15212,7 +16383,8 @@ function buildFastCompletion(
                         isBudget,
                         isSuperBudget,
                         ownedOnly,
-                        true // allowNewClass
+                        true, // allowNewClass
+                        archetypeCtx
                     )
                 ) {
                     continue;
@@ -15225,7 +16397,8 @@ function buildFastCompletion(
                     profile,
                     idealCurve,
                     verdictCtx,
-                    heroName
+                    heroName,
+                    archetypeCtx
                 );
 
                 if (candidateScore > bestCandidateScore) {
@@ -15252,7 +16425,8 @@ function getFastFinishCandidateScore(
     profile,
     idealCurve,
     verdictCtx,
-    heroName
+    heroName,
+    archetypeCtx
 ) {
     const currentCopies =
         deck.find(card => card.name === candidateName)?.count || 0;
@@ -15285,6 +16459,69 @@ function getFastFinishCandidateScore(
     // (see getHeroAffinityBonus for what this is standing in for).
     if (heroName) {
         score += getHeroAffinityBonus(candidateName, heroName);
+    }
+
+    // Archetype-aware pace and removal-mix adjustments (items 4 & 5).
+    if (archetypeCtx?.archetype) {
+        const guide = DE_ARCHETYPE_GUIDE[archetypeCtx.archetype];
+        const norm = de_normalizeCard(candidateName);
+
+        if (norm.isFinisherTagged) {
+            // Item 4: penalize finishers whose cost sits outside this
+            // archetype's pace window - the guide's worked example is a
+            // Zombot/Octo Zombie-style top-end finisher in an aggro-combo
+            // shell that can't function at that speed.
+            const [minPace, maxPace] = guide.paceWindow;
+            if (norm.cost < minPace || norm.cost > maxPace) {
+                score -= 18;
+            }
+
+            // Item 6: soften the reward for finishers once the deck is
+            // already past the guide's 2-4 sweet spot, so scoring alone
+            // (not just the hard cap in canFinishAddCard) discourages the
+            // greedy loop from over-stacking them.
+            const finisherCopies = deck.reduce((sum, card) => {
+                return de_normalizeCard(card.name).isFinisherTagged
+                    ? sum + card.count
+                    : sum;
+            }, 0);
+            if (finisherCopies >= 4) score -= 14;
+            else if (finisherCopies >= 2 && currentCopies === 0) score -= 4;
+        }
+
+        // Item 5: proactive removal is welcome up to the archetype's
+        // target; reactive-only removal (freezes, trigger-gated effects)
+        // is fine for a slow deck but drags down anything meant to be fast.
+        if (norm.roles.includes('removal_reactive')) {
+            const reactiveCopies = deck.reduce((sum, card) => {
+                return de_normalizeCard(card.name).roles.includes('removal_reactive')
+                    ? sum + card.count
+                    : sum;
+            }, 0);
+            if (reactiveCopies >= guide.reactiveRemovalMax) score -= 10;
+        }
+        if (norm.roles.includes('removal_proactive')) {
+            const [minProactive, maxProactive] = guide.proactiveRemovalTarget;
+            const proactiveCopies = deck.reduce((sum, card) => {
+                return de_normalizeCard(card.name).roles.includes('removal_proactive')
+                    ? sum + card.count
+                    : sum;
+            }, 0);
+            if (proactiveCopies < minProactive) score += 4;
+            else if (proactiveCopies >= maxProactive) score -= 6;
+        }
+
+        // Optional win-condition tag: Tempo rewards proactive tempo plays
+        // (bounce/freeze/removal-on-curve), Combo rewards synergy density.
+        // These are descriptors layered on the archetype, not separate
+        // curve targets, so they only nudge score rather than the curve.
+        if (archetypeCtx.winCondition === 'Tempo') {
+            if (norm.roles.includes('removal_proactive') || norm.mechanics.includes('tempo')) {
+                score += 6;
+            }
+        } else if (archetypeCtx.winCondition === 'Combo') {
+            if (synergy >= 60) score += 6;
+        }
     }
 
     /*
@@ -15485,7 +16722,7 @@ function getFinishConsistencyScore(deck) {
 
     return Math.round(points / deck.length);
 }
-function getFinishIdealCurve(startingDeck, verdictCtx) {
+function getFinishIdealCurve(startingDeck, verdictCtx, archetypeName) {
     const fallbackCurve = [
         0.23,
         0.22,
@@ -15495,11 +16732,26 @@ function getFinishIdealCurve(startingDeck, verdictCtx) {
         0.10
     ];
 
+    // Resolve which pacing archetype governs the curve: an explicit user
+    // pick wins, otherwise auto-detect from the seeds so even the
+    // "Auto (data-driven)" path stays inside a real archetype's window
+    // instead of drifting toward whatever the nearest-neighbor decks
+    // happen to look like.
+    const seedsForArchetype = startingDeck.length ? de_buildSeeds(
+        startingDeck.map(card => `${card.count}x ${card.name}`)
+    ) : [];
+    const totalSeedCards = startingDeck.reduce((sum, card) => sum + card.count, 0);
+    const effectiveArchetype = (archetypeName && DE_ARCHETYPE_GUIDE[archetypeName])
+        ? archetypeName
+        : de_autoPacingArchetype(seedsForArchetype, totalSeedCards);
+
     if (
         !startingDeck.length ||
         !verdictCtx?.dbDecks
     ) {
-        return fallbackCurve;
+        return effectiveArchetype
+            ? de_clampCurveToArchetype(fallbackCurve, effectiveArchetype)
+            : fallbackCurve;
     }
 
     const seedCounts = new Map(
@@ -15540,7 +16792,9 @@ function getFinishIdealCurve(startingDeck, verdictCtx) {
     const closest = comparisons.slice(0, 8);
 
     if (!closest.length) {
-        return fallbackCurve;
+        return effectiveArchetype
+            ? de_clampCurveToArchetype(fallbackCurve, effectiveArchetype)
+            : fallbackCurve;
     }
 
     const totalWeight = closest.reduce(
@@ -15559,7 +16813,12 @@ function getFinishIdealCurve(startingDeck, verdictCtx) {
         }
     }
 
-    return idealCurve;
+    // The k-NN blend only gets to break ties inside the archetype's
+    // explicit range (item 3) - it can no longer hand back an Aggro-shaped
+    // curve just because the nearest overlapping decks happened to be fast.
+    return effectiveArchetype
+        ? de_clampCurveToArchetype(idealCurve, effectiveArchetype)
+        : idealCurve;
 }
 function polishFinishedDeck(
     startingDeck,
@@ -15569,7 +16828,8 @@ function polishFinishedDeck(
     isBudget,
     isSuperBudget,
     options = {},
-    ownedOnly
+    ownedOnly,
+    archetypeCtx
 ) {
     const maxMilliseconds = options.maxMilliseconds ?? 350;
     const maxEvaluations = options.maxEvaluations ?? 140;
@@ -15648,7 +16908,9 @@ function polishFinishedDeck(
                         consistency: 0.05
                     },
                     idealCurve,
-                    verdictCtx
+                    verdictCtx,
+                    null,
+                    archetypeCtx
                 )
             }))
             .sort((a, b) => b.fit - a.fit)
@@ -15690,7 +16952,9 @@ function polishFinishedDeck(
                         classesAfterRemoval,
                         isBudget,
                         isSuperBudget,
-                        ownedOnly
+                        ownedOnly,
+                        false,
+                        archetypeCtx
                     )
                 ) {
                     continue;
@@ -15752,7 +17016,8 @@ function canFinishAddCard(
     isBudget,
     isSuperBudget,
     ownedOnly,
-    allowNewClass
+    allowNewClass,
+    archetypeCtx
 ) {
     const candidateData = cardDatabase?.[candidateName];
     if (!candidateData) return false;
@@ -15833,6 +17098,22 @@ function canFinishAddCard(
             ) {
                 return false;
             }
+        }
+    }
+
+    // Item 6: cap finisher-tagged cards at roughly the guide's 2-4 sweet
+    // spot instead of letting the greedy loop keep adding more just
+    // because each one scores well in isolation. This is a hard backstop;
+    // getFastFinishCandidateScore also discourages it earlier via scoring.
+    if (archetypeCtx?.archetype && currentCopies === 0) {
+        const norm = de_normalizeCard(candidateName);
+        if (norm.isFinisherTagged) {
+            const finisherCopies = deck.reduce((sum, card) => {
+                return de_normalizeCard(card.name).isFinisherTagged
+                    ? sum + card.count
+                    : sum;
+            }, 0);
+            if (finisherCopies >= 6) return false;
         }
     }
 
@@ -16523,12 +17804,6 @@ const sparkIcon = await loadCanvasImage([
 ]);
 
 const totalSparkCost = currentSeeds.reduce((sum, seed) => sum + (sparkCostFor(seed.name) * seed.count), 0);
-const sparkIcon = await loadCanvasImage([
-    `PvZH_Spark_Icon.webp`,
-    `PvZH_Spark_Icon.png`
-]);
-
-const totalSparkCost = currentSeeds.reduce((sum, seed) => sum + (sparkCostFor(seed.name) * seed.count), 0);
 
             // Header panel
             const headerX = padding;
@@ -16603,7 +17878,7 @@ const totalSparkCost = currentSeeds.reduce((sum, seed) => sum + (sparkCostFor(se
                 const dbName = seed.name.replace(/_/g, ' ').replace(/ /g, '_');
 
                 const img = await loadCanvasImage([
-                    `card_images/${dbName}.png`,
+                    `${getCardImageSrc(dbName)}`,
                     `card_images/${dbName}.webp`
                 ]);
 
@@ -16725,32 +18000,6 @@ characters.forEach(character => {
 
 ctx.restore();
             });
-
-   // Bottom-left spark cost summary
-const sparkLabel = `${totalSparkCost.toLocaleString()} Sparks`;
-const iconSize = 15;
-const sparkY = canvasHeight - 15;
-
-ctx.save();
-ctx.textAlign = 'left';
-ctx.textBaseline = 'middle';
-ctx.font = '700 12px "Segoe UI", sans-serif';
-ctx.shadowColor = 'rgba(0,0,0,0.45)';
-ctx.shadowBlur = 4;
-ctx.shadowOffsetY = 1;
-
-if (sparkIcon) {
-    ctx.drawImage(sparkIcon, padding, sparkY - iconSize / 2, iconSize, iconSize);
-} else {
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath();
-    ctx.arc(padding + iconSize / 2, sparkY, iconSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-ctx.fillStyle = 'rgba(241,245,249,0.82)';
-ctx.fillText(sparkLabel, padding + iconSize + 7, sparkY);
-ctx.restore();
 
    // Bottom-left spark cost summary
 const sparkLabel = `${totalSparkCost.toLocaleString()} Sparks`;
@@ -16920,14 +18169,6 @@ ctx.restore();
         'Pirate Pack': { label: 'Pirate Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pirate'], subtitle: 'Zombie tribe pack' },
         'Pet Pack': { label: 'Pet Pack', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['pet'], subtitle: 'Zombie tribe pack' },
         'Mustache & Professional': { label: 'Mustache & Professional', img: 'PvZH_Various_Pack.png', cardCount: 6, mode: 'tribe', tribes: ['mustache', 'professional'], subtitle: 'Zombie tribe pack' }
-    };
-
-    const PACK_SPECIAL_RULES = {
-        'Gargantuar Pack': {
-            guaranteedUncommons: [{ name: 'Yeti_Lunchbox', count: 3 }],
-            excludeFromUncommon: ['Yeti_Lunchbox'],
-            rareReplacement: { name: 'Gargologist', chance: 0.20 }
-        }
     };
 
     let packSimState = JSON.parse(JSON.stringify(PACK_SIM_DEFAULT_STATE));
@@ -17338,15 +18579,15 @@ ctx.restore();
                             <div class="pack-sim-hero-badge">★ HERO PULL</div>
                             ${countBadge}
                             <img src="hero_images/${heroImgBase(p.name)}.webp" alt="${p.name}" loading="lazy" decoding="async"
-                                 onerror="this.onerror=null;this.src='hero_images/${heroImgBase(p.name)}.png'">
+                                 onerror="this.onerror=null;this.src='hero_images/${urlSafeCardName(heroImgBase(p.name))}.png'">
                             <div class="pack-sim-card-name">${p.name}</div>
                             <div class="pack-sim-card-rarity">Hero</div>
                         </div>`
                     : `
                         <div class="pack-sim-card rarity-${p.rarity.toLowerCase().replace(/\s+/g, '-')}" style="animation-duration:${groupDelay}ms; animation-delay:0ms;">
                             ${countBadge}
-                            <img src="card_images/${p.name}.png" alt="${packCardDisplayName(p.name)}" loading="lazy" decoding="async"
-                                 onerror="this.onerror=null;this.src='card_images/${p.name}.webp'">
+                            <img src="${getCardImageSrc(p.name)}" alt="${packCardDisplayName(p.name)}" loading="lazy" decoding="async"
+                                 onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(p.name)}.webp'">
                             <div class="pack-sim-card-name">${packCardDisplayName(p.name)}</div>
                             <div class="pack-sim-card-rarity">${p.rarity}</div>
                         </div>`;
@@ -17385,8 +18626,8 @@ ctx.restore();
                 group.items.forEach(p => {
                     const countBadge = p.count > 1 ? `<div class="pack-sim-count-badge">×${p.count}</div>` : '';
                     const html = p.type === 'hero'
-                        ? `<div class="pack-sim-card rarity-hero"><div class="pack-sim-hero-badge">★ HERO PULL</div>${countBadge}<img src="hero_images/${heroImgBase(p.name)}.webp" alt="${p.name}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='hero_images/${heroImgBase(p.name)}.png'"><div class="pack-sim-card-name">${p.name}</div><div class="pack-sim-card-rarity">Hero</div></div>`
-                        : `<div class="pack-sim-card rarity-${p.rarity.toLowerCase().replace(/\s+/g, '-')}">${countBadge}<img src="card_images/${p.name}.png" alt="${packCardDisplayName(p.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='card_images/${p.name}.webp'"><div class="pack-sim-card-name">${packCardDisplayName(p.name)}</div><div class="pack-sim-card-rarity">${p.rarity}</div></div>`;
+                        ? `<div class="pack-sim-card rarity-hero"><div class="pack-sim-hero-badge">★ HERO PULL</div>${countBadge}<img src="hero_images/${heroImgBase(p.name)}.webp" alt="${p.name}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='hero_images/${urlSafeCardName(heroImgBase(p.name))}.png'"><div class="pack-sim-card-name">${p.name}</div><div class="pack-sim-card-rarity">Hero</div></div>`
+                        : `<div class="pack-sim-card rarity-${p.rarity.toLowerCase().replace(/\s+/g, '-')}">${countBadge}<img src="${getCardImageSrc(p.name)}" alt="${packCardDisplayName(p.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='card_images/${urlSafeCardName(p.name)}.webp'"><div class="pack-sim-card-name">${packCardDisplayName(p.name)}</div><div class="pack-sim-card-rarity">${p.rarity}</div></div>`;
                     finalGrid.insertAdjacentHTML('beforeend', html);
                 });
             });
@@ -17541,12 +18782,6 @@ ctx.restore();
         });
     }
 
-    if (packsPageBtn) {
-        packsPageBtn.addEventListener('click', () => {
-            window.location.hash = 'packs';
-        });
-    }
-
     if (synergyEasterEgg) {
         synergyEasterEgg.addEventListener('click', () => {
             window.location.hash = 'synergy';
@@ -17607,7 +18842,7 @@ function openVisualModal(title, cardsArray) {
         cardDiv.className = 'visual-card';
 
         const img = document.createElement('img');
-        img.src = `card_images/${dbName}.png`;
+        img.src = `${getCardImageSrc(dbName)}`;
         img.alt = displayName;
         img.title = displayName;
         img.style.objectFit = 'contain';
@@ -17738,7 +18973,7 @@ function renderGames() {
     // UTILITY HELPER UTILITIES
     // ==========================================
     function setCardImage(imgElement, cardKey) {
-        imgElement.src = `card_images/${cardKey}.png`;
+        imgElement.src = `${getCardImageSrc(cardKey)}`;
         imgElement.onerror = function () {
             this.onerror = null;
             this.src = `card_images/${cardKey}.webp`;
@@ -18085,7 +19320,7 @@ async function renderSynergyWeb() {
             };
 
             // 3. Kick off the loading process by assuming it's a PNG first
-            img.src = `card_images/${formattedName}.png`;
+            img.src = `${getCardImageSrc(formattedName)}`;
         });
     };
 
@@ -18494,7 +19729,7 @@ function drawCurrentClassTiers() {
             img.className = 'tier-actual-card';
 
             // Default to PNG
-            img.src = `card_images/${formattedName}.png`;
+            img.src = `${getCardImageSrc(formattedName)}`;
 
             // Fallback to WebP if the PNG is missing
             img.onerror = function () {
@@ -18776,4 +20011,3 @@ document.addEventListener("DOMContentLoaded", renderGuides);
         if (e.key === 'Escape') closeMenu();
     });
 })();
-
