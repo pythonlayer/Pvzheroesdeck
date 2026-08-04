@@ -1,6 +1,7 @@
 // --- Global Variables ---
 let fullDatabase = {};
 let cardDatabase = {};
+let packOpeningCardDatabase = null;
 
 function urlSafeCardName(name) {
     return String(name || '').replace(/'/g, '%27');
@@ -12,13 +13,28 @@ const heroQuotes = {
                     "Rose": "Rose? Thats CRAAAZY. You annoying little guy!",
                     "Nightcap": "Night cap ? Damn... this is gonna be hard."
                 };
-function getCardImageSrc(name) {
+function getCardLookupEntry(name) {
     const key = String(name || '');
-    const card = cardDatabase[key] || cardDatabase[key.replace(/ /g, '_')];
+    const candidates = [key, key.replace(/ /g, '_')];
+
+    for (const candidate of candidates) {
+        const fromCurrent = cardDatabase?.[candidate];
+        if (fromCurrent) return fromCurrent;
+
+        const fromPack = packOpeningCardDatabase?.[candidate];
+        if (fromPack) return fromPack;
+    }
+
+    return null;
+}
+
+function getCardImageSrc(name) {
+    const card = getCardLookupEntry(name);
     if (card && card.Image) {
         return `card_images/${card.Image}`;
     }
 
+    const key = String(name || '');
     return `card_images/${urlSafeCardName(key.replace(/ /g, '_'))}.png`;
 }
 
@@ -398,12 +414,17 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('card_data.json').then(res => {
             if (!res.ok) throw new Error("Could not load the card data file.");
             return res.json();
+        }),
+        fetch('card_data_old.json').then(res => {
+            if (!res.ok) throw new Error("Could not load the legacy card data file.");
+            return res.json();
         })
     ])
-        .then(([deckData, cardData]) => {
+        .then(([deckData, cardData, legacyCardData]) => {
             // Both files are successfully downloaded!
             fullDatabase = deckData;
             cardDatabase = makeAliasedCardDatabase(cardData);
+            packOpeningCardDatabase = makeAliasedCardDatabase(legacyCardData);
 
             loadingEl.style.display = 'none';
             const totalDecks = Object.keys(deckData).length;
@@ -8440,16 +8461,22 @@ gradeButtons.forEach(button => {
     }
 
     function getDeckBuilderCollectionClasses() {
+        const classes = new Set();
+        currentSeeds.forEach(seed => {
+            const cardClass = cardDatabase?.[seed.name]?.Class;
+            if (cardClass) classes.add(cardClass);
+        });
+
         if (deckHeroLock && Array.isArray(deckHeroLock.classes) && deckHeroLock.classes.length > 0) {
-            return deckHeroLock.classes.slice(0, 2);
+            deckHeroLock.classes.forEach(cls => classes.add(cls));
         }
-        // No hero locked in — only show classes once the deck actually has a
-        // card from them. Nothing added yet means nothing to show.
-        return Array.from(activeClasses).slice(0, 2);
+
+        return Array.from(classes).sort().slice(0, 2);
     }
 
     function saveCurrentDeck() {
         if (!currentSeeds.length) return;
+        syncDeckIdentityFromSeeds();
         const deckName = getUniqueDeckName(getCurrentDeckName());
         const deckObject = {
             name: deckName,
@@ -8468,10 +8495,10 @@ gradeButtons.forEach(button => {
         if (!deck) return;
         currentSeeds = (deck.cards || []).map(seed => ({ ...seed }));
         currentFaction = deck.faction || null;
-        activeClasses = new Set(deck.classes || []);
         deckHeroLock = deck.hero ? { name: deck.hero, faction: deck.faction, classes: deck.classes || [] } : null;
         manualDeckName = deck.name || '';
         lastAddedCard = null;
+        syncDeckIdentityFromSeeds();
         renderSeeds();
 
         const resultsPane = document.querySelector('.crafter-results-container') || document.getElementById('generatedDeckList');
@@ -10339,6 +10366,7 @@ gradeButtons.forEach(button => {
                 : ["Beastly", "Brainy", "Crazy", "Hearty", "Sneaky"];
 
             classCombos = [];
+            factionClasses.forEach(cls => classCombos.push([cls]));
             for (let i = 0; i < factionClasses.length; i++) {
                 for (let j = i + 1; j < factionClasses.length; j++) {
                     classCombos.push([factionClasses[i], factionClasses[j]]);
@@ -10504,8 +10532,13 @@ gradeButtons.forEach(button => {
                 const cardClass = cardInfo.Class;
                 const cardFaction = plantClasses.has(cardClass) ? "Plant" : "Zombie";
 
-                if (currentFaction !== null && currentFaction !== cardFaction) return;
-                if (!activeClasses.has(cardClass) && activeClasses.size >= 2) return;
+                if (deckHeroLock) {
+                    const lockedClasses = new Set(deckHeroLock.classes || []);
+                    if (!lockedClasses.has(cardClass)) return;
+                } else {
+                    if (currentFaction !== null && currentFaction !== cardFaction) return;
+                    if (!activeClasses.has(cardClass) && activeClasses.size >= 2) return;
+                }
 
                 const existing = currentSeeds.find(s => s.name === rawName);
                 if (existing && existing.count >= 4) return;
@@ -10541,6 +10574,14 @@ gradeButtons.forEach(button => {
         let amountToAdd = Math.min(requestedAmount, spaceLeft, roomForThisCard);
         if (amountToAdd <= 0) return;
 
+        if (deckHeroLock) {
+            const lockedClasses = new Set(deckHeroLock.classes || []);
+            if (!lockedClasses.has(cardClass)) return;
+        } else {
+            if (currentFaction !== null && cardFaction !== currentFaction) return;
+            if (!activeClasses.has(cardClass) && activeClasses.size >= 2) return;
+        }
+
         if (existing) {
             existing.count += amountToAdd;
         } else {
@@ -10554,7 +10595,9 @@ gradeButtons.forEach(button => {
         }
 
         lastAddedCard = rawName; // Update AI memory
-        currentFaction = cardFaction;
+        if (currentFaction === null) {
+            currentFaction = cardFaction;
+        }
         activeClasses.add(cardClass);
 
         seedInput.value = '';
@@ -17032,7 +17075,12 @@ function canFinishAddCard(
 
     if (candidateFaction !== currentFaction) return false;
 
-    if (
+    if (deckHeroLock) {
+        const lockedClasses = new Set(deckHeroLock.classes || []);
+        if (!lockedClasses.has(candidateClass)) {
+            return false;
+        }
+    } else if (
         !allowNewClass &&
         !workingClasses.has(candidateClass) &&
         workingClasses.size >= 2
@@ -18191,20 +18239,48 @@ ctx.restore();
         try { localStorage.setItem(PACK_SIM_STORAGE_KEY, JSON.stringify(packSimState)); } catch (e) { /* ignore */ }
     }
 
+    function getCardMatchesPackSet(card, setName) {
+        const normalizedSetName = String(setName || '').trim();
+        if (!normalizedSetName) return false;
+
+        const cardSetName = String(card?.Set || '').trim();
+        if (!cardSetName) return false;
+
+        if (cardSetName.toLowerCase() === normalizedSetName.toLowerCase()) {
+            return true;
+        }
+
+        if (
+            ['Premium', 'Galactic', 'Colossal', 'Triassic'].includes(normalizedSetName) &&
+            ['gold', 'silver'].includes(cardSetName.toLowerCase())
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
     function getPackPools(setName) {
         const pools = { Uncommon: [], Rare: [], 'Super-Rare': [], Legendary: [] };
-        for (const key in cardDatabase) {
-            const c = cardDatabase[key];
-            if (!c || c.Set !== setName) continue;
-            const rarity = (c.Rarity || '').trim();
-            const normalized = rarity === 'Uncommon' ? 'Uncommon'
-                : rarity === 'Rare' ? 'Rare'
-                : rarity === 'Super Rare' || rarity === 'Super-Rare' ? 'Super-Rare'
-                : rarity === 'Legendary' ? 'Legendary'
-                : null;
-            if (normalized && pools[normalized]) pools[normalized].push(key);
+        const fallbackPools = { Uncommon: [], Rare: [], 'Super-Rare': [], Legendary: [] };
+        const sourceDatabase = packOpeningCardDatabase || cardDatabase || {};
+
+        for (const key in sourceDatabase) {
+            const c = sourceDatabase[key];
+            if (!c) continue;
+
+            const rarity = normalizePackCardRarity(c);
+            if (!rarity) continue;
+
+            if (getCardMatchesPackSet(c, setName)) {
+                if (pools[rarity]) pools[rarity].push(key);
+            } else if (fallbackPools[rarity]) {
+                fallbackPools[rarity].push(key);
+            }
         }
-        return pools;
+
+        const hasAnyPool = Object.values(pools).some(pool => pool.length > 0);
+        return hasAnyPool ? pools : fallbackPools;
     }
 
     function normalizePackCardRarity(card) {
@@ -18226,7 +18302,8 @@ ctx.restore();
     function getTribePackCards(def) {
         const keywords = Array.isArray(def?.tribes) ? def.tribes : (def?.tribe ? [def.tribe] : []);
         if (!keywords.length) return [];
-        return Object.values(cardDatabase).filter(card => cardMatchesTribeKeywords(card, keywords));
+        const sourceDatabase = packOpeningCardDatabase || cardDatabase || {};
+        return Object.values(sourceDatabase).filter(card => cardMatchesTribeKeywords(card, keywords));
     }
 
     function pickCardFromPool(pool, rarity, usedNames) {
@@ -18266,7 +18343,7 @@ ctx.restore();
 
             if (specialRule?.guaranteedUncommons?.length) {
                 specialRule.guaranteedUncommons.forEach(entry => {
-                    const bonusCard = cardDatabase?.[entry.name];
+                    const bonusCard = (packOpeningCardDatabase || cardDatabase)?.[entry.name];
                     if (!bonusCard) return;
                     for (let amount = 0; amount < (entry.count || 0); amount += 1) {
                         packPulls.push(bonusCard);
@@ -18283,7 +18360,7 @@ ctx.restore();
 
             let rareCard = null;
             if (specialRule?.rareReplacement?.name && Math.random() < (specialRule.rareReplacement.chance || 0)) {
-                rareCard = cardDatabase?.[specialRule.rareReplacement.name];
+                rareCard = (packOpeningCardDatabase || cardDatabase)?.[specialRule.rareReplacement.name];
             }
             if (!rareCard) {
                 if (def?.featuredCard) {
@@ -18386,7 +18463,7 @@ ctx.restore();
             if (!chosen) continue;
 
             usedNames.add(chosen);
-            const card = cardDatabase[chosen];
+            const card = (packOpeningCardDatabase || cardDatabase)[chosen];
             if (!card) continue;
 
             pulled.push({
